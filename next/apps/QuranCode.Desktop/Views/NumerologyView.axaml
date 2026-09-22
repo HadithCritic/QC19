@@ -1,0 +1,38 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:QuranCode.Desktop.ViewModels"
+             x:Class="QuranCode.Desktop.Views.NumerologyView"
+             x:DataType="vm:NumerologyViewModel">
+  <DockPanel Margin="16">
+    <StackPanel DockPanel.Dock="Top" Spacing="8" Margin="0,0,0,12">
+      <TextBlock Text="Numerology" FontSize="18" FontWeight="SemiBold" />
+      <Grid ColumnDefinitions="*,110">
+        <TextBox Grid.Column="0" Text="{Binding Text}"
+                 Watermark="Arabic text to value"
+                 FlowDirection="RightToLeft" FontSize="17" Margin="0,0,8,0" />
+        <Button Grid.Column="1" Content="Calculate"
+                Command="{Binding CalculateCommand}"
+                IsEnabled="{Binding !IsBusy}"
+                HorizontalAlignment="Stretch"
+                HorizontalContentAlignment="Center" />
+      </Grid>
+      <CheckBox Content="All 407 systems (otherwise the common orderings)"
+                IsChecked="{Binding AllSystems}" />
+      <ProgressBar IsIndeterminate="True" Height="3" IsVisible="{Binding IsBusy}" />
+      <TextBlock Text="{Binding Summary}" Opacity="0.7" FontSize="12" />
+      <TextBlock Text="{Binding Error}" Foreground="IndianRed"
+                 IsVisible="{Binding Error, Converter={x:Static ObjectConverters.IsNotNull}}"
+                 TextWrapping="Wrap" />
+    </StackPanel>
+
+    <DataGrid ItemsSource="{Binding Values}" IsReadOnly="True"
+              GridLinesVisibility="Horizontal" CanUserSortColumns="True">
+      <DataGrid.Columns>
+        <DataGridTextColumn Header="System" Binding="{Binding System}" Width="*" />
+        <DataGridTextColumn Header="Value" Binding="{Binding Value}" Width="130" />
+        <DataGridTextColumn Header="Digit sum" Binding="{Binding DigitSum}" Width="110" />
+        <DataGridTextColumn Header="Digital root" Binding="{Binding DigitalRoot}" Width="110" />
+      </DataGrid.Columns>
+    </DataGrid>
+  </DockPanel>
+</UserControl>

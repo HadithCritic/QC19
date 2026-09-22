@@ -1,0 +1,49 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:QuranCode.Desktop.ViewModels"
+             x:Class="QuranCode.Desktop.Views.ReaderView"
+             x:DataType="vm:ReaderViewModel">
+  <DockPanel Margin="16">
+    <StackPanel DockPanel.Dock="Top" Spacing="8" Margin="0,0,0,12">
+      <TextBlock Text="Reader" FontSize="18" FontWeight="SemiBold" />
+      <ComboBox ItemsSource="{Binding Chapters}"
+                SelectedItem="{Binding SelectedChapter}"
+                HorizontalAlignment="Left" MinWidth="320">
+        <ComboBox.ItemTemplate>
+          <DataTemplate>
+            <TextBlock>
+              <Run Text="{Binding Number}" />
+              <Run Text=" " />
+              <Run Text="{Binding TransliteratedName}" />
+              <Run Text=" — " />
+              <Run Text="{Binding EnglishName}" />
+            </TextBlock>
+          </DataTemplate>
+        </ComboBox.ItemTemplate>
+      </ComboBox>
+      <TextBlock Text="{Binding Summary}" Opacity="0.7" FontSize="12" />
+      <TextBlock Text="{Binding Error}" Foreground="IndianRed"
+                 IsVisible="{Binding Error, Converter={x:Static ObjectConverters.IsNotNull}}"
+                 TextWrapping="Wrap" />
+    </StackPanel>
+
+    <!-- Virtualized by default in Avalonia's ListBox, so a 286-verse chapter
+         creates only the rows actually on screen. -->
+    <ListBox ItemsSource="{Binding Verses}">
+      <ListBox.ItemTemplate>
+        <DataTemplate x:DataType="vm:VerseRow">
+          <Grid ColumnDefinitions="64,*,90" Margin="0,4">
+            <TextBlock Grid.Column="0" Text="{Binding Reference}"
+                       Opacity="0.6" VerticalAlignment="Center" />
+            <TextBlock Grid.Column="1" Text="{Binding Text}"
+                       FontSize="19" TextWrapping="Wrap"
+                       FlowDirection="RightToLeft" />
+            <TextBlock Grid.Column="2" Text="{Binding Value}"
+                       HorizontalAlignment="Right" VerticalAlignment="Center"
+                       Opacity="0.6" FontFamily="Consolas" />
+          </Grid>
+        </DataTemplate>
+      </ListBox.ItemTemplate>
+    </ListBox>
+  </DockPanel>
+</UserControl>
