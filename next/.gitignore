@@ -1,3 +1,8 @@
 # Build output
 bin/
 obj/
+
+# Generated content databases; rebuild with next/data/import/build_content.py
+*.db
+*.db-wal
+*.db-shm
