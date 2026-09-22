@@ -1,0 +1,60 @@
+﻿# "Ba3da Ma" must be one word because:
+# Longest  chapter Al-Baqara    # 2 has 6116 words (no bismAllah)
+# Shortest chapter Al-Kawthar # 108 has   10 words (no bismAllah)
+# 2+6116+108+10 = 6236 = number of verses in the Quran.
+# ©2021 Mahmoud Allaw محمود علو
+
+Legend:
+	Ma Lekum	2 words
+	MaLekum		not sure
+	Malekum		1 word
+
+	Ba3da Ma	2 words
+	Ba3daMa		not sure
+	Ba3dama		1 word
+
+Note1:  All Arabic text used below is modern Quran text and is taken from https://tanzil.net v1.02 and 1.1b versions.
+New v1.1 changed Be3dama to Be3da Ma.
+
+Note2:	The modern text written above the old words in the OldQuran.pdf is inconsistent with the word separation which adds another layer of confusion. This OldQuran.pdf is FAKE. See OldQuran.txt.
+
+Data:
+4:75	Page 189	WemaLekum Latuqatiloona Fi Sabeel Allah ...?
+37:25	Page 954	Malekum Latanaasaroon?
+37:92	Page 961	Malekum Latantiqoon?
+57:8	Page 1160	Wema Lekum La Tuminoon biAllahi waRasooluhoo Yad3ookum Lituminoo biRabbikum ...?
+71:13	Page 1236	MaLekum	La Tarjoon Lillaahi Wiqaraa?
+٤_٧٥	وَمَا لَكُمْ لَا تُقَٰتِلُونَ فِى سَبِيلِ ٱللَّهِ وَٱلْمُسْتَضْعَفِينَ مِنَ ٱلرِّجَالِ وَٱلنِّسَآءِ وَٱلْوِلْدَٰنِ ٱلَّذِينَ يَقُولُونَ رَبَّنَآ أَخْرِجْنَا مِنْ هَٰذِهِ ٱلْقَرْيَةِ ٱلظَّالِمِ أَهْلُهَا وَٱجْعَل لَّنَا مِن لَّدُنكَ وَلِيًّۭا وَٱجْعَل لَّنَا مِن لَّدُنكَ نَصِيرًا
+٣٧_٢٥	مَا لَكُمْ لَا تَنَاصَرُونَ
+٣٧_٩٢	مَا لَكُمْ لَا تَنطِقُونَ
+٥٧_٨	وَمَا لَكُمْ لَا تُؤْمِنُونَ بِٱللَّهِ ۙ وَٱلرَّسُولُ يَدْعُوكُمْ لِتُؤْمِنُوا۟ بِرَبِّكُمْ وَقَدْ أَخَذَ مِيثَٰقَكُمْ إِن كُنتُم مُّؤْمِنِينَ
+٧١_١٣	مَّا لَكُمْ لَا تَرْجُونَ لِلَّهِ وَقَارًۭا
+
+2:181	Page 60		Femen Beddalehu Ba3daMa Sami3ahoo ...
+8:6	Page 371	Yujadiloonaka biAlHaqq Ba3da MaTabayana ... [Ma Tabayana = 1 word !!!]
+13:37	Page 528	Wakathaalik Anzalnaahu Hukmen Arabiyen Welen Itaba3ta Ahwaahum Ba3daMa Jaaeka Min AlIlim Maleka[1 word !!!] Min Walyen Wela Waaq.
+٢_١٨١	فَمَنۢ بَدَّلَهُۥ بَعْدَمَا سَمِعَهُۥ فَإِنَّمَآ إِثْمُهُۥ عَلَى ٱلَّذِينَ يُبَدِّلُونَهُۥٓ ۚ إِنَّ ٱللَّهَ سَمِيعٌ عَلِيمٌۭ
+٨_٦	يُجَٰدِلُونَكَ فِى ٱلْحَقِّ بَعْدَمَا تَبَيَّنَ كَأَنَّمَا يُسَاقُونَ إِلَى ٱلْمَوْتِ وَهُمْ يَنظُرُونَ
+١٣_٣٧	وَكَذَٰلِكَ أَنزَلْنَٰهُ حُكْمًا عَرَبِيًّۭا ۚ وَلَئِنِ ٱتَّبَعْتَ أَهْوَآءَهُم بَعْدَمَا جَآءَكَ مِنَ ٱلْعِلْمِ مَا لَكَ مِنَ ٱللَّهِ مِن وَلِىٍّۢ وَلَا وَاقٍۢ
+
+				----------------------
+				13:37	8:6	2:181
+				----------------------
+KFQC Quran Text v0.9		بَعۡدَ مَا	بَعۡدَ مَا	بَعۡدَ مَا
+KFQC Quran Text Web		بَعۡدَ مَا	بَعۡدَ مَا	بَعۡدَمَا
+KFQC PocketPC Text		بَعۡدَ مَا	بَعۡدَ مَا	بَعۡدَمَا
+Tanzil Quran Text 1.1b		بَعْدَمَا	بَعْدَمَا	بَعْدَمَا
+Tanzil Quran Text 1.1		بَعْدَ مَا	بَعْدَ مَا	بَعْدَ مَا
+QuranExplorer QuranText		بَعۡدَمَا	بَعۡدَ مَا	بَعۡدَمَا
+				----------------------
+
+Furthermore, it could also be that all three occurrences are one word "بَعْدَمَا" just as in Tanzil Quran Text 1.1b
+as this would produce 77878 words in the Quran = 2 * 23 * 1693 which might be a hint to the human genome structure:
+2 strands (double helix DNA), 23 chromosomes per helix, 1693 genes per chromosomes.
+
+
+Allah knows all.
+
+Ali Adams
+qurancode.com
+God > ∞

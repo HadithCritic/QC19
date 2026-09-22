@@ -1,0 +1,65 @@
+===========================
+Mathematical Query Language
+===========================
+
+Result Type:
+-------------------------------------
+L:	find letters
+W:	find words
+X:	find sentences
+V:	find verses	[default]
+C:	find chapters
+#:	find pages
+S:	find stations
+P:	find parts
+G:	find groups
+H:	find halfs
+Q:	find quarters
+B:	find bowings
+
+LHS Variables:
+-------------------------------------
+Cs	number of chapters
+Vs	number of verses
+Ws	number of words
+Ls	number of letters
+Us	number of unique letters
+C	chapter number in book
+V	verse number in book
+W	word number in book
+L	letter number in book
+Vc	verse number in chapter
+Wc	word number in chapter
+Lc	letter number in chapter
+Wv	word number in verse
+Lv	letter number in verse
+Lw	letter number in word
+
+RHS Variables:
+-------------------------------------
+Any natural number or:
+p	prime number
+ap	additive prime number
+xp	non - additive prime number
+c	composite number
+ac	additive composite number
+xc	non - additive composite number
+o	odd number
+e	even number
+val	value
+
+Examples:
+-------------------------------------
+        L: L + Lc + Lv + Lw - val = 0
+        W: C + V + W + Ls = val
+        V: C + V = Ws    
+        L - W + C + V = p    
+        C: C + Vs = 114    
+        #: Ls = 506    
+-------------------------------------
+
+
+
+Ali Adams
+qurancode.com
+God >

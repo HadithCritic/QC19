@@ -1,0 +1,13 @@
+# Build output (csproj OutputPath is ..\Build\Release\)
+/C#/Build/
+[Oo]bj/
+
+# Visual Studio user state
+*.suo
+*.user
+*.userprefs
+.vs/
+
+# NOTE: C#/Tools/*/bin/Release/*.dll are intentionally tracked.
+# QuranCode.csproj and Research.csproj reference them by <HintPath>,
+# so the solution cannot build without them present.

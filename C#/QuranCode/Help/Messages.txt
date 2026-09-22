@@ -1,0 +1,48 @@
+﻿ESC key to switch between search results and Quran text.
+F1 = Help | F2 = Bookmarks | F3 = Find Next | Shift+F3 = Find Previous 
+F4 = Related Words | F5 = Related Verses | F6 = Similar Verses
+F7 = Same Text | F8 = Same Harakat | F9 = Same Value
+Selection = displayed text (Chapter, Page, Station, Part, Group, Half, Quarter, ...).
+Highlighted text = currently selected text with the mouse or arrow keys.
+P = Prime = a number that is only divisible by itself or 1 without a remainder.
+AP = Additive Prime = a prime number with the sum of its digits is prime too.
+XP = Non-additive Prime = a prime number with the sum of its digits is non-prime.
+C = Composite = a number that is composed by multiplying prime numbers.
+AC = Additive Composite = a composite number with the sum of its digits is composite too.
+XC = Non-additive Composite = a composite number with the sum of its digits is non-composite.
+A prime number is the mother of all its multiples (الشـفع co-dependent).
+1 is the building unit for all numbers (the father) (الوتر standalone).
+2 is prime, the mother of all even numbers.
+3 is prime, the mother of all multiples of 3.
+4 is composite, a child of the prime 2.
+5 is a mother|6 is a child of 2 and 3|7 is a mother|...
+The first few primes are 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, ...
+Prime numbers become rarer as we go up the number ladder but never vanish.
+The gap between prime numbers is irregular and has no known formula.
+The gap between prime numbers is related to the energy levels of electronic shells (2008).
+There is $1,000,000 prize for (dis)proving the Riemann's Hypothesis related to prime numbers.
+Even numbers are a special case of the general divisibility by the first prime number (2).
+Odd numbers are a special case of the general non-divisibility by the first prime number (2).
+Prime numbers are used as private keys in modern public key cryptography (علم الجـفر).
+The Key (الفاتحة) which has 7 verses, 29 words, and 139 letters.
+7, 29, 139, 729139 and 139297 are all additive prime numbers.
+Quran 15:87    وَلَقَدْ ءَاتَيْنَٰكَ سَبْعًۭا مِّنَ ٱلْمَثَانِى وَٱلْقُرْءَانَ ٱلْعَظِيمَ
+القرءان  =  سورة الفاتحة  +  الرسالة المجـفرة
+Quran =  Key  +  Encrypted Message
+114 Chapters = 1 + 113             where 1 and 113  are unit and an additive prime number.
+6236 Verses  = 7 + 6229            where 7 and 6229 are additive prime numbers.
+The primalogy system was discovered with the Mercy of Allah by Ali Adams in 2008 (1429H).
+The primalogy system assigns prime values to Arabic letters in alphabetical order.
+The primalogy value of the word "Allah" is additive prime number (269|17).
+The primalogy value of chapter The Key (الفاتحة) is additive prime number (8317|19).
+The primalogy value of chapter Oneness of God (الإخلاص) with bismAllah is additive prime number (4201|7).
+The primalogy value of chapter Oneness of God (الإخلاص) without bismAllah is additive prime number (3167|17).
+The primalogy value of verse The Throne (ءاية الكرسي) is additive prime number (11261|11).
+The most repeated verse in the Quran is (فباي ءالاء ربكما تكذبان) in chapter The Merciful.
+The verse (فباي ءالاء ربكما تكذبان) has 4 words and is repeated 31 times.
+The primalogy value of the verse (فباي ءالاء ربكما تكذبان) is additive prime number (683|17).
+The 683 primalogy value of the 4-words 31-repetition verse is the 124th prime where 124 = 4 x 31.
+The 7 verses of chapter The Key (الفاتحة) all have additive composite primalogy values.
+Prime numbers in the Quran point to same-value text within the Quran.
+Additive prime numbers in the Quran point to countable things outside the Quran.
+Prime numbers are God's Signature!

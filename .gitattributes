@@ -1,0 +1,4 @@
+# Disable all end-of-line normalization.
+# This tree contains UTF-16LE text (Languages/*.txt, Features.txt, Readme.txt)
+# that git's CRLF handling would corrupt, plus prebuilt DLLs and EXEs.
+* -text

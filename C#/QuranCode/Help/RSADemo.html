@@ -1,0 +1,358 @@
+<html>
+
+<head>
+<meta http-equiv=Content-Type content="text/html; charset=windows-1252">
+<meta name=Generator content="Microsoft Word 11 (filtered)">
+<title>RSA Algorithm Demo</title>
+
+<style>
+<!--
+ /* Font Definitions */
+ @font-face
+	{font-family:SimSun;
+	panose-1:2 1 6 0 3 1 1 1 1 1;}
+@font-face
+	{font-family:"\@SimSun";
+	panose-1:2 1 6 0 3 1 1 1 1 1;}
+ /* Style Definitions */
+ p.MsoNormal, li.MsoNormal, div.MsoNormal
+	{margin:0in;
+	margin-bottom:.0001pt;
+	font-size:12.0pt;
+	font-family:"Times New Roman";}
+a:link, span.MsoHyperlink
+	{color:blue;
+	text-decoration:underline;}
+a:visited, span.MsoHyperlinkFollowed
+	{color:purple;
+	text-decoration:underline;}
+@page Section1
+	{size:8.5in 11.0in;
+	margin:1.0in 1.25in 1.0in 1.25in;}
+div.Section1
+	{page:Section1;}
+-->
+</style>
+
+</head>
+
+<body lang=EN-US link=blue vlink=purple>
+
+<div class=Section1>
+
+<div align=center>
+
+<table class=MsoNormalTable border=0 cellspacing=0 cellpadding=0
+ style='border-collapse:collapse'>
+ <tr>
+  <td width=22 valign=top style='width:16.8pt;padding:0in 5.4pt 0in 5.4pt'>
+  <p class=MsoNormal align=center style='text-align:center'><span
+  style='font-size:10.0pt;font-family:"Courier New"'>&nbsp;</span></p>
+  </td>
+  <td width=687 valign=top style='width:515.4pt;padding:0in 5.4pt 0in 5.4pt'>
+  <p class=MsoNormal><b><span style='font-size:10.0pt;font-family:"Courier New"'>The
+  RSA Algorithm - <a href="https://claymath.org/posters/primes/">https://claymath.org/posters/primes/</a></span></b></p>
+  <p class=MsoNormal align=center style='text-align:center'><span
+  style='font-family:"Courier New"'>&nbsp;</span></p>
+  </td>
+  <td width=350 valign=top style='width:3.65in;padding:0in 5.4pt 0in 5.4pt'>
+  <p class=MsoNormal align=center style='text-align:center'><b><span
+  style='font-family:"Courier New"'>RSA Algorithm Demo</span></b></p>
+  </td>
+ </tr>
+ <tr>
+  <td width=22 valign=top style='width:16.8pt;padding:0in 5.4pt 0in 5.4pt'>
+  <p class=MsoNormal align=center style='text-align:center'><span
+  style='font-size:10.0pt;font-family:"Courier New"'>&nbsp;</span></p>
+  </td>
+  <td width=687 valign=top style='width:515.4pt;padding:0in 5.4pt 0in 5.4pt'>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>The
+  task of cryptography (Greek kryptos hidden, graphein to write) is to turn messages
+  into gibberish so that they cannot be read by persons other than the intended
+  recipient.</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>&nbsp;</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>If
+  I send my credit card number and PIN over the internet to an online
+  bookstore, the bookstore should be able to read it, but no one else should.</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>&nbsp;</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>A
+  cryptographer starts with plain text such as m=&quot;ATTACKATDAWN&quot; and
+  produces cipher text such as c=&quot;OTMMGKLHDTIR.&quot; This is encryption.</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>&nbsp;</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>Decryption
+  is the reverse: it produces plain text from cipher text. </span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>&nbsp;</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>In
+  the old days, to send a secret message, you first had to send a key secretly
+  to the recipient. This you did by meeting in person, or through a trusted
+  courier.</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>In
+  the example above, the key was &quot;OATMEAL&quot; and the encryption method
+  is due to Vigenère. But the internet is not a trusted medium, so how do you
+  get started?</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>&nbsp;</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>You
+  can't use the internet to send the key, then your financial information.</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>A
+  bad person could capture your internet traffic with the bookstore. He would
+  use the key to read your credit card number and PIN, and would then charge
+  expensive travel to exotic places to your account. </span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>&nbsp;</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>This
+  dilemma was solved in 1978 by Rivest, Shamir, and Adelman. Their method, now
+  known as RSA, depends on some marvelous properties of prime numbers. One of
+  these is that it is rather easy to generate large prime numbers, but much
+  harder to factor large numbers into primes. Another is Fermat's little
+  theorem. </span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>&nbsp;</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>----------------------------------------</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>Note:
+  &quot;a mod N&quot; is the remainder of a/N.</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>----------------------------------------</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>RSA
+  starts first with translating the message letters into blocks of numbers and
+  back again. We can do this using a random table like the one below,</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>where
+  A corresponds to 11, B to 12, etc.</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>&nbsp;</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>Conversion
+  Table</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>-------------------------------</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>&nbsp;
+  0&nbsp; 1&nbsp; 2&nbsp; 3&nbsp; 4&nbsp; 5&nbsp; 6&nbsp; 7&nbsp; 8&nbsp; 9</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>&nbsp;|-----------------------------</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>1|SP
+  A&nbsp; B&nbsp; C&nbsp; D&nbsp; E&nbsp; F&nbsp; G&nbsp; H&nbsp; I</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>2|J&nbsp;
+  K&nbsp; L&nbsp; M&nbsp; N&nbsp; O&nbsp; P&nbsp; Q&nbsp; R&nbsp; S</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>3|T&nbsp;
+  U&nbsp; V&nbsp; W&nbsp; X&nbsp; Y&nbsp; Z&nbsp; a&nbsp; b&nbsp; c</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>4|d&nbsp;
+  e&nbsp; f&nbsp; g&nbsp; h&nbsp; i&nbsp; j&nbsp; k&nbsp; l&nbsp; m</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>5|n&nbsp;
+  o&nbsp; p&nbsp; q&nbsp; r&nbsp; s&nbsp; t&nbsp; u&nbsp; v&nbsp; w</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>6|x&nbsp;
+  y&nbsp; z&nbsp; .&nbsp; ,&nbsp; :&nbsp; ;&nbsp; '&nbsp; &quot;&nbsp; `</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>7|!&nbsp;
+  @&nbsp; #&nbsp; $&nbsp; %&nbsp; ^&nbsp; &amp;&nbsp; *&nbsp; -&nbsp; +</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>8|(&nbsp;
+  )&nbsp; [&nbsp; ]&nbsp; {&nbsp; }&nbsp; ?&nbsp; /&nbsp; &lt;&nbsp; &gt;</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>9|0&nbsp;
+  1&nbsp; 2&nbsp; 3&nbsp; 4&nbsp; 5&nbsp; 6&nbsp; 7&nbsp; 8&nbsp; 9</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>-------------------------------</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>&nbsp;</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>Thus
+  the word </span><b><span style='font-family:"Courier New"'>Attack</span></b><span
+  style='font-size:10.0pt;font-family:"Courier New"'> becomes </span><b><span
+  style='font-family:"Courier New"'>115656373947</span></b><span
+  style='font-size:10.0pt;font-family:"Courier New"'> = message = m.</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>&nbsp;</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>From
+  now on encrypting and decrypting becomes a matter of computing with large
+  integers.</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>&nbsp;</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>Let
+  p and q be large prime numbers</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>Let
+  N = p*q.</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>&nbsp;</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>For
+  encryption use: c = f(m) = m^e mod N,</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>&nbsp;</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>where
+  e is a positive integer which has no factor in common with (p-1)(q-1).</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>&nbsp;</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>For
+  decryption use: m = g(c) = c^d mod N,</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>&nbsp;</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>where
+  d is a positive integer such that (e*d - 1) is divisible by (p-1)(q-1). </span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>&nbsp;</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>What
+  makes RSA so hard to break?</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>Well,
+  think first about what Alice, the person who designs the code, does.</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>First
+  she generates the large primes p and q, then she chooses e.</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>Finally
+  she solves an equation to find d: </span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>&nbsp;</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>x*e
+  + (p-1)(q-1)*c = 1, where all the letters are integers.</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>&nbsp;</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>Alice</span><span
+  style='font-size:10.0pt;font-family:"Courier New"'> makes e and N public.
+  This is all anyone needs to send secret messages to her.</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>&nbsp;</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>Now
+  think about what Bob the spy, who wants to intercept and decrypt messages
+  sent to Alice, needs to know.</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>First
+  he must factor N to find p and q so as to set up the equation:</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>&nbsp;</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>x*e
+  + (p-1)(q-1)y = 1.</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>&nbsp;</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>Then
+  he solves the equation to find x and decrypt Alice's messages using</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>g(c)
+  = c^x mod N.</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>&nbsp;</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>The
+  problem is that the factoring problem takes huge amounts of computer time,</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>for
+  large enough p and q so much time that it would take millions of years, given
+  current mathematical theory and current computer technology, to crack the
+  code. </span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>&nbsp;</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>The
+  fact that g decrypts messages encrypted by f, is a consequence of Fermat's
+  little theorem: </span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>&nbsp;</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>If
+  a is not divisible by p, where p is prime, then a^(p-1) - 1 is divisible by
+  p. </span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>&nbsp;</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>Fermat
+  (1605-1661) was a French mathematician whose work is the foundation of modern
+  number theory.</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>&nbsp;</span></p>
+  <p class=MsoNormal>&nbsp;</p>
+  </td>
+  <td width=350 valign=top style='width:3.65in;padding:0in 5.4pt 0in 5.4pt'>
+  <p class=MsoNormal align=center style='text-align:center'><span
+  style='font-size:10.0pt;font-family:"Courier New"'>&nbsp;</span></p>
+  <p class=MsoNormal align=center style='text-align:center'></p>
+  <p class=MsoNormal align=center style='text-align:center'>&nbsp;</p>
+  <p class=MsoNormal align=center style='text-align:center'><span
+  style='font-size:10.0pt;font-family:"Courier New"'>Download the demo from</span></p>
+  <p class=MsoNormal align=center style='text-align:center'><span
+  style='font-size:10.0pt;font-family:"Courier New"'><a
+  href="http://heliwave.com/RSADemo.zip">http://heliwave.com/RSADemo.zip</a></span></p>
+  <p class=MsoNormal align=center style='text-align:center'>&nbsp;</p>
+  <p class=MsoNormal align=center style='text-align:center'><span
+  style='font-size:10.0pt;font-family:"Courier New"'>and download its source code
+  from</span></p>
+  <p class=MsoNormal align=center style='text-align:center'><span
+  style='font-size:10.0pt;font-family:"Courier New"'><a
+  href="http://heliwave.com/RSADemo.Source.zip">http://heliwave.com/RSADemo.Source.zip</a></span></p>
+  <p class=MsoNormal align=center style='text-align:center'>&nbsp;</p>
+  <p class=MsoNormal align=center style='text-align:center'></p>
+  <p class=MsoNormal align=center style='text-align:center'><span
+  style='font-size:10.0pt;font-family:"Courier New"'>&nbsp;</span></p>
+  <p class=MsoNormal align=center style='text-align:center'><span
+  style='font-size:10.0pt;font-family:"Courier New"'>&nbsp;</span></p>
+  <p class=MsoNormal align=center style='text-align:center'><span
+  style='font-size:10.0pt;font-family:"Courier New"'><a
+  href="http://heliwave.com/RSADemo.zip"></a></span></p>
+  </td>
+ </tr>
+ <tr>
+  <td width=22 valign=top style='width:16.8pt;padding:0in 5.4pt 0in 5.4pt'>
+  <p class=MsoNormal align=center style='text-align:center'><span
+  style='font-size:10.0pt;font-family:"Courier New"'>&nbsp;</span></p>
+  </td>
+  <td width=687 valign=top style='width:515.4pt;padding:0in 5.4pt 0in 5.4pt'>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>EXAMPLE
+  from <a href="https://en.wikipedia.org/wiki/RSA">https://en.wikipedia.org/wiki/RSA</a></span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>----------------------------------------------</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>Here
+  is an example of RSA encryption and decryption.</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>The
+  parameters used here are artificially small, but one can also use OpenSSL to
+  generate and examine a real keypair.</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>&nbsp;</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>1. Choose
+  two distinct prime numbers, such as </span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>&nbsp;</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>p
+  = 61 and q = 53.</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>&nbsp;</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>&nbsp;</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>2. Compute
+  n = p * q giving </span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>&nbsp;</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>n
+  = 61 * 53 = 3233.</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>&nbsp;</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>&nbsp;</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>3. Compute
+  the totient of the product as r = (p - 1)(q - 1) giving </span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>&nbsp;</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>r(3233)
+  = (61 - 1)(53 - 1) = 3120.</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>&nbsp;</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>&nbsp;</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>4. Choose
+  any number 1 &lt; e &lt; 3120 that is coprime to 3120.</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>&nbsp;</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>Choosing
+  a prime number for e leaves us only to check that e is not a divisor of 3120.</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>&nbsp;</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>Let
+  e = 17.</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>&nbsp;</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>&nbsp;</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>5. Compute
+  x, the modular multiplicative inverse of e(mod r(n)) yielding </span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>&nbsp;</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>x
+  = 2753.</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>&nbsp;</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>The
+  public key is (n = 3233, e = 17).</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>For
+  a padded plaintext message m, the encryption function is m^17(mod 3233).</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>&nbsp;</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>The
+  private key is (n = 3233, x = 2753).</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>For
+  an encrypted ciphertext c, the decryption function is c^2753(mod 3233).</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>&nbsp;</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>In order to encrypt letter a with ASCII = 65, let m = 65, then we calculate:</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>c
+  = 65^17(mod 3233) = 2790.</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>&nbsp;</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>To
+  decrypt c = 2790, we calculate:</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>m
+  = 2790^2753(mod 3233) = 65 which in ASCII is letter a.</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>&nbsp;</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>Both
+  of these calculations can be computed efficiently using the
+  square-and-multiply algorithm for modular exponentiation. In real life,
+  the primes p and q would be much much larger. In our example it would
+  be relatively trivial to factor n (3233) found in the public key back to the
+  secret primes p and q. And given e from the public key, we could then
+  compute the private key x.</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>--------------------------------------------------------------------</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>&nbsp;</span></p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Courier New"'>Ali
+  Adams</span></p>
+  <p class=MsoNormal><i><span style='font-size:8.0pt;font-family:"Courier New"'>God
+  &gt;</span></i></p>
+  </td>
+  <td width=350 valign=top style='width:3.65in;padding:0in 5.4pt 0in 5.4pt'>
+  <p class=MsoNormal align=center style='text-align:center'><span
+  style='font-size:10.0pt;font-family:"Courier New"'>&nbsp;</span></p>
+  <p class=MsoNormal align=center style='text-align:center'><span
+  style='font-size:10.0pt;font-family:"Courier New"'>&nbsp;</span></p>
+  <p class=MsoNormal align=center style='text-align:center'><span
+  style='font-size:10.0pt;font-family:"Courier New"'>&nbsp;</span></p>
+  <p class=MsoNormal align=center style='text-align:center'><span
+  style='font-size:10.0pt;font-family:"Courier New"'><img border=0 width=276
+  height=603 src="RSADemo.png">&nbsp;</span></p>
+  </td>
+ </tr>
+</table>
+
+</div>
+
+<p class=MsoNormal align=center style='text-align:center'><span
+style='font-size:10.0pt;font-family:"Courier New"'>&nbsp;</span></p>
+
+</div>
+
+</body>
+
+</html>
