@@ -1,0 +1,136 @@
+namespace QuranCode.Engine.Protocol;
+
+// Wire types. Kept separate from the engine's own records so the protocol is
+// an explicit contract: renaming an engine field cannot silently change what
+// the UI receives. The TypeScript mirror is apps/desktop/src/lib/engine/types.ts.
+
+/// <param name="VerseCount">Numbered verses, not counting verse-0 Bismillahs.</param>
+/// <param name="RowCount">Every verse row, verse-0 Bismillahs included.</param>
+/// <param name="Basmala">"prefix" (classic) or "verse-zero" (Submission).</param>
+internal sealed record EngineInfo(
+    string Version,
+    string Edition,
+    string Basmala,
+    int ChapterCount,
+    int VerseCount,
+    int RowCount,
+    int ValueSystemCount,
+    string DefaultValueSystem);
+
+internal sealed record ChapterDto(
+    int Number,
+    string Name,
+    string TransliteratedName,
+    string EnglishName,
+    int RevelationOrder,
+    string RevelationPlace,
+    int VerseCount,
+    int FirstVerse,
+    bool HasVerseZero);
+
+internal sealed record ValueSystemDto(
+    string Name,
+    string TextMode,
+    string LetterOrder,
+    string LetterValue,
+    bool ResearchOnly);
+
+/// <summary>A verse split for display. <c>Bismillah</c> is the chapter header when present.</summary>
+/// <param name="IsBasmala">A verse-0 Bismillah, which the user may choose not to count.</param>
+internal sealed record VerseDto(
+    int Number,
+    int Chapter,
+    int NumberInChapter,
+    bool IsBasmala,
+    string? Bismillah,
+    IReadOnlyList<string> Words);
+
+/// <summary>
+/// Analysis of one number. <c>Value</c> is a decimal string because a 64-bit
+/// total can exceed what a JavaScript number holds exactly (2^53).
+/// </summary>
+internal sealed record NumberDto(
+    string Value,
+    string Class,
+    string Code,
+    long DigitSum,
+    long DigitalRoot,
+    long? FamilyOrdinal,
+    long? ClassOrdinal,
+    IReadOnlyList<long>? Factors);
+
+internal sealed record LetterCountDto(string Letter, int Count);
+
+/// <summary>
+/// A verse's value and class code, for coloring verse markers; both null for a
+/// Bismillah that is not being counted.
+/// </summary>
+internal sealed record VerseValueDto(int Number, string? Value, string? Code);
+
+internal sealed record StatsDto(
+    int First,
+    int Last,
+    string ValueSystem,
+    NumberDto Chapters,
+    NumberDto Verses,
+    NumberDto Words,
+    NumberDto Letters,
+    NumberDto DistinctLetters,
+    NumberDto Value,
+    IReadOnlyList<LetterCountDto> LetterFrequencies);
+
+internal sealed record RangeDto(int First, int Last);
+
+/// <summary>One system's value for a text, with how many letters that system's text mode counts.</summary>
+internal sealed record SystemValueDto(string ValueSystem, int LetterCount, NumberDto Value);
+
+/// <summary>A verse that matched, with the display word indices to highlight.</summary>
+/// <param name="Aligned">
+/// False when display words could not be mapped to searchable words; the UI
+/// then marks the whole verse instead of individual words.
+/// </param>
+/// <param name="BismillahHighlights">
+/// Words of the Bismillah header to highlight. The engine counts the header
+/// as the first words of verse 1, one display word per engine word.
+/// </param>
+internal sealed record SearchVerseDto(
+    int Number,
+    int Chapter,
+    int NumberInChapter,
+    bool IsBasmala,
+    string? Bismillah,
+    IReadOnlyList<string> Words,
+    IReadOnlyList<int> Highlights,
+    bool Aligned,
+    IReadOnlyList<int> BismillahHighlights,
+    int MatchCount);
+
+internal sealed record SearchResultDto(
+    string Term,
+    int WordCount,
+    int VerseCount,
+    int Offset,
+    IReadOnlyList<SearchVerseDto> Verses);
+
+// Parameters. Optional members carry a default; without one, strict
+// constructor binding treats even a nullable parameter as required.
+
+internal sealed record ChapterParams(int Chapter);
+
+internal sealed record ChapterValuesParams(int Chapter, string? ValueSystem = null, bool IncludeBasmalas = true);
+
+internal sealed record RangeParams(int First, int Last, string? ValueSystem = null, bool IncludeBasmalas = true);
+
+internal sealed record ReferenceParams(string Text);
+
+internal sealed record NumberParams(string Value);
+
+internal sealed record TextValuesParams(string Text, IReadOnlyList<string>? ValueSystems = null);
+
+internal sealed record SearchParams(
+    string Term,
+    string? Wordness = null,
+    string? ValueSystem = null,
+    int? Offset = null,
+    int? Limit = null,
+    bool IncludeBasmalas = true);

@@ -1,0 +1,242 @@
+using System.Globalization;
+using QuranCode.Core;
+using QuranCode.Core.Analysis;
+using QuranCode.Core.Content;
+using QuranCode.Core.Numbers;
+using QuranCode.Core.Search;
+using QuranCode.Core.Text;
+using QuranCode.Engine.Protocol;
+
+namespace QuranCode.Engine.Host;
+
+/// <summary>
+/// Maps protocol calls onto the engine. Validation happens here, at the
+/// boundary; the engine below assumes well-formed arguments.
+/// </summary>
+internal sealed class Handlers
+{
+    /// <summary>Longest text accepted for valuation: several pages of Arabic.</summary>
+    public const int MaxTextLength = 20_000;
+
+    public const int DefaultSearchLimit = 50;
+    public const int MaxSearchLimit = 500;
+
+    private readonly QuranCodeEngine _engine;
+    private readonly Dictionary<string, ValueSystemSummary> _systems;
+
+    public Handlers(QuranCodeEngine engine)
+    {
+        _engine = engine;
+        _systems = engine.ValueSystemSummaries().ToDictionary(s => s.Name, StringComparer.Ordinal);
+    }
+
+    public EngineInfo Info() => new(
+        typeof(Handlers).Assembly.GetName().Version?.ToString(3) ?? "0.0.0",
+        _engine.Corpus.Edition,
+        _engine.Corpus.Basmala == BasmalaMode.VerseZero ? "verse-zero" : "prefix",
+        _engine.Chapters.Count,
+        _engine.Chapters.Sum(c => c.VerseCount),
+        _engine.Verses.Count,
+        _systems.Count,
+        QuranCodeEngine.DefaultValueSystem);
+
+    public IReadOnlyList<ChapterDto> Chapters() => _engine.Chapters
+        .Select(c => new ChapterDto(
+            c.Number, c.Name, c.TransliteratedName, c.EnglishName,
+            c.RevelationOrder, c.RevelationPlace, c.VerseCount, c.FirstVerse, c.HasVerseZero))
+        .ToArray();
+
+    public IReadOnlyList<ValueSystemDto> ValueSystems() => _systems.Values
+        .Select(s => new ValueSystemDto(s.Name, s.TextMode, s.LetterOrder, s.LetterValue, s.ResearchOnly))
+        .ToArray();
+
+    public IReadOnlyList<VerseDto> ChapterVerses(ChapterParams p)
+    {
+        Chapter chapter = RequireChapter(p.Chapter);
+        var verses = new VerseDto[chapter.RowCount];
+        for (int i = 0; i < verses.Length; i++)
+        {
+            Verse verse = _engine.Verse(chapter.FirstVerse + i);
+            VerseDisplay display = _engine.Display(verse);
+            verses[i] = new VerseDto(
+                verse.Number, verse.ChapterNumber, verse.NumberInChapter, verse.IsBasmala, display.Bismillah, display.Words);
+        }
+        return verses;
+    }
+
+    /// <summary>
+    /// Every verse's value in a chapter. Classification only, no ordinals:
+    /// this feeds 286 verse markers at once and must stay cheap.
+    /// </summary>
+    public IReadOnlyList<VerseValueDto> ChapterValues(ChapterValuesParams p)
+    {
+        Chapter chapter = RequireChapter(p.Chapter);
+        ValueSystemSummary system = RequireSystem(p.ValueSystem);
+
+        var values = new VerseValueDto[chapter.RowCount];
+        for (int i = 0; i < values.Length; i++)
+        {
+            int number = chapter.FirstVerse + i;
+            long? value = _engine.ValueOfVerse(number, system.Name, system.TextMode, includeBasmalas: p.IncludeBasmalas);
+            values[i] = value is long v
+                ? new VerseValueDto(number, v.ToString(CultureInfo.InvariantCulture), NumberTheory.Classify(v).Code())
+                : new VerseValueDto(number, null, null);
+        }
+        return values;
+    }
+
+    public StatsDto Stats(RangeParams p)
+    {
+        VerseRange range = RequireRange(p.First, p.Last);
+        string system = RequireSystem(p.ValueSystem).Name;
+        SelectionStatistics s = _engine.Statistics(range, system, includeBasmalas: p.IncludeBasmalas);
+
+        return new StatsDto(
+            range.First, range.Last, system,
+            Number(s.ChapterCount), Number(s.VerseCount), Number(s.WordCount),
+            Number(s.LetterCount), Number(s.DistinctLetterCount), Number(s.Value),
+            s.LetterFrequencies.Select(f => new LetterCountDto(f.Letter.ToString(), f.Count)).ToArray());
+    }
+
+    public RangeDto ParseReference(ReferenceParams p)
+    {
+        ReferenceParseResult result = _engine.ParseReference(p.Text);
+        if (!result.IsSuccess) throw RpcException.InvalidParams(result.Error!);
+        return new RangeDto(result.Range.First, result.Range.Last);
+    }
+
+    public NumberDto AnalyzeNumber(NumberParams p)
+    {
+        string text = p.Value.Trim().Replace(",", "", StringComparison.Ordinal);
+        if (!long.TryParse(text, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out long value))
+        {
+            throw RpcException.InvalidParams($"\"{Truncate(p.Value)}\" is not a whole number between -9223372036854775808 and 9223372036854775807.");
+        }
+        return Number(value);
+    }
+
+    public IReadOnlyList<SystemValueDto> TextValues(TextValuesParams p)
+    {
+        RequireText(p.Text, "text");
+
+        IEnumerable<ValueSystemSummary> systems = p.ValueSystems is { Count: > 0 } names
+            ? names.Distinct(StringComparer.Ordinal).Select(RequireSystem)
+            : _systems.Values;
+
+        return systems
+            .Select(s =>
+            {
+                string normalized = _engine.Pipeline(s.TextMode).Normalize(p.Text);
+                int letters = normalized.Count(char.IsLetter);
+                return new SystemValueDto(s.Name, letters, Number(_engine.Value(p.Text, s.Name, s.TextMode)));
+            })
+            .ToArray();
+    }
+
+    public SearchResultDto Search(SearchParams p)
+    {
+        RequireText(p.Term, "term");
+        Wordness wordness = ParseWordness(p.Wordness);
+        int offset = p.Offset ?? 0;
+        int limit = p.Limit ?? DefaultSearchLimit;
+        if (offset < 0) throw RpcException.InvalidParams("offset must not be negative.");
+        if (limit is < 1 or > MaxSearchLimit) throw RpcException.InvalidParams($"limit must be between 1 and {MaxSearchLimit}.");
+
+        string textMode = RequireSystem(p.ValueSystem).TextMode;
+        SearchResult result = _engine.Search(textMode, p.IncludeBasmalas).Find(p.Term, wordness);
+        Segmentation segmentation = _engine.Segmentation(textMode, p.IncludeBasmalas);
+        CorpusView view = _engine.View(p.IncludeBasmalas);
+        TextPipeline pipeline = _engine.Pipeline(textMode);
+
+        int[] page = result.Verses.Skip(offset).Take(limit).ToArray();
+        var hitsByVerse = page.ToDictionary(v => v, _ => new List<int>());
+        foreach (WordMatch match in result.Words)
+        {
+            if (hitsByVerse.TryGetValue(match.VerseNumber, out List<int>? hits))
+            {
+                hits.Add(match.WordIndex - segmentation.VerseFirstWord[view.IndexOf(match.VerseNumber)]);
+            }
+        }
+
+        SearchVerseDto[] verses = page
+            .Select(number => SearchVerse(number, hitsByVerse[number], segmentation, view, pipeline))
+            .ToArray();
+
+        return new SearchResultDto(result.Term, result.WordCount, result.VerseCount, offset, verses);
+    }
+
+    private SearchVerseDto SearchVerse(
+        int number, List<int> hitWords, Segmentation segmentation, CorpusView view, TextPipeline pipeline)
+    {
+        Verse verse = _engine.Verse(number);
+        VerseDisplay display = _engine.Display(verse);
+        DisplaySpan[]? spans = DisplayWords.Align(display, segmentation.VerseWords(view.IndexOf(number)), pipeline);
+
+        // An unalignable verse gets no word highlights; the UI marks the
+        // whole verse instead of pointing at the wrong words.
+        int[] highlights = spans is null
+            ? []
+            : hitWords.SelectMany(w => Enumerable.Range(spans[w].First, spans[w].Count)).Distinct().Order().ToArray();
+        int[] bismillahHighlights = hitWords.Where(w => w < display.WordOffset).Distinct().Order().ToArray();
+
+        return new SearchVerseDto(
+            verse.Number, verse.ChapterNumber, verse.NumberInChapter, verse.IsBasmala,
+            display.Bismillah, display.Words, highlights,
+            spans is not null, bismillahHighlights, hitWords.Count);
+    }
+
+    internal static NumberDto Number(long value)
+    {
+        NumberAnalysis a = NumberAnalysis.Of(value);
+        return new NumberDto(
+            value.ToString(CultureInfo.InvariantCulture), a.Class.ToString(), a.Code,
+            a.DigitSum, a.DigitalRoot, a.FamilyOrdinal, a.ClassOrdinal, a.Factors);
+    }
+
+    private Chapter RequireChapter(int number)
+    {
+        if (number < 1 || number > _engine.Chapters.Count)
+        {
+            throw RpcException.InvalidParams($"Chapters run from 1 to {_engine.Chapters.Count}.");
+        }
+        return _engine.Chapters[number - 1];
+    }
+
+    private VerseRange RequireRange(int first, int last)
+    {
+        int count = _engine.Verses.Count;
+        if (first < 1 || last > count || last < first)
+        {
+            throw RpcException.InvalidParams($"A range must satisfy 1 <= first <= last <= {count}.");
+        }
+        return new VerseRange(first, last);
+    }
+
+    private ValueSystemSummary RequireSystem(string? name)
+    {
+        name ??= QuranCodeEngine.DefaultValueSystem;
+        return _systems.TryGetValue(name, out ValueSystemSummary system)
+            ? system
+            : throw RpcException.NotFound($"There is no value system named \"{Truncate(name)}\".");
+    }
+
+    private static void RequireText(string text, string name)
+    {
+        if (string.IsNullOrWhiteSpace(text)) throw RpcException.InvalidParams($"{name} is empty.");
+        if (text.Length > MaxTextLength)
+        {
+            throw RpcException.InvalidParams($"{name} is longer than {MaxTextLength:N0} characters.");
+        }
+    }
+
+    private static Wordness ParseWordness(string? value) => value switch
+    {
+        null or "any" => Wordness.Any,
+        "whole" => Wordness.WholeWord,
+        "part" => Wordness.PartOfWord,
+        _ => throw RpcException.InvalidParams("wordness must be any, whole or part."),
+    };
+
+    // Echoed input is clipped so an error message never carries a huge payload.
+    private static string Truncate(string text) => text.Length <= 40 ? text : text[..40] + "…";
+}
