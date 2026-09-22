@@ -1,6 +1,6 @@
 # Feature matrix
 
-Every feature listed in `Features.txt` (79 items), classified per brief §3.3 and
+Every feature listed in `C#/QuranCode/Features.txt` (79 items), classified per brief §3.3 and
 §47. This is the guard against silent feature loss: nothing may be dropped
 without a row here saying so and why.
 
@@ -26,7 +26,7 @@ without a row here saying so and why.
 | 28 | Show Original text, use Simplified29 counts | port | done | This is what `Original` mode already does; see text-normalization spec |
 | 29 | Chapter info on hover | port | todo | UI |
 | 59 | Sort chapters by number/name/revelation/counts/value | port | engine | All fields present in `chapters` |
-| 60 | Direct chapter/verse entry (`5:55`, `6:19-23`, …) | port | engine | `TryParseReference` handles `c:v`; ranges todo |
+| 60 | Direct chapter/verse entry (`5:55`, `6:19-23`, …) | port | **done** | Chapters, verses, ranges and verse 0 (`2`, `2:255`, `2:255-257`, `1:7-2:2`, `2:0`), Arabic-Indic digits |
 | 61 | Direct page/station/part/… entry | port | engine | `partitions` table holds all 7 kinds |
 | 63 | Distances on text clicks | port | engine | `Segmentation` distance arrays |
 | 68 | Back/forward through browse and find history | port | todo | Belongs in `user.db` |
@@ -39,7 +39,7 @@ without a row here saying so and why.
 
 | # | Feature | Class | Status | Notes |
 | ---: | --- | --- | --- | --- |
-| 2 | Values in all numerical systems at once | port | engine | 407 systems loaded; loop over `ValueSystems()` |
+| 2 | Values in all numerical systems at once | port | **done** | Values view: any text in every visible system |
 | 47 | Add L, W, V, C and distances to total | port | **done** | All 21 modifiers, 29 golden cases |
 | 48 | Add W, V, C and distances | port | **done** | Same |
 | 49 | Add V, C and distances | port | **done** | Same |
@@ -56,7 +56,7 @@ without a row here saying so and why.
 
 | # | Feature | Class | Status | Notes |
 | ---: | --- | --- | --- | --- |
-| — | Arabic text search, 3 wordness modes | port | **done** | 10 queries, 9,582 verse entries verified |
+| n/a | Arabic text search, 3 wordness modes | port | **done** | 10 queries, 9,582 verse entries verified |
 | 1 | Ctrl+Click for same-root verses | port | data | 2,053 roots imported, but `word_roots` is empty: roots are not yet linked to words |
 | 53 | Root search, multi-root, +/- include/exclude | port | todo | Data present, query layer todo |
 | 52 | Search across all text modes | port | engine | Engine caches a search per mode |
@@ -81,8 +81,8 @@ without a row here saying so and why.
 | 3 | Full statistics of "Allah" and derivatives | port | engine | Search + counts |
 | 10 | Allah / non-Allah / repeated / all word info | port | engine | Same |
 | 21 | Word frequency list, multi-select | port | engine | Frequencies derivable |
-| 22 | Letter frequency list with prime factorization | port | engine | Frequencies done; factorization todo |
-| 12–13 | C/V classification odd/even, prime/composite | port | todo | Needs the number-theory module |
+| 22 | Letter frequency list with prime factorization | port | engine | Frequencies shown for any selection; factorization of the counts todo |
+| 12–13 | C/V classification odd/even, prime/composite | port | engine | Number classes (U, AP, XP, AC, XC) and ordinals done and tested; chapter and verse classification lists todo |
 | 6–7 | 4n±1 prime and composite decompositions | port | todo | Same |
 | 8 | Front-back symmetry | port | todo | |
 | 9 | Waleed's CPIndexChain | port | todo | |
@@ -120,15 +120,35 @@ Brief §17: these become modules in one shell rather than separate executables.
 | 74 | QuranNet 3D word graph | port | todo | Merge as a module |
 | 75 | QuranLab (114 verse-count properties) | port | todo | Merge as a module |
 | 76 | InitialLetters sentence builder | port | todo | Merge as a module |
-| 77 | Prime Calculator with Yafu | **rewrite** | todo | Keep factoring; drop the bundled Yafu binary unless licensing is cleared |
+| 77 | Prime Calculator with Yafu | **rewrite** | todo | Keep factoring; the bundled YAFU binaries were removed (no license terms) |
 | 79 | Composites analysis | port | todo | Merge as a module |
+
+## Other standalone tools
+
+These legacy programs are not in `Features.txt`, so they are listed here to
+keep the inventory complete. Their source is in `C#/<name>/`; what each one
+computes has not been reviewed yet, so the notes give only the window title.
+
+| Tool | Window title | Class | Status |
+| --- | --- | --- | --- |
+| AhlulBayt | Ahlul-Bayt | port | todo |
+| DayOfWeek | Day of Week | port | todo |
+| Deficients | (none set) | port | todo |
+| Dimensions | Dimensions | port | todo |
+| Divisibility | Divisibility Rules | port | todo |
+| Indices | Indices | port | todo |
+| Numbers | Numbers | port | todo |
+| Primes | (none set) | port | todo |
+| WordDecoder | Word Decoder | port | todo |
+| WordFinder | Word Finder | port | todo |
+| WordGenerator | WordGenerator | port | todo |
 
 ## Deliberate removals
 
 | # | Feature | Reason |
 | ---: | --- | --- |
 | 36 | F1 = Help opening bundled PDFs | The 40 MB `Help/` tree does not belong in a base install (brief §27). Help becomes fetched or hosted. The capability stays; the bundling does not. |
-| 37 | F2 = Bookmarks | Not removed — the keybinding is a UI detail, the feature is row 70. |
+| 37 | F2 = Bookmarks | Not removed: the keybinding is a UI detail, the feature is row 70. |
 
 Only one genuine removal, and it removes a packaging decision rather than a
 capability.
@@ -139,11 +159,16 @@ capability.
 
 | Status | Count |
 | --- | ---: |
-| done (golden-tested) | 7 |
-| engine (no UI) | 18 |
-| todo | 44 |
-| data (needs a pack) | 9 |
-| drop | 1 |
+| done | 9 |
+| engine (no UI yet) | 14 |
+| todo | 47 |
+| data (needs a pack) | 7 |
+| drop | 1 (#36) |
+| part of another row | 1 (#37, see #70) |
+
+Counted per numbered feature, 79 in all; a row such as 32–35 counts as four.
+Arabic text search, which `Features.txt` does not number, is also done. The
+11 standalone tools above are all todo.
 
 The completed items are concentrated where correctness risk is highest: text
 normalization, valuation, the 21 modifiers, and text search. The outstanding
@@ -155,6 +180,7 @@ Two items are classed **rewrite** rather than port, both per brief §26:
 - **#30, the expression calculator.** The legacy compiles C# at runtime to
   evaluate ordinary arithmetic. That is a security and startup cost for
   something a parser does better.
-- **#77, Prime Calculator.** The factoring capability is worth keeping; the
-  bundled third-party Yafu binary needs a licensing check before it is
-  redistributed (brief §29).
+- **#77, Prime Calculator.** The factoring capability is worth keeping. The
+  third-party YAFU, GGNFS and GMP-ECM binaries it launched were removed from
+  the repository because they came without license terms. The engine factors
+  up to 10^14 on its own; larger numbers need a replacement.
