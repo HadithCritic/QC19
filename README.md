@@ -28,9 +28,12 @@ reference for what the software computes; the new application is in
   a word, with the matching words highlighted.
 - **Values.** The value of any Arabic text in every system at once.
 - **Numbers.** Look up any whole number.
+- **Counting options** from the original's Statistics panel: the Bismillah,
+  waw as a word, shadda as a letter, and hamza, alif, yaa and noon above a
+  line as letters, each checked against the original.
 - Light and dark themes.
 
-Of the original's 79 listed features, 9 are done, 14 are in the engine without
+Of the original's 79 listed features, 11 are done, 12 are in the engine without
 a screen yet, 47 are still to do, and 7 wait on data that is not imported yet.
 [`next/docs/compatibility/feature-matrix.md`](next/docs/compatibility/feature-matrix.md)
 tracks each one, along with the 16 standalone tools the original shipped.
@@ -53,12 +56,12 @@ the authoritative text and is imported without edits.
 | --- | ---: | ---: |
 | Verses | 6,346 | 6,234 |
 | Words | 77,850 | 77,402 |
-| Letters | 327,662 | 325,534 |
+| Letters | 327,664 | 325,536 |
 
 The classic Tanzil text from the original is still built, because the tests
 compare the new engine against the original software over that text.
 [`next/docs/compatibility/submission-vs-classic.md`](next/docs/compatibility/submission-vs-classic.md)
-lists the 30 verses where the two texts differ.
+lists the 28 verses where the two texts differ.
 
 To update the text, replace the three CSV files and rebuild the database.
 
