@@ -28,6 +28,32 @@ internal static class Positions
         DumpWords(book, sampleVerses, outputDir);
         DumpLetters(book, sampleVerses, outputDir);
         DumpChapterValues(client, outputDir);
+        DumpAllVerses(client, outputDir);
+    }
+
+    /// <summary>
+    /// Every verse: its simplified text, counts and value. Large but decisive,
+    /// because it localizes a normalization difference to a single verse
+    /// instead of a chapter.
+    /// </summary>
+    private static void DumpAllVerses(Client client, string outputDir)
+    {
+        Book book = client.Book;
+        var sb = new StringBuilder();
+        sb.Append("# Every verse under the default numerical system.").Append(Lf);
+        sb.Append("# system=").Append(client.NumericalSystem.Name).Append(Lf);
+        sb.Append("verse	chapter:verse	words	letters	value	simplified_text").Append(Lf);
+
+        foreach (Verse verse in book.Verses)
+        {
+            sb.Append(N(verse.Number)).Append('	')
+              .Append(N(verse.Chapter.Number)).Append(':').Append(N(verse.NumberInChapter)).Append('	')
+              .Append(N(verse.Words.Count)).Append('	')
+              .Append(N(verse.Letters.Count)).Append('	')
+              .Append(N(client.CalculateValue(verse))).Append('	')
+              .Append(verse.Text.Replace('	', ' ')).Append(Lf);
+        }
+        Write(Path.Combine(outputDir, "all-verses.tsv"), sb);
     }
 
     private static void DumpWords(Book book, int[] sampleVerses, string outputDir)
