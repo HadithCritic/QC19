@@ -48,10 +48,10 @@
   $effect(() => {
     const number = app.chapter;
     const system = app.valueSystem;
-    const includeBasmalas = app.includeBasmalas;
+    const counting = { ...app.counting };
     if (!system) return;
     codes = new Map();
-    loadValues(number, system, includeBasmalas)
+    loadValues(number, system, counting)
       .then(({ current, value }) => {
         if (current) codes = new Map(value.map((v) => [v.number, { value: v.value, code: v.code }]));
       })
@@ -78,7 +78,7 @@
   }
 
   function uncounted(verse: Verse): boolean {
-    return verse.isBasmala && !app.includeBasmalas;
+    return verse.isBasmala && app.verseZeroExcluded;
   }
 
   function label(verse: Verse): string {

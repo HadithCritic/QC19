@@ -79,3 +79,61 @@ All passing: engine 150, protocol 33, interface 11, Rust 7, rustfmt, clippy
 
 ## Phase 1: Settle how text is counted
 
+### 1.1 Mark-order fix (7:58, 10:101, 15:92)
+
+The Submission file stores three hamzas on a tatweel as tatweel, vowel, hamza
+instead of tatweel, hamza, vowel. The text-mode rules match only the second
+order, so these hamzas were dropped while the same words elsewhere kept theirs.
+`CountingText.CanonicalizeMarks` reorders them before counting; the stored text
+is not edited. **Behavior change, logged:** Submission letter totals rise by 2
+(327,662 to 327,664 with Bismillahs counted), 7:58 and 10:101 now count as in
+the classic text and leave the edition comparison (30 to 28 verses). The
+classic text has no such case, so no golden figure moves.
+
+### 1.2 Counting options
+
+Captured new golden data from the original, `tests/golden/counting-options.tsv`
+(a new file; no baseline was changed): 10 option sets (default, no Bismillah,
+each option alone, waw with shadda, all) across Simplified29, 31, 36 and 28,
+per chapter and for the whole book. Implemented `CountingOptions` and
+`CountingText` in the engine, following `Server.BuildSimplifiedBook`'s order.
+**All 40 combinations match the original exactly.**
+
+Decisions:
+
+- **Availability per text mode follows the original's enabled check boxes**
+  (priority 1): no text options in Original; no hamza in Simplified28 or 30.
+  The engine drops a disallowed option rather than applying it.
+- **Leaving out the Bismillah in an edition with verse 0 works in every text
+  mode,** including Original, where the classic original forces it on. This is
+  the owner's explicit requirement for verse 0 and takes precedence.
+- **One `counting` object on the protocol** replaces the single
+  `includeBasmalas` flag.
+- **Interface:** a Counting menu in the top bar replaces the Count Bismillah
+  switch, listing all seven options with the original's marks; disallowed ones
+  are disabled with the reason. The simplest conventional control for seven
+  related check boxes.
+
+Bug found and fixed on the way: Arabic literals typed into source files were
+being put into Unicode canonical order (fatha before shadda), which the text
+does not use, so the Bismillah prefix never matched. The two constants are now
+generated from the text itself; no other literal in the source has stacked
+marks.
+
+### 1.3 Emlaaei text (#31)
+
+**Not implemented, by decision.** The original loads a separate emlaaei
+(standard spelling) text of the classic edition. No such text exists for the
+Submission edition, and mixing the classic one in would contradict its verse
+structure (9:128-129, verse 0, 68:1). Left as a data item in the feature matrix.
+
+### Phase 1 checks
+
+All passing: engine 198, protocol 35, interface 15, Rust 7, rustfmt, clippy,
+and the oracle reproduces every golden file including the new
+`counting-options.tsv`. **Phase 1 complete.**
+
+---
+
+## Phase 2: Performance
+

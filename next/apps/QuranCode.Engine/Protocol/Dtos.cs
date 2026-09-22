@@ -112,14 +112,24 @@ internal sealed record SearchResultDto(
     int Offset,
     IReadOnlyList<SearchVerseDto> Verses);
 
+/// <summary>How the text is counted; every member optional, defaults as in the original.</summary>
+internal sealed record CountingDto(
+    bool IncludeBasmalas = true,
+    bool WawAsWord = false,
+    bool ShaddaAsLetter = false,
+    bool HamzaAboveLine = false,
+    bool ElfAboveLine = false,
+    bool YaaAboveLine = false,
+    bool NoonAboveLine = false);
+
 // Parameters. Optional members carry a default; without one, strict
 // constructor binding treats even a nullable parameter as required.
 
 internal sealed record ChapterParams(int Chapter);
 
-internal sealed record ChapterValuesParams(int Chapter, string? ValueSystem = null, bool IncludeBasmalas = true);
+internal sealed record ChapterValuesParams(int Chapter, string? ValueSystem = null, CountingDto? Counting = null);
 
-internal sealed record RangeParams(int First, int Last, string? ValueSystem = null, bool IncludeBasmalas = true);
+internal sealed record RangeParams(int First, int Last, string? ValueSystem = null, CountingDto? Counting = null);
 
 internal sealed record ReferenceParams(string Text);
 
@@ -133,4 +143,4 @@ internal sealed record SearchParams(
     string? ValueSystem = null,
     int? Offset = null,
     int? Limit = null,
-    bool IncludeBasmalas = true);
+    CountingDto? Counting = null);

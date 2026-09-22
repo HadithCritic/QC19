@@ -31,4 +31,5 @@ namespace QuranCode.Engine.Protocol;
 [JsonSerializable(typeof(NumberParams))]
 [JsonSerializable(typeof(TextValuesParams))]
 [JsonSerializable(typeof(SearchParams))]
+[JsonSerializable(typeof(CountingDto))]
 internal sealed partial class WireJson : JsonSerializerContext;

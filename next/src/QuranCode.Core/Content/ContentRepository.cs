@@ -44,13 +44,14 @@ public sealed class ContentRepository : IDisposable
 {
     private readonly SqliteConnection _connection;
 
-    /// <summary>Oldest schema this code reads: v3 added editions and verse 0.</summary>
-    public const int MinimumSchemaVersion = 3;
+    /// <summary>Oldest schema this code reads: v3 added editions and verse 0, v4 the waw words.</summary>
+    public const int MinimumSchemaVersion = 4;
 
     private Chapter[]? _chapters;
     private Verse[]? _verses;
     private CorpusInfo? _corpus;
     private VerseRules? _verseRules;
+    private WawWords? _wawWords;
     private readonly Dictionary<string, TextMode> _textModes = [];
     private readonly Dictionary<string, ValueSystem> _valueSystems = [];
 
@@ -92,6 +93,34 @@ public sealed class ContentRepository : IDisposable
 
     /// <summary>Verse-scoped word rules for this edition.</summary>
     public VerseRules VerseRules => _verseRules ??= LoadVerseRules();
+
+    /// <summary>Words whose leading waw belongs to the word, for waw-as-word.</summary>
+    public WawWords WawWords => _wawWords ??= LoadWawWords();
+
+    private WawWords LoadWawWords()
+    {
+        var words = new HashSet<string>(StringComparer.Ordinal);
+        var splits = new Dictionary<string, HashSet<(int, int)>>(StringComparer.Ordinal);
+
+        using (SqliteCommand command = _connection.CreateCommand())
+        {
+            command.CommandText = "SELECT word FROM waw_words";
+            using SqliteDataReader reader = command.ExecuteReader();
+            while (reader.Read()) words.Add(reader.GetString(0));
+        }
+        using (SqliteCommand command = _connection.CreateCommand())
+        {
+            command.CommandText = "SELECT word, chapter, verse FROM waw_word_splits";
+            using SqliteDataReader reader = command.ExecuteReader();
+            while (reader.Read())
+            {
+                string word = reader.GetString(0);
+                if (!splits.TryGetValue(word, out HashSet<(int, int)>? verses)) splits[word] = verses = [];
+                verses.Add((reader.GetInt32(1), reader.GetInt32(2)));
+            }
+        }
+        return new WawWords(words, splits);
+    }
 
     private CorpusInfo LoadCorpus()
     {

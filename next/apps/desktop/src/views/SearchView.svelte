@@ -25,7 +25,7 @@
     loading = true;
     error = null;
     try {
-      const page = await engine.search(term, wordness, app.valueSystem, app.includeBasmalas, offset, PAGE);
+      const page = await engine.search(term, wordness, app.valueSystem, { ...app.counting }, offset, PAGE);
       result = page;
       verses = offset === 0 ? page.verses : [...verses, ...page.verses];
     } catch (e) {
@@ -35,13 +35,13 @@
     }
   }
 
-  // Changing whether Bismillahs count changes which verses match; rerun an
+  // Changing how the text is counted changes which words match; rerun an
   // existing search rather than leave stale results on screen.
-  let searchedWith: boolean | null = null;
+  let searchedWith: string | null = null;
   $effect(() => {
-    const include = app.includeBasmalas;
-    if (result && searchedWith !== null && searchedWith !== include) void run(0);
-    searchedWith = include;
+    const counting = JSON.stringify(app.counting);
+    if (result && searchedWith !== null && searchedWith !== counting) void run(0);
+    searchedWith = counting;
   });
 
   function submit(event: SubmitEvent): void {

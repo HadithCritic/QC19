@@ -29,15 +29,18 @@ namespace QuranCode.Core;
 /// everything counted runs over that view.
 /// </para>
 /// <para>
-/// Everything expensive is lazy and cached per (text mode, Bismillah choice).
+/// <b>How the text is counted</b> is a <see cref="CountingOptions"/>: the
+/// original's Statistics-panel options. Everything expensive is lazy and
+/// cached per (text mode, effective options).
 /// </para>
 /// </remarks>
 public sealed class QuranCodeEngine : IDisposable
 {
     private readonly ContentRepository _content;
     private readonly Dictionary<bool, CorpusView> _views = [];
-    private readonly Dictionary<(string, bool), Segmentation> _segmentations = [];
-    private readonly Dictionary<(string, bool), TextSearch> _searches = [];
+    private readonly Dictionary<(string, CountingOptions), Segmentation> _segmentations = [];
+    private readonly Dictionary<(string, CountingOptions), TextSearch> _searches = [];
+    private readonly Dictionary<(string, CountingOptions), CountingText> _countingTexts = [];
 
     /// <summary>The text mode used when none is named.</summary>
     public const string DefaultTextMode = "Original";
@@ -52,6 +55,8 @@ public sealed class QuranCodeEngine : IDisposable
 
     /// <summary>Which edition this engine reads.</summary>
     public CorpusInfo Corpus => _content.Corpus;
+
+    private bool VerseZero => Corpus.Basmala == BasmalaMode.VerseZero;
 
     /// <summary>The 114 chapters.</summary>
     public IReadOnlyList<Chapter> Chapters => _content.Chapters;
@@ -72,15 +77,20 @@ public sealed class QuranCodeEngine : IDisposable
     public Verse Verse(int chapter, int numberInChapter) =>
         _content.Verses[_content.Chapters[chapter - 1].AbsoluteOf(numberInChapter) - 1];
 
-    /// <summary>The verses counted with or without verse-0 Bismillahs.</summary>
-    public CorpusView View(bool includeBasmalas = true)
-    {
-        // An edition without verse-0 rows has one view whatever is asked.
-        bool key = includeBasmalas || Corpus.Basmala == BasmalaMode.Prefix;
-        if (_views.TryGetValue(key, out CorpusView? cached)) return cached;
+    /// <summary>The options that actually apply in a text mode.</summary>
+    public CountingOptions Effective(string textMode, CountingOptions? counting) =>
+        (counting ?? CountingOptions.Default).For(textMode, VerseZero);
 
-        var view = new CorpusView(_content.Verses, key);
-        _views[key] = view;
+    /// <summary>The verses counted with or without verse-0 Bismillahs.</summary>
+    public CorpusView View(CountingOptions? counting = null)
+    {
+        // Only an edition with verse-0 rows has anything to leave out; the
+        // classic edition strips its Bismillah from the text instead.
+        bool include = !VerseZero || (counting ?? CountingOptions.Default).IncludeBasmalas;
+        if (_views.TryGetValue(include, out CorpusView? cached)) return cached;
+
+        var view = new CorpusView(_content.Verses, include);
+        _views[include] = view;
         return view;
     }
 
@@ -92,27 +102,45 @@ public sealed class QuranCodeEngine : IDisposable
     public ValueSystem ValueSystem(string name = DefaultValueSystem) =>
         _content.GetValueSystem(name);
 
-    /// <summary>The counted verses segmented under a text mode. Built once per mode and view.</summary>
-    public Segmentation Segmentation(string textMode = DefaultTextMode, bool includeBasmalas = true)
+    /// <summary>How verses are turned into counted text under a text mode and options.</summary>
+    public CountingText CountingText(string textMode = DefaultTextMode, CountingOptions? counting = null)
     {
-        CorpusView view = View(includeBasmalas);
-        var key = (textMode, view.IncludesBasmalas);
+        CountingOptions effective = Effective(textMode, counting);
+        var key = (textMode, effective);
+        if (_countingTexts.TryGetValue(key, out CountingText? cached)) return cached;
+
+        TextPipeline pipeline = Pipeline(textMode);
+        var plain = new CountingText(pipeline, _content.VerseRules, effective, Corpus.Basmala, _content.WawWords);
+        WawWords waw = Text.CountingText.WawWordsFor(_content.WawWords, effective, View(effective).Verses, plain, pipeline);
+        CountingText text = ReferenceEquals(waw, _content.WawWords)
+            ? plain
+            : new CountingText(pipeline, _content.VerseRules, effective, Corpus.Basmala, waw);
+
+        _countingTexts[key] = text;
+        return text;
+    }
+
+    /// <summary>The counted verses segmented under a text mode. Built once per mode and options.</summary>
+    public Segmentation Segmentation(string textMode = DefaultTextMode, CountingOptions? counting = null)
+    {
+        CountingOptions effective = Effective(textMode, counting);
+        var key = (textMode, effective);
         if (_segmentations.TryGetValue(key, out Segmentation? cached)) return cached;
 
-        Segmentation built = Content.Segmentation.Build(
-            view.Verses, Pipeline(textMode), verseRules: _content.VerseRules);
+        CountingText text = CountingText(textMode, effective);
+        Segmentation built = Content.Segmentation.Build(View(effective).Verses, text.Normalize);
         _segmentations[key] = built;
         return built;
     }
 
-    /// <summary>Text search over a text mode and view. Built once per pair.</summary>
-    public TextSearch Search(string textMode = DefaultTextMode, bool includeBasmalas = true)
+    /// <summary>Text search over a text mode and options. Built once per pair.</summary>
+    public TextSearch Search(string textMode = DefaultTextMode, CountingOptions? counting = null)
     {
-        CorpusView view = View(includeBasmalas);
-        var key = (textMode, view.IncludesBasmalas);
+        CountingOptions effective = Effective(textMode, counting);
+        var key = (textMode, effective);
         if (_searches.TryGetValue(key, out TextSearch? cached)) return cached;
 
-        var search = new TextSearch(Segmentation(textMode, includeBasmalas), view.Verses, Pipeline(textMode));
+        var search = new TextSearch(Segmentation(textMode, effective), View(effective).Verses, Pipeline(textMode));
         _searches[key] = search;
         return search;
     }
@@ -134,7 +162,7 @@ public sealed class QuranCodeEngine : IDisposable
 
     /// <summary>
     /// Value of one verse, by absolute number; null when it is a Bismillah the
-    /// view does not count.
+    /// options do not count.
     /// </summary>
     public long? ValueOfVerse(
         int verseNumber,
@@ -142,13 +170,13 @@ public sealed class QuranCodeEngine : IDisposable
         string textMode = DefaultTextMode,
         CalculationProfile? profile = null,
         ModifierSet? modifiers = null,
-        bool includeBasmalas = true)
+        CountingOptions? counting = null)
     {
-        int index = View(includeBasmalas).IndexOf(verseNumber);
+        int index = View(counting).IndexOf(verseNumber);
         if (index < 0) return null;
 
         return SegmentedCalculator.ValueOfVerse(
-            Segmentation(textMode, includeBasmalas), index, ValueSystem(valueSystem),
+            Segmentation(textMode, counting), index, ValueSystem(valueSystem),
             profile ?? CalculationProfile.Default, modifiers ?? ModifierSet.None);
     }
 
@@ -159,9 +187,9 @@ public sealed class QuranCodeEngine : IDisposable
         string textMode = DefaultTextMode,
         CalculationProfile? profile = null,
         ModifierSet? modifiers = null,
-        bool includeBasmalas = true) =>
+        CountingOptions? counting = null) =>
         SegmentedCalculator.ValueOfChapter(
-            Segmentation(textMode, includeBasmalas), chapterNumber, ValueSystem(valueSystem),
+            Segmentation(textMode, counting), chapterNumber, ValueSystem(valueSystem),
             profile ?? CalculationProfile.Default, modifiers ?? ModifierSet.None);
 
     /// <summary>Value of the whole book.</summary>
@@ -169,9 +197,9 @@ public sealed class QuranCodeEngine : IDisposable
         string valueSystem = DefaultValueSystem,
         string textMode = DefaultTextMode,
         CalculationProfile? profile = null,
-        bool includeBasmalas = true)
+        CountingOptions? counting = null)
     {
-        Segmentation segmentation = Segmentation(textMode, includeBasmalas);
+        Segmentation segmentation = Segmentation(textMode, counting);
         return SegmentedCalculator.ValueOfVerses(
             segmentation, 0, segmentation.VerseCount,
             ValueSystem(valueSystem), profile ?? CalculationProfile.Default, ModifierSet.None);
@@ -191,11 +219,11 @@ public sealed class QuranCodeEngine : IDisposable
         string valueSystem = DefaultValueSystem,
         CalculationProfile? profile = null,
         ModifierSet? modifiers = null,
-        bool includeBasmalas = true)
+        CountingOptions? counting = null)
     {
         ValueSystem system = ValueSystem(valueSystem);
         return SelectionStatistics.Compute(
-            Segmentation(system.TextModeName, includeBasmalas), View(includeBasmalas), Chapters, range, system,
+            Segmentation(system.TextModeName, counting), View(counting), Chapters, range, system,
             profile ?? CalculationProfile.Default, modifiers ?? ModifierSet.None);
     }
 

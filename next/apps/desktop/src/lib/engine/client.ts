@@ -1,5 +1,6 @@
 import type {
   Chapter,
+  CountingOptions,
   EngineInfo,
   NumberInfo,
   SearchResult,
@@ -83,16 +84,16 @@ export const engine = {
   chapters: () => call<Chapter[]>("chapters.list"),
   systems: () => call<ValueSystem[]>("systems.list"),
   chapterVerses: (chapter: number) => call<Verse[]>("chapter.verses", { chapter }),
-  chapterValues: (chapter: number, valueSystem: string, includeBasmalas: boolean) =>
-    call<VerseValue[]>("chapter.values", { chapter, valueSystem, includeBasmalas }),
-  stats: (range: VerseRange, valueSystem: string, includeBasmalas: boolean) =>
-    call<Stats>("selection.stats", { ...range, valueSystem, includeBasmalas }),
+  chapterValues: (chapter: number, valueSystem: string, counting: CountingOptions) =>
+    call<VerseValue[]>("chapter.values", { chapter, valueSystem, counting }),
+  stats: (range: VerseRange, valueSystem: string, counting: CountingOptions) =>
+    call<Stats>("selection.stats", { ...range, valueSystem, counting }),
   parseReference: (text: string) => call<VerseRange>("reference.parse", { text }),
   analyzeNumber: (value: string) => call<NumberInfo>("number.analyze", { value }),
   textValues: (text: string, valueSystems?: string[]) =>
     call<SystemValue[]>("text.values", valueSystems ? { text, valueSystems } : { text }),
-  search: (term: string, wordness: Wordness, valueSystem: string, includeBasmalas: boolean, offset: number, limit: number) =>
-    call<SearchResult>("search.text", { term, wordness, valueSystem, includeBasmalas, offset, limit }),
+  search: (term: string, wordness: Wordness, valueSystem: string, counting: CountingOptions, offset: number, limit: number) =>
+    call<SearchResult>("search.text", { term, wordness, valueSystem, counting, offset, limit }),
 };
 
 /** The message to show for any thrown value. */

@@ -36,7 +36,7 @@ from datetime import datetime, timezone
 
 import submission
 
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 4
 
 # Text modes the legacy hides in the Standard edition. Hardcoded there too:
 # Server.LoadSimplificationSystems skips "SimplifiedMarks" when EDITION is Standard.
@@ -466,6 +466,34 @@ class Importer:
                 patterns.append(line)
         return patterns
 
+    # -- waw words -------------------------------------------------------
+
+    def import_waw_words(self) -> None:
+        """Data/waw-words.txt: a word per line, optionally a tab and c:v,c:v verses."""
+        rel = os.path.join("Data", "waw-words.txt")
+        if not os.path.exists(self.path(rel)):
+            self.errors.append("Data/waw-words.txt is missing")
+            return
+        self.register_source("data/waw-words", "waw words", "metadata", rel)
+        text, _ = read_text_detect(self.path(rel))
+        words = splits = 0
+        for line in text.splitlines():
+            fields = line.strip("\r\n").split("\t")
+            word = fields[0].strip()
+            if not word:
+                continue
+            self.db.execute("INSERT OR IGNORE INTO waw_words (word) VALUES (?)", (word,))
+            words += 1
+            if len(fields) > 1:
+                for address in fields[1].split(","):
+                    parts = address.strip().split(":")
+                    if len(parts) == 2 and all(p.isdigit() for p in parts):
+                        self.db.execute(
+                            "INSERT OR IGNORE INTO waw_word_splits (word, chapter, verse) VALUES (?,?,?)",
+                            (word, int(parts[0]), int(parts[1])))
+                        splits += 1
+        print(f"  waw words          {words} ({splits} verse exceptions)")
+
     # -- roots ------------------------------------------------------------
 
     def import_roots(self) -> None:
@@ -576,6 +604,7 @@ class Importer:
             self.import_partitions(sections)
             self.import_text_modes()
             self.import_value_systems()
+            self.import_waw_words()
             self.import_roots()
             self.build_fts()
 

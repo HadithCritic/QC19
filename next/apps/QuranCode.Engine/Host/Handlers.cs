@@ -77,7 +77,7 @@ internal sealed class Handlers
         for (int i = 0; i < values.Length; i++)
         {
             int number = chapter.FirstVerse + i;
-            long? value = _engine.ValueOfVerse(number, system.Name, system.TextMode, includeBasmalas: p.IncludeBasmalas);
+            long? value = _engine.ValueOfVerse(number, system.Name, system.TextMode, counting: Counting(p.Counting));
             values[i] = value is long v
                 ? new VerseValueDto(number, v.ToString(CultureInfo.InvariantCulture), NumberTheory.Classify(v).Code())
                 : new VerseValueDto(number, null, null);
@@ -89,7 +89,7 @@ internal sealed class Handlers
     {
         VerseRange range = RequireRange(p.First, p.Last);
         string system = RequireSystem(p.ValueSystem).Name;
-        SelectionStatistics s = _engine.Statistics(range, system, includeBasmalas: p.IncludeBasmalas);
+        SelectionStatistics s = _engine.Statistics(range, system, counting: Counting(p.Counting));
 
         return new StatsDto(
             range.First, range.Last, system,
@@ -143,10 +143,11 @@ internal sealed class Handlers
         if (limit is < 1 or > MaxSearchLimit) throw RpcException.InvalidParams($"limit must be between 1 and {MaxSearchLimit}.");
 
         string textMode = RequireSystem(p.ValueSystem).TextMode;
-        SearchResult result = _engine.Search(textMode, p.IncludeBasmalas).Find(p.Term, wordness);
-        Segmentation segmentation = _engine.Segmentation(textMode, p.IncludeBasmalas);
-        CorpusView view = _engine.View(p.IncludeBasmalas);
-        TextPipeline pipeline = _engine.Pipeline(textMode);
+        CountingOptions counting = Counting(p.Counting);
+        SearchResult result = _engine.Search(textMode, counting).Find(p.Term, wordness);
+        Segmentation segmentation = _engine.Segmentation(textMode, counting);
+        CorpusView view = _engine.View(counting);
+        CountingText text = _engine.CountingText(textMode, counting);
 
         int[] page = result.Verses.Skip(offset).Take(limit).ToArray();
         var hitsByVerse = page.ToDictionary(v => v, _ => new List<int>());
@@ -159,18 +160,18 @@ internal sealed class Handlers
         }
 
         SearchVerseDto[] verses = page
-            .Select(number => SearchVerse(number, hitsByVerse[number], segmentation, view, pipeline))
+            .Select(number => SearchVerse(number, hitsByVerse[number], segmentation, view, text))
             .ToArray();
 
         return new SearchResultDto(result.Term, result.WordCount, result.VerseCount, offset, verses);
     }
 
     private SearchVerseDto SearchVerse(
-        int number, List<int> hitWords, Segmentation segmentation, CorpusView view, TextPipeline pipeline)
+        int number, List<int> hitWords, Segmentation segmentation, CorpusView view, CountingText text)
     {
         Verse verse = _engine.Verse(number);
         VerseDisplay display = _engine.Display(verse);
-        DisplaySpan[]? spans = DisplayWords.Align(display, segmentation.VerseWords(view.IndexOf(number)), pipeline);
+        DisplaySpan[]? spans = DisplayWords.Align(display, segmentation.VerseWords(view.IndexOf(number)), text.NormalizeWord);
 
         // An unalignable verse gets no word highlights; the UI marks the
         // whole verse instead of pointing at the wrong words.
@@ -184,6 +185,19 @@ internal sealed class Handlers
             display.Bismillah, display.Words, highlights,
             spans is not null, bismillahHighlights, hitWords.Count);
     }
+
+    private static CountingOptions Counting(CountingDto? dto) => dto is null
+        ? CountingOptions.Default
+        : new CountingOptions
+        {
+            IncludeBasmalas = dto.IncludeBasmalas,
+            WawAsWord = dto.WawAsWord,
+            ShaddaAsLetter = dto.ShaddaAsLetter,
+            HamzaAboveLine = dto.HamzaAboveLine,
+            ElfAboveLine = dto.ElfAboveLine,
+            YaaAboveLine = dto.YaaAboveLine,
+            NoonAboveLine = dto.NoonAboveLine,
+        };
 
     internal static NumberDto Number(long value)
     {

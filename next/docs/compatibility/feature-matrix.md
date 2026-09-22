@@ -69,7 +69,7 @@ without a row here saying so and why.
 | 26 | Find sentences by letter frequency sum | port | todo | |
 | 25 | Find sentences by numbers | port | todo | |
 | 32–35 | FindByNumbers (words/verses/chapters, ranges, sets, operators) | port | todo | The largest remaining search surface |
-| 31 | Emlaaei hamza+elf search improvement | port | data | Needs the emlaaei text variant |
+| 31 | Emlaaei hamza+elf search improvement | port | data | Needs an emlaaei (standard spelling) text of the Submission edition; none exists (worklog, Phase 1) |
 | 15 | Match density shading per chapter | port | todo | UI |
 | 38 | F3 navigation through results | port | todo | UI |
 | 39–44 | F4–F9 related/similar/same lookups | port | todo | Similarity engine not started |
@@ -94,8 +94,8 @@ without a row here saying so and why.
 
 | # | Feature | Class | Status | Notes |
 | ---: | --- | --- | --- | --- |
-| 18 | Waw as a word | port | engine | Modeled in `segmentations`; not yet applied |
-| 19 | Shadda as a double letter | port | engine | Same |
+| 18 | Waw as a word | port | **done** | Counting menu; matches the original in every tested text mode (`golden/counting-options.tsv`) |
+| 19 | Shadda as a double letter | port | **done** | Counting menu, as above; so are hamza, alif, yaa and noon above a line, which `Features.txt` does not number |
 | 20 | BismAllah chapter prefixes | port | **done** | Submission edition: verse 0, counted or not (ADR 0003) |
 | 4 | Updated root database | port | done | 2,053 roots imported with provenance |
 | 62 | Word grammar, Arabic and English | port | data | `word_grammar` table exists; corpus.quran.com data not imported |
@@ -159,8 +159,8 @@ capability.
 
 | Status | Count |
 | --- | ---: |
-| done | 9 |
-| engine (no UI yet) | 14 |
+| done | 11 |
+| engine (no UI yet) | 12 |
 | todo | 47 |
 | data (needs a pack) | 7 |
 | drop | 1 (#36) |

@@ -60,6 +60,7 @@ internal static class Program
             Positions.Dump(client, SampleVerses, outputDir);
             Modifiers.Dump(client, outputDir);
             Searches.Dump(client, outputDir);
+            CountingOptions.Dump(client, outputDir);
         }
         catch (Exception ex)
         {

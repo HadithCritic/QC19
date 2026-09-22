@@ -101,6 +101,17 @@ export interface SystemValue {
 
 export type Wordness = "any" | "whole" | "part";
 
+/** How the text is counted: the original's Statistics-panel options. */
+export interface CountingOptions {
+  includeBasmalas: boolean;
+  wawAsWord: boolean;
+  shaddaAsLetter: boolean;
+  hamzaAboveLine: boolean;
+  elfAboveLine: boolean;
+  yaaAboveLine: boolean;
+  noonAboveLine: boolean;
+}
+
 export interface SearchVerse extends Verse {
   highlights: number[];
   /** False when words could not be mapped; mark the whole verse instead. */

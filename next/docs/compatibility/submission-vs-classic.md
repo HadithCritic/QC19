@@ -21,7 +21,6 @@ Structural differences, not listed row by row:
 | 7:38 | اداركوا | ادركوا | 40 → 40 |
 | 7:46 | الاعراف | الاعرف | 18 → 18 |
 | 7:48 | الاعراف | الاعرف | 14 → 14 |
-| 7:58 | الءايت | الايت | 17 → 17 |
 | 7:66 | سفاهه | سفهه | 14 → 14 |
 | 7:67 | سفاهه | سفهه | 10 → 10 |
 | 7:69 | بصطه | بسطه | 27 → 27 |
@@ -32,7 +31,6 @@ Structural differences, not listed row by row:
 | 8:6 | بعدما | بعد ما | 11 → 12 |
 | 10:15 | ءاياتنا | ءايتنا | 39 → 39 |
 | 10:21 | ءاياتنا | ءايتنا | 22 → 22 |
-| 10:101 | الءايت | الايت | 14 → 14 |
 | 12:39 | يصحبي | يصيحبي | 9 → 9 |
 | 12:41 | يصحبي | يصيحبي | 19 → 19 |
 | 13:4 | صنوان | صنون | 27 → 27 |
@@ -51,10 +49,16 @@ Structural differences, not listed row by row:
 | --- | --- | --- |
 | Sin for sad | 2:245, 7:69 | The edition's text |
 | Spelled-out letter | 68:1 (نون for ن) | The edition's text |
-| Shorter spelling (no written alif, or ي for ا) | 3:136, 6:99, 7:38, 7:46, 7:48, 7:58, 7:66, 7:67, 7:133, 7:145, 7:154, 7:163, 10:15, 10:21, 10:101, 12:39, 12:41, 13:4, 13:5, 13:14, 13:17, 25:29 | The edition's text; letter counts differ, word counts do not |
+| Shorter spelling (no written alif, or ي for ا) | 3:136, 6:99, 7:38, 7:46, 7:48, 7:66, 7:67, 7:133, 7:145, 7:154, 7:163, 10:15, 10:21, 12:39, 12:41, 13:4, 13:5, 13:14, 13:17, 25:29 | The edition's text; letter counts differ, word counts do not |
 | بعد ما kept as two words | 2:181, 8:6, 13:37 | The classic joins it by rule; this edition keeps its own spacing |
 | لوما as one word | 15:7 | The edition's text |
 | ما لم as one word | 96:5 | `data/editions/submission-verse-rules.tsv`, so 96:1-5 is 19 words |
+
+7:58 and 10:101 used to appear here. The Submission file stores their hamza
+with the vowel mark before it rather than after, so the rules dropped the
+hamza. The engine now puts the marks in one order before counting (see
+`CountingText.CanonicalizeMarks`), and both verses count as in the classic
+text.
 
 ما لم occurs in 19 other verses and stays two words there. To join it
 elsewhere, add a row per verse to the verse-rules file and rebuild.

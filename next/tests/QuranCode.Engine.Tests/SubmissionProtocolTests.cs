@@ -53,7 +53,7 @@ public sealed class SubmissionProtocolTests : IDisposable
     public void ExcludedBismillahHasNoValue()
     {
         JsonElement counted = Result("chapter.values", new { chapter = 2 });
-        JsonElement excluded = Result("chapter.values", new { chapter = 2, includeBasmalas = false });
+        JsonElement excluded = Result("chapter.values", new { chapter = 2, counting = new { includeBasmalas = false } });
 
         Assert.Equal(JsonValueKind.String, counted[0].GetProperty("value").ValueKind);
         Assert.Equal(JsonValueKind.Null, excluded[0].GetProperty("value").ValueKind);
@@ -65,10 +65,28 @@ public sealed class SubmissionProtocolTests : IDisposable
     {
         int first = Absolute(2, 0), last = Absolute(2, 286);
         JsonElement with = Result("selection.stats", new { first, last });
-        JsonElement without = Result("selection.stats", new { first, last, includeBasmalas = false });
+        JsonElement without = Result("selection.stats", new { first, last, counting = new { includeBasmalas = false } });
 
         Assert.Equal("287", with.GetProperty("verses").GetProperty("value").GetString());
         Assert.Equal("286", without.GetProperty("verses").GetProperty("value").GetString());
+    }
+
+    [Fact]
+    public void CountingOptionsTravelAsOneObject()
+    {
+        const string system = "Simplified29_Alphabet_Primes1";
+        JsonElement plain = Result("selection.stats", new { first = 1, last = 6346, valueSystem = system });
+        JsonElement hamza = Result("selection.stats", new { first = 1, last = 6346, valueSystem = system, counting = new { hamzaAboveLine = true } });
+
+        long Letters(JsonElement stats) => long.Parse(stats.GetProperty("letters").GetProperty("value").GetString()!);
+        Assert.True(Letters(hamza) > Letters(plain));
+    }
+
+    [Fact]
+    public void UnknownCountingOptionsAreRejected()
+    {
+        string response = _dispatcher.Handle("""{"id":1,"method":"selection.stats","params":{"first":1,"last":7,"counting":{"countEverything":true}}}""");
+        Assert.Equal("invalid_params", JsonDocument.Parse(response).RootElement.GetProperty("error").GetProperty("code").GetString());
     }
 
     [Fact]
@@ -82,7 +100,7 @@ public sealed class SubmissionProtocolTests : IDisposable
     public void SearchHighlightsVerseZeroAndSkipsItWhenExcluded()
     {
         JsonElement with = Result("search.text", new { term = "الرحمن", wordness = "whole", limit = 10 });
-        JsonElement without = Result("search.text", new { term = "الرحمن", wordness = "whole", limit = 10, includeBasmalas = false });
+        JsonElement without = Result("search.text", new { term = "الرحمن", wordness = "whole", limit = 10, counting = new { includeBasmalas = false } });
 
         Assert.Equal(112, with.GetProperty("verseCount").GetInt32() - without.GetProperty("verseCount").GetInt32());
 

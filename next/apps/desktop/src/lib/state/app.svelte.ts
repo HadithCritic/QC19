@@ -1,5 +1,6 @@
 import { describeError, engine } from "../engine/client";
-import type { Chapter, EngineInfo, ValueSystem, VerseRange } from "../engine/types";
+import type { Chapter, CountingOptions, EngineInfo, ValueSystem, VerseRange } from "../engine/types";
+import { DEFAULT_COUNTING, parseCounting, type CountingKey } from "../counting";
 import { chapterOfVerse, lastVerse } from "../numbers";
 import { visibleSystems } from "../systems";
 
@@ -10,11 +11,11 @@ interface Settings {
   theme: Theme;
   research: boolean;
   valueSystem: string | null;
-  countBasmalas: boolean;
+  counting: CountingOptions;
 }
 
 const SETTINGS_KEY = "qurancode.settings.v1";
-const DEFAULT_SETTINGS: Settings = { theme: "system", research: false, valueSystem: null, countBasmalas: true };
+const DEFAULT_SETTINGS: Settings = { theme: "system", research: false, valueSystem: null, counting: DEFAULT_COUNTING };
 
 // Preferences are a per-user convenience. Storage can be unavailable or
 // hold junk from an older build; either way the app starts on defaults.
@@ -22,12 +23,15 @@ function loadSettings(): Settings {
   try {
     const raw = localStorage.getItem(SETTINGS_KEY);
     if (!raw) return DEFAULT_SETTINGS;
-    const parsed = JSON.parse(raw) as Partial<Settings>;
+    const parsed = JSON.parse(raw) as Partial<Settings> & { countBasmalas?: unknown };
+    const counting = parseCounting(parsed.counting);
+    // Settings from before the counting options stored only this flag.
+    if (parsed.counting === undefined && parsed.countBasmalas === false) counting.includeBasmalas = false;
     return {
       theme: parsed.theme === "light" || parsed.theme === "dark" ? parsed.theme : "system",
       research: parsed.research === true,
       valueSystem: typeof parsed.valueSystem === "string" ? parsed.valueSystem : null,
-      countBasmalas: parsed.countBasmalas !== false,
+      counting,
     };
   } catch {
     return DEFAULT_SETTINGS;
@@ -59,13 +63,13 @@ class AppState {
   theme = $state<Theme>("system");
   research = $state(false);
   valueSystem = $state("");
-  /** Count the verse-0 Bismillahs. Only meaningful for an edition that has them. */
-  countBasmalas = $state(true);
+  /** How the text is counted; the engine applies only what the text mode allows. */
+  counting = $state<CountingOptions>({ ...DEFAULT_COUNTING });
 
   systems = $derived(visibleSystems(this.allSystems, this.research));
   hasVerseZero = $derived(this.info?.basmala === "verse-zero");
-  /** What every counting request sends: classic editions always count everything. */
-  includeBasmalas = $derived(!this.hasVerseZero || this.countBasmalas);
+  /** Whether verse-0 Bismillahs are left out of the counts. */
+  verseZeroExcluded = $derived(this.hasVerseZero && !this.counting.includeBasmalas);
   currentSystem = $derived(this.allSystems.find((s) => s.name === this.valueSystem));
 
   constructor() {
@@ -73,7 +77,7 @@ class AppState {
     this.theme = settings.theme;
     this.research = settings.research;
     this.valueSystem = settings.valueSystem ?? "";
-    this.countBasmalas = settings.countBasmalas;
+    this.counting = settings.counting;
   }
 
   async start(): Promise<void> {
@@ -100,7 +104,7 @@ class AppState {
       theme: this.theme,
       research: this.research,
       valueSystem: this.valueSystem,
-      countBasmalas: this.countBasmalas,
+      counting: { ...this.counting },
     });
   }
 
@@ -116,8 +120,13 @@ class AppState {
     this.persist();
   }
 
-  setCountBasmalas(on: boolean): void {
-    this.countBasmalas = on;
+  setCounting(key: CountingKey, on: boolean): void {
+    this.counting = { ...this.counting, [key]: on };
+    this.persist();
+  }
+
+  resetCounting(): void {
+    this.counting = { ...DEFAULT_COUNTING };
     this.persist();
   }
 

@@ -15,6 +15,8 @@ public sealed class SubmissionEditionTests(ITestOutputHelper output)
 {
     private static QuranCodeEngine Engine => SubmissionEngine.Instance;
 
+    private static readonly CountingOptions NoBasmalas = new() { IncludeBasmalas = false };
+
     private static string[] Words(int chapter, int verse, string textMode = "Original") =>
         Engine.Segmentation(textMode).VerseWords(Engine.Verse(chapter, verse).Number - 1);
 
@@ -112,7 +114,7 @@ public sealed class SubmissionEditionTests(ITestOutputHelper output)
         var range = new VerseRange(baqara.FirstVerse, baqara.LastVerse);
 
         SelectionStatistics with = Engine.Statistics(range);
-        SelectionStatistics without = Engine.Statistics(range, includeBasmalas: false);
+        SelectionStatistics without = Engine.Statistics(range, counting: NoBasmalas);
 
         Assert.Equal(287, with.VerseCount);
         Assert.Equal(286, without.VerseCount);
@@ -126,7 +128,7 @@ public sealed class SubmissionEditionTests(ITestOutputHelper output)
     {
         var all = new VerseRange(1, Engine.Verses.Count);
         SelectionStatistics with = Engine.Statistics(all);
-        SelectionStatistics without = Engine.Statistics(all, includeBasmalas: false);
+        SelectionStatistics without = Engine.Statistics(all, counting: NoBasmalas);
 
         output.WriteLine($"with: {with.VerseCount} verses, {with.WordCount} words, {with.LetterCount} letters, value {with.Value}");
         output.WriteLine($"without: {without.VerseCount} verses, {without.WordCount} words, {without.LetterCount} letters, value {without.Value}");
@@ -139,18 +141,18 @@ public sealed class SubmissionEditionTests(ITestOutputHelper output)
     public void AnExcludedBismillahAloneCountsAsNothing()
     {
         int zero = Engine.Verse(2, 0).Number;
-        SelectionStatistics stats = Engine.Statistics(new VerseRange(zero, zero), includeBasmalas: false);
+        SelectionStatistics stats = Engine.Statistics(new VerseRange(zero, zero), counting: NoBasmalas);
 
         Assert.Equal(0, stats.VerseCount);
         Assert.Equal(0, stats.Value);
-        Assert.Null(Engine.ValueOfVerse(zero, includeBasmalas: false));
+        Assert.Null(Engine.ValueOfVerse(zero, counting: NoBasmalas));
     }
 
     [Fact]
     public void SearchSkipsExcludedBismillahs()
     {
         int with = Engine.Search().Find("الرحمن", Search.Wordness.WholeWord).VerseCount;
-        int without = Engine.Search(includeBasmalas: false).Find("الرحمن", Search.Wordness.WholeWord).VerseCount;
+        int without = Engine.Search(counting: NoBasmalas).Find("الرحمن", Search.Wordness.WholeWord).VerseCount;
         Assert.Equal(112, with - without);
     }
 
@@ -173,10 +175,12 @@ public sealed class SubmissionEditionTests(ITestOutputHelper output)
     [Fact]
     public void EveryVerseAlignsForHighlighting()
     {
-        TextPipeline pipeline = Engine.Pipeline();
+        // Display words are normalized as the counted text is, which is what
+        // the search results use.
+        CountingText text = Engine.CountingText();
         Segmentation segmentation = Engine.Segmentation();
         var unaligned = Engine.Verses
-            .Where(v => DisplayWords.Align(Engine.Display(v), segmentation.VerseWords(v.Number - 1), pipeline) is null)
+            .Where(v => DisplayWords.Align(Engine.Display(v), segmentation.VerseWords(v.Number - 1), text.NormalizeWord) is null)
             .Select(v => $"{v.ChapterNumber}:{v.NumberInChapter}")
             .ToList();
 

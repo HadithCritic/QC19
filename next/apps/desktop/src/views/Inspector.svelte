@@ -7,6 +7,7 @@
   import { rangeReference } from "../lib/numbers";
   import { app } from "../lib/state/app.svelte";
   import { humanize } from "../lib/systems";
+  import { COUNTING_CHOICES, DEFAULT_COUNTING, unavailableReason } from "../lib/counting";
 
   // Live statistics for the selection: the panel the legacy app kept beside
   // the text, recomputed whenever the selection or the system changes.
@@ -21,14 +22,14 @@
   $effect(() => {
     const selection = app.selection;
     const system = app.valueSystem;
-    const includeBasmalas = app.includeBasmalas;
+    const counting = { ...app.counting };
     if (!selection || !system) {
       stats = null;
       return;
     }
     loading = true;
     error = null;
-    load(selection, system, includeBasmalas)
+    load(selection, system, counting)
       .then(({ current, value }) => {
         if (!current) return;
         stats = value;
@@ -50,6 +51,15 @@
       : [],
   );
 
+  // Options in effect that differ from the defaults, named for the reader.
+  const counted = $derived(
+    COUNTING_CHOICES.filter(
+      (c) =>
+        app.counting[c.key] !== DEFAULT_COUNTING[c.key] &&
+        unavailableReason(c.key, app.currentSystem?.textMode ?? "", app.hasVerseZero) === null,
+    ).map((c) => (c.key === "includeBasmalas" ? "without the Bismillah" : c.label.toLowerCase())),
+  );
+
   const maxFrequency = $derived(stats?.letterFrequencies[0]?.count ?? 1);
   const reference = $derived(stats ? rangeReference(stats.first, stats.last, app.chapters) : "");
 </script>
@@ -62,15 +72,15 @@
   {:else if stats && stats.verses.value === "0"}
     <Notice
       title="This Bismillah is not counted"
-      detail="Turn on Count Bismillah in the top bar to include each chapter's verse 0 in the numbers."
+      detail="Turn on Count the Bismillah under Counting in the top bar to include each chapter's verse 0."
     />
   {:else if stats}
     <header>
       <p class="eyebrow">Selection</p>
       <h2 class="num">{reference}</h2>
       <p class="system">{humanize(app.currentSystem?.textMode ?? "")} · {humanize(app.currentSystem?.letterOrder ?? "")} · {humanize(app.currentSystem?.letterValue ?? "")}</p>
-      {#if app.hasVerseZero}
-        <p class="system">{app.countBasmalas ? "Bismillahs counted as verse 0" : "Bismillahs not counted"}</p>
+      {#if counted.length > 0}
+        <p class="system">Counting: {counted.join(", ")}</p>
       {/if}
     </header>
 

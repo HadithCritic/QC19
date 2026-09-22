@@ -13,8 +13,8 @@ Tanzil text:
 - the Bismillah of chapters 2..114 (except 9) is verse 0, counted by default
   and excludable by the user, as the legacy `with_bism_Allah` option allowed;
   chapter 1's Bismillah is verse 1 and cannot be excluded;
-- its orthography differs (7:69 بسطة with sin, 68:1 نون spelled out, and 27
-  more verses listed in `docs/compatibility/submission-vs-classic.md`);
+- its orthography differs (7:69 بسطة with sin, 68:1 نون spelled out, and the
+  other verses listed in `docs/compatibility/submission-vs-classic.md`);
 - ما لم in 96:5 counts as one word, so 96:1-5 is 19 words.
 
 The classic text must stay: it is what the golden tests compare against the

@@ -112,9 +112,16 @@ public static class DisplayWords
     /// <param name="segmentedWords">The verse's words as the segmentation holds them, header included.</param>
     public static DisplaySpan[]? Align(VerseDisplay display, IReadOnlyList<string> segmentedWords, TextPipeline pipeline)
     {
+        ArgumentNullException.ThrowIfNull(pipeline);
+        return Align(display, segmentedWords, pipeline.Normalize);
+    }
+
+    /// <summary>As above, normalizing display words with <paramref name="normalizeWord"/>.</summary>
+    public static DisplaySpan[]? Align(VerseDisplay display, IReadOnlyList<string> segmentedWords, Func<string, string> normalizeWord)
+    {
         ArgumentNullException.ThrowIfNull(display);
         ArgumentNullException.ThrowIfNull(segmentedWords);
-        ArgumentNullException.ThrowIfNull(pipeline);
+        ArgumentNullException.ThrowIfNull(normalizeWord);
 
         var spans = new DisplaySpan[segmentedWords.Count];
         int s = 0;
@@ -127,7 +134,7 @@ public static class DisplayWords
         int d = 0;
         while (d < words.Count && s < segmentedWords.Count)
         {
-            if (TryJoin(words, d, segmentedWords[s], pipeline, out int joined))
+            if (TryJoin(words, d, segmentedWords[s], normalizeWord, out int joined))
             {
                 spans[s++] = new DisplaySpan(d, joined);
                 d += joined;
@@ -135,7 +142,7 @@ public static class DisplayWords
             }
 
             // One display word split into several segmented words.
-            int split = TrySplit(words[d], segmentedWords, s, pipeline);
+            int split = TrySplit(words[d], segmentedWords, s, normalizeWord);
             if (split == 0) return null;
 
             for (int i = 0; i < split; i++) spans[s++] = new DisplaySpan(d, 1);
@@ -145,21 +152,21 @@ public static class DisplayWords
         return d == words.Count && s == segmentedWords.Count ? spans : null;
     }
 
-    private static bool TryJoin(IReadOnlyList<string> words, int start, string target, TextPipeline pipeline, out int count)
+    private static bool TryJoin(IReadOnlyList<string> words, int start, string target, Func<string, string> normalize, out int count)
     {
         string wanted = Compact(target);
         for (count = 1; count <= MaxJoin && start + count <= words.Count; count++)
         {
             string candidate = string.Join(' ', Enumerable.Range(start, count).Select(i => words[i]));
-            if (Compact(pipeline.Normalize(candidate)) == wanted) return true;
+            if (Compact(normalize(candidate)) == wanted) return true;
         }
         count = 0;
         return false;
     }
 
-    private static int TrySplit(string word, IReadOnlyList<string> segmented, int start, TextPipeline pipeline)
+    private static int TrySplit(string word, IReadOnlyList<string> segmented, int start, Func<string, string> normalize)
     {
-        string wanted = Compact(pipeline.Normalize(word));
+        string wanted = Compact(normalize(word));
         string accumulated = "";
         for (int count = 1; count <= MaxJoin && start + count <= segmented.Count; count++)
         {

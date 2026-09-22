@@ -78,6 +78,20 @@ CREATE TABLE corpus (
     value TEXT NOT NULL
 );
 
+-- Words that begin with a waw belonging to the word (legacy Data/waw-words.txt),
+-- which waw-as-word leaves whole, and the verses where the same spelling is
+-- و plus another word and is split after all.
+CREATE TABLE waw_words (
+    word TEXT PRIMARY KEY
+);
+
+CREATE TABLE waw_word_splits (
+    word    TEXT    NOT NULL REFERENCES waw_words(word),
+    chapter INTEGER NOT NULL,
+    verse   INTEGER NOT NULL,
+    PRIMARY KEY (word, chapter, verse)
+);
+
 -- Word rules scoped to one verse, applied to that verse's text before the
 -- text mode's rules, in every text mode. The stored text is never edited;
 -- these only change how words are counted (for example, 96:5 counts ما لم as

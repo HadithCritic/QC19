@@ -1,4 +1,5 @@
 <script lang="ts">
+  import CountingMenu from "./lib/components/CountingMenu.svelte";
   import Notice from "./lib/components/Notice.svelte";
   import ReferenceBox from "./lib/components/ReferenceBox.svelte";
   import SystemPicker from "./lib/components/SystemPicker.svelte";
@@ -67,13 +68,7 @@
       <ReferenceBox />
       <SystemPicker />
       <div class="settings">
-        {#if app.hasVerseZero}
-          <label class="switch" title="Count each chapter's Bismillah as its verse 0. Chapter 1's Bismillah is its verse 1 and always counts; chapter 9 has none.">
-            <input type="checkbox" role="switch" checked={app.countBasmalas} onchange={(e) => app.setCountBasmalas(e.currentTarget.checked)} />
-            <span class="track" aria-hidden="true"></span>
-            Count Bismillah
-          </label>
-        {/if}
+        <CountingMenu />
         <label class="switch" title="Show the research-only letter-value systems and the SimplifiedMarks text mode">
           <input type="checkbox" role="switch" checked={app.research} onchange={(e) => app.setResearch(e.currentTarget.checked)} />
           <span class="track" aria-hidden="true"></span>

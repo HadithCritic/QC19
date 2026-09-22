@@ -72,4 +72,7 @@ public sealed class TextPipeline
     /// </remarks>
     public string Segment(string text) =>
         string.IsNullOrEmpty(text) ? "" : _rules.Simplify(text);
+
+    /// <summary>Applies only the letter stage to text that has been through the rules.</summary>
+    public string LetterStage(string segmented) => ArabicNormalizer.Simplify(segmented, TextModeName);
 }

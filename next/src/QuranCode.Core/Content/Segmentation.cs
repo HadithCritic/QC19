@@ -172,9 +172,17 @@ public sealed class Segmentation
         IReadOnlyList<Verse> verses, TextPipeline pipeline, bool distancesWithinChapters = true,
         VerseRules? verseRules = null)
     {
-        verseRules ??= VerseRules.None;
-        ArgumentNullException.ThrowIfNull(verses);
         ArgumentNullException.ThrowIfNull(pipeline);
+        VerseRules rules = verseRules ?? VerseRules.None;
+        return Build(verses, verse => pipeline.Normalize(rules.Apply(verse.Number, verse.Text)), distancesWithinChapters);
+    }
+
+    /// <summary>Segments verses whose counted text <paramref name="normalize"/> produces.</summary>
+    public static Segmentation Build(
+        IReadOnlyList<Verse> verses, Func<Verse, string> normalize, bool distancesWithinChapters = true)
+    {
+        ArgumentNullException.ThrowIfNull(verses);
+        ArgumentNullException.ThrowIfNull(normalize);
 
         int verseCount = verses.Count;
         var verseChapter = new int[verseCount];
@@ -214,7 +222,7 @@ public sealed class Segmentation
             verseNumberInChapter[v] = verse.NumberInChapter;
             verseFirstWord[v] = wordVerse.Count;
 
-            string normalized = pipeline.Normalize(verseRules.Apply(verse.Number, verse.Text));
+            string normalized = normalize(verse);
 
             int wordInVerse = 0;
             int letterInVerse = 0;

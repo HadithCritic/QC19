@@ -65,6 +65,7 @@
     <Compile Include="Positions.cs" />
     <Compile Include="Modifiers.cs" />
     <Compile Include="Searches.cs" />
+    <Compile Include="CountingOptions.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
