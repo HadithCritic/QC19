@@ -28,4 +28,17 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\QuranCode.Core\QuranCode.Core.csproj" />
   </ItemGroup>
+  <!--
+    SkiaSharp and HarfBuzzSharp ship native .pdb files inside their NuGet
+    packages, and the SDK copies them on publish. They are 105 MB together and
+    are debug symbols for third-party native code we do not debug, so they are
+    dropped from published output. Nothing references them at runtime.
+  -->
+  <Target Name="RemoveNativeSymbols" AfterTargets="ComputeFilesToPublish">
+    <ItemGroup>
+      <ResolvedFileToPublish Remove="@(ResolvedFileToPublish)"
+                             Condition="'%(Extension)' == '.pdb' And $([System.String]::Copy('%(Filename)').StartsWith('lib'))" />
+    </ItemGroup>
+  </Target>
+
 </Project>

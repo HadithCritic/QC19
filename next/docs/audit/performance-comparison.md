@@ -70,14 +70,33 @@ rebuilding anything.
 
 ## Distribution
 
+Measured on a published build (`win-x64`, framework-dependent, content
+included), confirmed to launch.
+
 | | Legacy | New |
 | --- | ---: | ---: |
+| **Total install** | **615 MB** | **35 MB** |
 | Canonical content | ~21 MB loose files (`Data/`, `Values/`, `Rules/`) | 3.1 MB `content.db` |
+| Precomputed number tables | 63 MB | 0 — computed by a sieve |
+| Offline translations | 156 MB | 0 — optional packs |
+| Help PDFs and images | 40 MB | 0 — fetched on demand |
+| Executables | 17 | 1 |
 | Full-text index | none | included |
+| Files in install root | 4,388 | 43 |
 
-The wider install reduction (156 MB of translations, 63 MB of precomputed
-numbers, 40 MB of help assets) is a packaging change and is not claimed here,
-because it has not been done yet.
+**-94%.**
+
+Two caveats, both real:
+
+- The 35 MB excludes the .NET 9 runtime, which the legacy install also
+  excluded (it needed .NET Framework 4.0). A self-contained build would add
+  roughly 70 MB.
+- 105 MB of that was third-party native `.pdb` files that SkiaSharp and
+  HarfBuzzSharp ship inside their NuGet packages and the SDK copies on
+  publish. They are debug symbols for native code this project does not
+  debug, and a `RemoveNativeSymbols` target now drops them. Without that
+  target the figure is 140 MB, which is still -77%, but shipping another
+  project's debug symbols is not a reduction anyone should have to accept.
 
 ## Honest summary
 
