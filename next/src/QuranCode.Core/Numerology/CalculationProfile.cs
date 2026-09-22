@@ -33,12 +33,13 @@ public enum CalculationMode
 /// </para>
 ///
 /// <para>
-/// <b>Scope.</b> Only the sign-alternation and calculation-mode settings are
-/// implemented so far. The 21 position and distance modifiers
-/// (<c>AddToLetterLNumber</c> and siblings) require per-letter positional
-/// metadata and are not yet wired up; <see cref="RequiresPositionalMetadata"/>
-/// reports whether a profile needs them. Constructing such a profile is allowed,
-/// but valuation will reject it rather than silently return a wrong number.
+/// <b>Two calculators.</b> A profile that needs only text goes through
+/// <see cref="ValueCalculator"/>. One that switches on positions or distances
+/// needs per-element metadata and goes through
+/// <see cref="SegmentedCalculator"/> over a built segmentation;
+/// <see cref="RequiresPositionalMetadata"/> reports which. Handing such a
+/// profile to the text-only calculator throws rather than quietly returning a
+/// number computed without the modifiers.
 /// </para>
 /// </remarks>
 public sealed record CalculationProfile
@@ -62,6 +63,16 @@ public sealed record CalculationProfile
 
     /// <summary>Add letter/word/verse/chapter positions to the total.</summary>
     public bool AddPositions { get; init; }
+
+    /// <summary>
+    /// Use positions counted from the start of the corpus rather than from the
+    /// start of the containing element.
+    /// </summary>
+    /// <remarks>
+    /// Has no effect on the letter L position: the legacy ternary returns
+    /// <c>NumberInWord</c> on both branches. See <see cref="ModifierSet"/>.
+    /// </remarks>
+    public bool AbsolutePositions { get; init; }
 
     /// <summary>Add distances to the previous identical element to the total.</summary>
     public bool AddDistancesToPrevious { get; init; }

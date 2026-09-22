@@ -63,6 +63,7 @@
     <Compile Include="Program.cs" />
     <Compile Include="Benchmark.cs" />
     <Compile Include="Positions.cs" />
+    <Compile Include="Modifiers.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

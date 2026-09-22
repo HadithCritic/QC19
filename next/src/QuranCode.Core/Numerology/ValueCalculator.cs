@@ -45,8 +45,9 @@ public static class ValueCalculator
         if (profile.RequiresPositionalMetadata)
         {
             throw new NotSupportedException(
-                "Position and distance modifiers are not implemented yet. " +
-                "See docs/decisions/0001 and the scope note on CalculationProfile.");
+                "This profile uses position or distance modifiers, which need " +
+                "per-element metadata that plain text does not carry. Build a " +
+                "Segmentation and use SegmentedCalculator instead.");
         }
 
         if (text.IsEmpty) return 0L;

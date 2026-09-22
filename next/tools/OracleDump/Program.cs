@@ -57,6 +57,7 @@ internal static class Program
             DumpValueSystems(client, outputDir);
             DumpLetterFrequencies(client, outputDir);
             Positions.Dump(client, SampleVerses, outputDir);
+            Modifiers.Dump(client, outputDir);
         }
         catch (Exception ex)
         {
