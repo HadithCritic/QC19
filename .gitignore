@@ -2,12 +2,20 @@
 /C#/Build/
 [Oo]bj/
 
+# Tools now built as part of Solution.sln (converted from HintPath to
+# ProjectReference), so their binaries no longer need to be tracked.
+/C#/Tools/Controls/bin/
+/C#/Tools/FontBuilder/bin/
+/C#/Tools/MP3Player/bin/
+/C#/Tools/WAVMaker/bin/
+
+# NOTE: Tools/{Replace,Touch,Version,Evaluator}/bin/Release/*.exe ARE tracked
+# deliberately. Version.bat and Release.bat invoke them directly from those
+# paths, and they are not part of Solution.sln, so a fresh clone would have
+# no way to produce them.
+
 # Visual Studio user state
 *.suo
 *.user
 *.userprefs
 .vs/
-
-# NOTE: C#/Tools/*/bin/Release/*.dll are intentionally tracked.
-# QuranCode.csproj and Research.csproj reference them by <HintPath>,
-# so the solution cannot build without them present.

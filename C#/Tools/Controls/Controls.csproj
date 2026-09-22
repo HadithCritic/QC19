@@ -5,7 +5,7 @@
     <Platform Condition="">AnyCPU</Platform>
     <ProductVersion>9.0.30729</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{B0138CBF-A11A-4F54-AD14-2D9217D90F27}</ProjectGuid>
+    <ProjectGuid>{C400281D-261E-479C-B4BA-FFE7D7E9BEBC}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Controls</RootNamespace>

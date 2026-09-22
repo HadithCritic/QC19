@@ -39,9 +39,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
-    <Reference Include="WAVMaker">
-      <HintPath>..\Tools\WAVMaker\bin\Release\WAVMaker.dll</HintPath>
-    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -65,6 +62,10 @@
     <ProjectReference Include="..\Utilities\Utilities.csproj">
       <Project>{B0138CBF-A11A-4F54-AD14-2D9217D90F27}</Project>
       <Name>Utilities</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Tools\WAVMaker\WAVMaker.csproj">
+      <Project>{8B694862-E243-4527-AAE4-08BAB299B7A7}</Project>
+      <Name>WAVMaker</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

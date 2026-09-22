@@ -41,21 +41,9 @@
     <UseVSHostingProcess>false</UseVSHostingProcess>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Controls">
-      <HintPath>..\Tools\Controls\bin\Release\Controls.dll</HintPath>
-    </Reference>
-    <Reference Include="FontBuilder">
-      <HintPath>..\Tools\FontBuilder\bin\Release\FontBuilder.dll</HintPath>
-    </Reference>
-    <Reference Include="MP3Player">
-      <HintPath>..\Tools\MP3Player\bin\Release\MP3Player.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Drawing" />
     <Reference Include="System.Windows.Forms" />
-    <Reference Include="WAVMaker">
-      <HintPath>..\Tools\WAVMaker\bin\Release\WAVMaker.dll</HintPath>
-    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AboutBox.cs">
@@ -3727,6 +3715,22 @@
     <ProjectReference Include="..\Utilities\Utilities.csproj">
       <Project>{B0138CBF-A11A-4F54-AD14-2D9217D90F27}</Project>
       <Name>Utilities</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Tools\Controls\Controls.csproj">
+      <Project>{C400281D-261E-479C-B4BA-FFE7D7E9BEBC}</Project>
+      <Name>Controls</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Tools\FontBuilder\FontBuilder.csproj">
+      <Project>{2FB20799-DFCD-499C-86F2-805307A0539F}</Project>
+      <Name>FontBuilder</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Tools\MP3Player\MP3Player.csproj">
+      <Project>{45191FE0-3A2F-46D4-ADFC-626B69DBF7AD}</Project>
+      <Name>MP3Player</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Tools\WAVMaker\WAVMaker.csproj">
+      <Project>{8B694862-E243-4527-AAE4-08BAB299B7A7}</Project>
+      <Name>WAVMaker</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
