@@ -145,9 +145,15 @@ cd next/apps/desktop && pnpm test                # interface logic: 11 tests
 cd next/apps/desktop/src-tauri && cargo test     # Rust bridge: 7 tests
 ```
 
-To record new golden data, build the original solution (`C#/Solution.sln`,
-which needs the .NET Framework 4.0 targeting pack) and run OracleDump with its
-output folder, `C#/Build/Release`, as the install root.
+`next/tools/oracle.py` builds the original (with Microsoft's .NET Framework 4.0
+reference assemblies from NuGet and the Visual Studio Build Tools, so no
+developer pack is needed) and runs OracleDump against its output,
+`C#/Build/Release`:
+
+```bash
+python next/tools/oracle.py --check          # regenerate and compare with next/tests/golden
+python next/tools/oracle.py --out <folder>   # regenerate into a folder
+```
 
 ## Repository layout
 

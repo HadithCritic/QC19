@@ -1,0 +1,76 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  engine:
+    name: Engine and protocol
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "9.0.x"
+      - name: Build the content databases
+        run: |
+          python next/data/import/build_content.py -o next/data/content.db
+          python next/data/import/build_content.py --edition submission -o next/data/submission.db
+      - name: Engine tests
+        run: dotnet test next/tests/QuranCode.Core.Tests
+      - name: Protocol tests
+        run: dotnet test next/tests/QuranCode.Engine.Tests
+
+  desktop:
+    name: Desktop app
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: next/apps/desktop
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
+          cache-dependency-path: next/apps/desktop/pnpm-lock.yaml
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "9.0.x"
+      # tauri-build needs the sidecar and its resources staged before cargo runs.
+      - name: Build the Submission database and stage the engine
+        working-directory: .
+        run: |
+          python next/data/import/build_content.py --edition submission -o next/data/submission.db
+          node next/apps/desktop/scripts/prepare-engine.mjs
+      - run: pnpm install --frozen-lockfile
+      - name: Type check
+        run: pnpm check
+      - name: Interface tests
+        run: pnpm test
+      - name: Rust format
+        working-directory: next/apps/desktop/src-tauri
+        run: cargo fmt --check
+      - name: Rust lints
+        working-directory: next/apps/desktop/src-tauri
+        run: cargo clippy --all-targets -- -D warnings
+      - name: Rust tests
+        working-directory: next/apps/desktop/src-tauri
+        run: cargo test --lib
