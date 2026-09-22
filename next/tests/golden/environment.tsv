@@ -1,0 +1,21 @@
+# QuranCode legacy oracle environment
+key	value
+edition	Standard
+default_numerical_system	Original_Alphabet_Primes1
+default_simplification_system	Original
+loaded_numerical_systems	274
+word_count_method	77878
+calculation_mode	SumOfLetterValues
+alternate_letter_values	False
+alternate_word_values	False
+alternate_verse_values	False
+alternate_chapter_values	False
+build.with_diacritics	False
+build.with_bism_Allah	True
+build.waw_as_word	False
+build.shadda_as_letter	False
+build.hamza_above_horizontal_line_as_letter	False
+build.elf_above_horizontal_line_as_letter	False
+build.yaa_above_horizontal_line_as_letter	False
+build.noon_above_horizontal_line_as_letter	False
+build.emlaaei_text	False

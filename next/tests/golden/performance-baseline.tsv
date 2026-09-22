@@ -1,0 +1,28 @@
+# Legacy engine performance baseline
+# Machine-specific. Re-record before comparing against a new implementation.
+# Engine only: excludes all WinForms UI construction.
+host	LAPTOP-MU5R0JUK
+os	Microsoft Windows NT 6.2.9200.0
+clr	4.0.30319.42000
+cpu_count	8
+captured_utc	2026-09-22 16:20:28
+
+step	ms	working_set_mb	managed_heap_mb	note
+baseline	0	17.1	0.7	before any engine work
+client_construct	140	24.6	5.9	loads 274 numerical systems
+build_book	3142	183.2	140.7	6236 verses, 77878 words, 327792 letters
+rebuild_book	2857	280.0	210.0	same parameters; no caching in the legacy engine
+value_whole_book	35	280.0	210.1	result=19628315
+value_all_verses	59	280.0	210.1	6236 calls, checksum=19628315
+switch_numerical_system	1371	358.0	280.1	load + full rebuild
+
+directory	bytes	files
+Numbers	64986784	77
+Translations	162563688	156
+Help	40946892	118
+Data	20704941	12
+Values	153537	410
+Rules	28260	24
+Audio	344200	13
+Images	717884	1060
+Fonts	646960	2

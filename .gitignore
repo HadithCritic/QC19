@@ -24,3 +24,7 @@
 
 # Release archives produced by build.ps1
 *.zip
+
+# Rule files the legacy engine writes beside the executable at runtime.
+# Canonical copies live in Rules/<word-count-method>/.
+/Rules/*.txt

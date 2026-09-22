@@ -1,0 +1,10 @@
+# Aggregate values per numerical system.
+system	text_mode	letter_order	letter_value	letter_values_sum	book_value	chapter1_value
+Original_Alphabet_Primes1	Original	Alphabet	Primes1	1372	19628315	8317
+Original_Abjad_Gematria	Original	Abjad	Gematria	5995	23466310	10143
+Original_Appearance_Composites	Original	Appearance	Composites	708	5348986	1984
+Simplified29_Alphabet_Primes1	Simplified29	Alphabet	Primes1	1372	19628315	8317
+Simplified29_Abjad_Gematria	Simplified29	Abjad	Gematria	5995	23466310	10143
+Simplified28_Alphabet_Primes1	Simplified28	Alphabet	Primes1	1371	19625255	8317
+Simplified31_Alphabet_Primes1	Simplified31	Alphabet	Primes1	1594	19799075	8361
+Simplified36_Alphabet_Primes1	Simplified36	Alphabet	Primes1	2277	23936194	10214
