@@ -14,6 +14,14 @@ text, applied later by the engine, never baked in here.
 
 Usage:
     python build_content.py <install-root> [-o content.db]
+    python build_content.py <install-root> --edition submission -o submission.db
+
+The classic edition is the legacy Tanzil text and is what the golden tests
+check against. The submission edition is the app's authoritative text: its
+text, verse index and chapter names come from the wikisubmission.org export in
+next/data/sources/submission/ (override with --submission-dir), and everything
+else (value systems, text-mode rules, page and part boundaries) from the
+install root.
 """
 
 from __future__ import annotations
@@ -24,9 +32,15 @@ import io
 import os
 import sqlite3
 import sys
+
+import submission
 from datetime import datetime, timezone
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 3
+
+# Text modes the legacy hides in the Standard edition. Hardcoded there too:
+# Server.LoadSimplificationSystems skips "SimplifiedMarks" when EDITION is Standard.
+RESEARCH_ONLY_TEXT_MODES = frozenset({"SimplifiedMarks"})
 ALGORITHM_VERSION = 1
 
 # Word count method: the legacy engine ships two segmentation variants
@@ -83,9 +97,12 @@ def sha256_file(path: str) -> tuple[str, int]:
 
 
 class Importer:
-    def __init__(self, root: str, db_path: str) -> None:
+    def __init__(self, root: str, db_path: str, edition: str = "classic",
+                 submission_dir: str | None = None) -> None:
         self.root = os.path.abspath(root)
         self.db_path = db_path
+        self.edition = edition
+        self.submission_dir = os.path.abspath(submission_dir) if submission_dir else None
         self.db: sqlite3.Connection | None = None
         self.errors: list[str] = []
 
@@ -96,7 +113,7 @@ class Importer:
 
     def register_source(self, key: str, name: str, kind: str, rel_path: str,
                         origin: str = "", license_: str = "") -> int:
-        full = self.path(rel_path)
+        full = rel_path if os.path.isabs(rel_path) else self.path(rel_path)
         content_hash, size = sha256_file(full)
         cur = self.db.execute(
             "INSERT INTO sources (key, name, kind, version, origin, license,"
@@ -152,6 +169,59 @@ class Importer:
                  int(r[7]), int(r[8])),
             )
         print(f"  chapters           {len(rows)}")
+
+    def import_submission(self) -> None:
+        """Replaces the classic text with the Submission edition's.
+
+        Chapter names, verse counts and revelation order come from the export;
+        revelation place and bowing counts, which it does not carry, stay from
+        the classic metadata.
+        """
+        directory = self.submission_dir
+        rows = submission.load_rows(directory)
+        chapters = submission.read_csv(directory, submission.CHAPTERS_FILE)
+        for name in (submission.INDEX_FILE, submission.TEXT_FILE, submission.CHAPTERS_FILE):
+            self.register_source(f"submission/{name}", name, "text",
+                                 os.path.join(directory, name), origin=submission.ORIGIN)
+
+        first_row: dict[int, int] = {}
+        has_zero: set[int] = set()
+        for row in rows:
+            first_row.setdefault(row["chapter"], row["number"])
+            if row["verse"] == 0:
+                has_zero.add(row["chapter"])
+
+        for c in chapters:
+            number = int(c["chapter_number"])
+            self.db.execute(
+                "UPDATE chapters SET verse_count=?, first_verse=?, has_verse_zero=?,"
+                " name=?, transliterated_name=?, english_name=?, revelation_order=?"
+                " WHERE number=?",
+                (int(c["chapter_verses"]), first_row[number], int(number in has_zero),
+                 c["title_arabic"], c["title_transliterated"], c["title_english"],
+                 int(c["revelation_order"]), number))
+
+        for row in rows:
+            self.db.execute(
+                "INSERT INTO verses (number, chapter_number, number_in_chapter, text,"
+                " stopmark, is_basmala) VALUES (?,?,?,?,?,?)",
+                (row["number"], row["chapter"], row["verse"], row["text"], None,
+                 int(row["verse"] == 0)))
+        print(f"  verses             {len(rows)} ({len(has_zero)} verse-0 Bismillahs)")
+
+        texts = {r["number"]: r["text"] for r in rows}
+        verse_ids = {(r["chapter"], r["verse"]): r["number"] for r in rows}
+        rules = submission.read_verse_rules()
+        for ordinal, (verse_id, find, replace_with, note) in enumerate(rules):
+            chapter, verse = (int(x) for x in verse_id.split(":"))
+            number = verse_ids.get((chapter, verse))
+            if number is None or find not in texts[number]:
+                self.errors.append(f"verse rule for {verse_id}: {find!r} not found in the verse")
+                continue
+            self.db.execute(
+                "INSERT INTO verse_rules (verse_number, ordinal, find, replace_with, note)"
+                " VALUES (?,?,?,?,?)", (number, ordinal, find, replace_with, note))
+        print(f"  verse rules        {len(rules)}")
 
     def import_verses(self, source_id: int) -> None:
         path = self.path("Data", "quran-uthmani.txt")
@@ -210,11 +280,11 @@ class Importer:
                 continue
             starts: list[tuple[int, int]] = []
             for r in rows:
-                key = (int(r[1]), int(r[2]))
-                if key not in verse_index:
-                    self.errors.append(f"{kind} {r[0]} references missing verse {key}")
+                number = self.partition_start(verse_index, int(r[1]), int(r[2]))
+                if number is None:
+                    self.errors.append(f"{kind} {r[0]} references missing verse {r[1]}:{r[2]}")
                     continue
-                starts.append((int(r[0]), verse_index[key]))
+                starts.append((int(r[0]), number))
 
             for i, (number, first) in enumerate(starts):
                 last = starts[i + 1][1] - 1 if i + 1 < len(starts) else total_verses
@@ -223,10 +293,26 @@ class Importer:
                     " VALUES (?,?,?,?)", (kind, number, first, last))
             print(f"  partitions/{kind:<8}{len(starts)}")
 
+    @staticmethod
+    def partition_start(verse_index: dict[tuple[int, int], int], chapter: int, verse: int) -> int | None:
+        """Row a partition starting at chapter:verse begins on.
+
+        A partition starting at a chapter's verse 1 includes its verse-0
+        Bismillah. A start at a verse this edition does not have (9:128, 9:129)
+        moves to the next verse that exists.
+        """
+        if verse == 1 and (chapter, 0) in verse_index:
+            return verse_index[(chapter, 0)]
+        if (chapter, verse) in verse_index:
+            return verse_index[(chapter, verse)]
+        later = [n for (c, v), n in verse_index.items() if (c, v) > (chapter, verse)]
+        return min(later) if later else None
+
     # -- text modes -------------------------------------------------------
 
     def import_text_modes(self) -> None:
         total_rules = 0
+        skipped_joins = 0
         encodings_seen: set[str] = set()
         for method in (77878, 77880):
             rules_dir = self.path("Rules", str(method))
@@ -239,8 +325,9 @@ class Importer:
                 source_id = self.register_source(
                     f"rules/{method}/{mode}", f"{mode} rules ({method})", "rules", rel)
                 cur = self.db.execute(
-                    "INSERT INTO text_modes (name, word_count_method, source_id)"
-                    " VALUES (?,?,?)", (mode, method, source_id))
+                    "INSERT INTO text_modes (name, word_count_method, research_only, source_id)"
+                    " VALUES (?,?,?,?)",
+                    (mode, method, int(mode in RESEARCH_ONLY_TEXT_MODES), source_id))
                 mode_id = cur.lastrowid
 
                 # Ordinal is significant: these are applied in sequence and
@@ -259,6 +346,9 @@ class Importer:
                     find, replace_with = fields[0], fields[1]
                     if not find:
                         continue
+                    if self.edition == "submission" and submission.is_word_join(find, replace_with):
+                        skipped_joins += 1
+                        continue
                     self.db.execute(
                         "INSERT INTO text_mode_rules (text_mode_id, ordinal, find,"
                         " replace_with) VALUES (?,?,?,?)",
@@ -267,6 +357,8 @@ class Importer:
                 total_rules += ordinal
         modes = self.db.execute("SELECT COUNT(*) FROM text_modes").fetchone()[0]
         print(f"  text modes         {modes} ({total_rules} rules)")
+        if skipped_joins:
+            print(f"    skipped {skipped_joins} word-joining rules: this edition's spacing is authoritative")
         mixed = {e.split(":")[1] for e in encodings_seen}
         if len(mixed) > 1:
             print(f"    note: rule files use mixed encodings {sorted(mixed)}")
@@ -279,7 +371,9 @@ class Importer:
             self.errors.append("no Values directory")
             return
 
+        extra_patterns = self.read_extra_system_patterns(values_dir)
         imported = 0
+        research_only = 0
         encodings_seen: set[str] = set()
         for filename in sorted(os.listdir(values_dir)):
             if not filename.endswith(".txt"):
@@ -312,20 +406,41 @@ class Importer:
                 continue
 
             source_id = self.register_source(f"values/{name}", name, "values", rel)
+            is_extra = any(pattern in name for pattern in extra_patterns)
+            research_only += is_extra
             cur = self.db.execute(
                 "INSERT INTO value_systems (name, text_mode_name, letter_order,"
-                " letter_value, letter_values_sum, source_id) VALUES (?,?,?,?,?,?)",
+                " letter_value, letter_values_sum, research_only, source_id)"
+                " VALUES (?,?,?,?,?,?,?)",
                 (name, text_mode_name, letter_order, letter_value,
-                 sum(v for _, v in pairs), source_id))
+                 sum(v for _, v in pairs), int(is_extra), source_id))
             system_id = cur.lastrowid
             self.db.executemany(
                 "INSERT OR IGNORE INTO value_map (value_system_id, letter, value)"
                 " VALUES (?,?,?)",
                 [(system_id, letter, value) for letter, value in pairs])
             imported += 1
-        print(f"  value systems      {imported}")
+        print(f"  value systems      {imported} ({research_only} research-only)")
         if len(encodings_seen) > 1:
             print(f"    note: value files use mixed encodings {sorted(encodings_seen)}")
+
+    def read_extra_system_patterns(self, values_dir: str) -> list[str]:
+        """Substrings that mark a value system as research-only.
+
+        The legacy loads these from Values/_ExtraSystems.txt and skips any
+        matching system in the Standard and Research editions
+        (Server.LoadNumericalSystems). Substring match, as the legacy does.
+        """
+        path = os.path.join(values_dir, "_ExtraSystems.txt")
+        if not os.path.isfile(path):
+            return []
+        text, _ = read_text_detect(path)
+        patterns = []
+        for line in text.splitlines():
+            line = line.strip()
+            if line and not line.startswith("#"):
+                patterns.append(line)
+        return patterns
 
     # -- roots ------------------------------------------------------------
 
@@ -367,9 +482,17 @@ class Importer:
         These come from next/tests/golden/, captured by driving the legacy
         engine. They are not aspirational values.
         """
+        verse_checks = (
+            [("verses", "SELECT COUNT(*) FROM verses", 6236)]
+            if self.edition == "classic" else
+            [("rows", "SELECT COUNT(*) FROM verses", submission.EXPECTED_ROWS),
+             ("bismillahs", "SELECT COUNT(*) FROM verses WHERE is_basmala=1", submission.EXPECTED_BASMALAS),
+             ("numbered", "SELECT COUNT(*) FROM verses WHERE is_basmala=0", 6234),
+             ("chapter 9", "SELECT verse_count FROM chapters WHERE number=9", 127),
+             ("counts", "SELECT SUM(verse_count) FROM chapters", 6234)])
         checks = [
             ("chapters", "SELECT COUNT(*) FROM chapters", 114),
-            ("verses", "SELECT COUNT(*) FROM verses", 6236),
+            *verse_checks,
             ("stations", "SELECT COUNT(*) FROM partitions WHERE kind='station'", 7),
             ("parts", "SELECT COUNT(*) FROM partitions WHERE kind='part'", 30),
             ("groups", "SELECT COUNT(*) FROM partitions WHERE kind='group'", 60),
@@ -389,7 +512,7 @@ class Importer:
 
         # Al-Fatiha structure, the project's canonical smoke test.
         verses = self.db.execute(
-            "SELECT COUNT(*) FROM verses WHERE chapter_number=1").fetchone()[0]
+            "SELECT COUNT(*) FROM verses WHERE chapter_number=1 AND is_basmala=0").fetchone()[0]
         status = "ok " if verses == 7 else "FAIL"
         if verses != 7:
             ok = False
@@ -419,7 +542,13 @@ class Importer:
                 origin="tanzil.net", license_="cc-by")
 
             self.import_chapters(sections)
-            self.import_verses(text_source)
+            if self.edition == "submission":
+                self.import_submission()
+            else:
+                self.import_verses(text_source)
+            basmala = "verse-zero" if self.edition == "submission" else "prefix"
+            self.db.executemany("INSERT INTO corpus (key, value) VALUES (?,?)",
+                                [("edition", self.edition), ("basmala", basmala)])
             self.import_partitions(sections)
             self.import_text_modes()
             self.import_value_systems()
@@ -437,7 +566,7 @@ class Importer:
                     print("  " + error)
 
             size_mb = os.path.getsize(self.db_path) / 1024 / 1024
-            print(f"\ncontent.db  {size_mb:.1f} MB")
+            print(f"\n{os.path.basename(self.db_path)}  {size_mb:.1f} MB ({self.edition} edition)")
             return 0 if ok and not self.errors else 1
         finally:
             self.db.close()
@@ -447,12 +576,23 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("root", help="QuranCode install root")
     parser.add_argument("-o", "--output", default="content.db")
+    parser.add_argument("--edition", choices=["classic", "submission"], default="classic")
+    parser.add_argument("--submission-dir", default=submission.DEFAULT_DIR,
+                        help="folder holding the ws_quran_*_rows.csv export "
+                             "(default: next/data/sources/submission)")
     args = parser.parse_args()
 
     if not os.path.isdir(os.path.join(args.root, "Data")):
         print(f"not a QuranCode install root: {args.root}", file=sys.stderr)
         return 2
-    return Importer(args.root, args.output).run()
+    if args.edition == "submission":
+        names = (submission.INDEX_FILE, submission.TEXT_FILE, submission.CHAPTERS_FILE)
+        missing = [n for n in names
+                   if not args.submission_dir or not os.path.exists(os.path.join(args.submission_dir, n))]
+        if missing:
+            print(f"--submission-dir must contain {', '.join(missing)}", file=sys.stderr)
+            return 2
+    return Importer(args.root, args.output, args.edition, args.submission_dir).run()
 
 
 if __name__ == "__main__":

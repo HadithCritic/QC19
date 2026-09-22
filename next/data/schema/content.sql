@@ -53,18 +53,42 @@ CREATE TABLE chapters (
     english_name        TEXT    NOT NULL,
     revelation_order    INTEGER NOT NULL,
     revelation_place    TEXT    NOT NULL,      -- Makkah | Madinah
-    verse_count         INTEGER NOT NULL,
-    first_verse         INTEGER NOT NULL,      -- absolute verse number of verse 1
+    verse_count         INTEGER NOT NULL,      -- numbered verses, excluding a verse 0
+    first_verse         INTEGER NOT NULL,      -- absolute number of the chapter's first row (its verse 0 if any)
+    has_verse_zero      INTEGER NOT NULL DEFAULT 0, -- 1: the Bismillah is stored as verse 0
     bowing_count        INTEGER NOT NULL
 );
 
 CREATE TABLE verses (
-    number            INTEGER PRIMARY KEY,     -- 1..6236, absolute
+    number            INTEGER PRIMARY KEY,     -- absolute: 1..6236 classic, 1..6346 submission
     chapter_number    INTEGER NOT NULL REFERENCES chapters(number),
     number_in_chapter INTEGER NOT NULL,
-    text              TEXT    NOT NULL,        -- original Uthmani, unmodified
+    text              TEXT    NOT NULL,        -- the edition's text, unmodified
     stopmark          TEXT,
+    is_basmala        INTEGER NOT NULL DEFAULT 0, -- 1: a verse-0 Bismillah the user may exclude
     UNIQUE (chapter_number, number_in_chapter)
+);
+
+-- Which edition this database holds and how it treats the Bismillah:
+--   edition  classic | submission
+--   basmala  prefix     (verse 1 of chapters 2..114 except 9 begins with it)
+--            verse-zero (stored as its own verse 0; chapter 1's is verse 1)
+CREATE TABLE corpus (
+    key   TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+);
+
+-- Word rules scoped to one verse, applied to that verse's text before the
+-- text mode's rules, in every text mode. The stored text is never edited;
+-- these only change how words are counted (for example, 96:5 counts ما لم as
+-- one word in the Submission edition).
+CREATE TABLE verse_rules (
+    verse_number INTEGER NOT NULL REFERENCES verses(number),
+    ordinal      INTEGER NOT NULL,
+    find         TEXT    NOT NULL,
+    replace_with TEXT    NOT NULL,
+    note         TEXT    NOT NULL,
+    PRIMARY KEY (verse_number, ordinal)
 );
 
 -- The eight partition schemes the legacy Book exposes in parallel
@@ -94,6 +118,7 @@ CREATE TABLE text_modes (
     id                INTEGER PRIMARY KEY,
     name              TEXT    NOT NULL,  -- Original, Simplified28..36, SimplifiedDots, SimplifiedMarks
     word_count_method INTEGER NOT NULL,  -- 77878 | 77880
+    research_only     INTEGER NOT NULL DEFAULT 0,  -- 1: hidden unless research mode (legacy: non-Standard editions)
     source_id         INTEGER NOT NULL REFERENCES sources(id),
     UNIQUE (name, word_count_method)
 );
@@ -171,6 +196,7 @@ CREATE TABLE value_systems (
     letter_order      TEXT    NOT NULL,         -- Alphabet | Abjad | Frequency | Appearance | ...
     letter_value      TEXT    NOT NULL,         -- Primes1 | Gematria | Composites | ...
     letter_values_sum INTEGER NOT NULL,         -- checksum; verified on import
+    research_only     INTEGER NOT NULL DEFAULT 0, -- 1: matches Values/_ExtraSystems.txt
     source_id         INTEGER NOT NULL REFERENCES sources(id)
 );
 

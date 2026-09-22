@@ -1,0 +1,5 @@
+# Verse-scoped word rules for the Submission edition, applied to one verse's
+# text before the text mode's rules, in every text mode. The stored text is
+# never edited; these only change how words are counted.
+# verse_id	find	replace_with	note
+96:5	مَا لَمْ	مَالَمْ	Count ما لم as one word, so 96:1-5 is 19 words
