@@ -100,10 +100,21 @@ Two caveats, both real:
 
 ## Honest summary
 
-Measured and real: startup −93%, heap −98%, system switching −97%, content
-3.1 MB with an FTS index included.
+Measured and favorable:
 
-Measured and adverse: per-verse valuation +42%.
+| | |
+| --- | ---: |
+| Startup to usable | −93% |
+| Managed heap after startup | −98% |
+| Working set after startup | −81% |
+| Switching value system | −97% |
+| Value whole book | −35% |
+| Install size | −94% |
 
-Not yet measured, because not yet built: search latency, large-result rendering,
-cold start of a packaged application, and anything involving the UI.
+Measured and adverse: per-verse valuation **+42%**, for the reason given
+above. It is a known consequence of normalizing on demand, and the fix is
+designed but not built.
+
+Not measured, because not built: large-result rendering with virtualization,
+cold start of an installed application, and search latency under the UI
+rather than in a test.
