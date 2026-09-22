@@ -34,15 +34,24 @@ pub struct EngineError {
 
 impl EngineError {
     fn new(code: &str, message: impl Into<String>) -> Self {
-        Self { code: code.to_owned(), message: message.into() }
+        Self {
+            code: code.to_owned(),
+            message: message.into(),
+        }
     }
 
     fn unavailable(detail: impl std::fmt::Display) -> Self {
-        Self::new("engine_unavailable", format!("The analysis engine could not be started: {detail}"))
+        Self::new(
+            "engine_unavailable",
+            format!("The analysis engine could not be started: {detail}"),
+        )
     }
 
     fn stopped() -> Self {
-        Self::new("engine_stopped", "The analysis engine stopped unexpectedly. It restarts on the next request.")
+        Self::new(
+            "engine_stopped",
+            "The analysis engine stopped unexpectedly. It restarts on the next request.",
+        )
     }
 }
 
@@ -67,7 +76,12 @@ pub struct Engine {
 
 impl Engine {
     pub fn new(binary: PathBuf, content: PathBuf) -> Self {
-        Self { binary, content, next_id: AtomicU64::new(1), running: Mutex::new(None) }
+        Self {
+            binary,
+            content,
+            next_id: AtomicU64::new(1),
+            running: Mutex::new(None),
+        }
     }
 
     /// Sends one request and waits for its response.
@@ -75,7 +89,10 @@ impl Engine {
         validate_method(method)?;
 
         let id = self.next_id.fetch_add(1, Ordering::Relaxed);
-        let line = format!("{}\n", json!({ "id": id, "method": method, "params": params }));
+        let line = format!(
+            "{}\n",
+            json!({ "id": id, "method": method, "params": params })
+        );
         let (sender, receiver) = oneshot::channel();
 
         let pending = {
@@ -99,13 +116,19 @@ impl Engine {
                 self.restart_if_current(&pending).await;
                 Err(EngineError::new(
                     "timeout",
-                    format!("The engine did not answer within {} seconds and was restarted.", REQUEST_TIMEOUT.as_secs()),
+                    format!(
+                        "The engine did not answer within {} seconds and was restarted.",
+                        REQUEST_TIMEOUT.as_secs()
+                    ),
                 ))
             }
         }
     }
 
-    fn ensure_running<'a>(&self, slot: &'a mut Option<Running>) -> Result<&'a mut Running, EngineError> {
+    fn ensure_running<'a>(
+        &self,
+        slot: &'a mut Option<Running>,
+    ) -> Result<&'a mut Running, EngineError> {
         let exited = match slot.as_mut() {
             Some(running) => !matches!(running.child.try_wait(), Ok(None)),
             None => true,
@@ -146,10 +169,21 @@ impl Engine {
             }
         }
 
-        let mut child = command.spawn().map_err(|error| EngineError::unavailable(format!("{error} ({})", self.binary.display())))?;
-        let stdin = child.stdin.take().ok_or_else(|| EngineError::unavailable("no stdin"))?;
-        let stdout = child.stdout.take().ok_or_else(|| EngineError::unavailable("no stdout"))?;
-        let stderr = child.stderr.take().ok_or_else(|| EngineError::unavailable("no stderr"))?;
+        let mut child = command.spawn().map_err(|error| {
+            EngineError::unavailable(format!("{error} ({})", self.binary.display()))
+        })?;
+        let stdin = child
+            .stdin
+            .take()
+            .ok_or_else(|| EngineError::unavailable("no stdin"))?;
+        let stdout = child
+            .stdout
+            .take()
+            .ok_or_else(|| EngineError::unavailable("no stdout"))?;
+        let stderr = child
+            .stderr
+            .take()
+            .ok_or_else(|| EngineError::unavailable("no stderr"))?;
 
         let pending: Pending = Arc::default();
         tauri::async_runtime::spawn(read_responses(stdout, Arc::clone(&pending)));
@@ -160,13 +194,20 @@ impl Engine {
             }
         });
 
-        Ok(Running { child, stdin, pending })
+        Ok(Running {
+            child,
+            stdin,
+            pending,
+        })
     }
 
     /// Kills the engine that owns `pending`, unless it has already been replaced.
     async fn restart_if_current(&self, pending: &Pending) {
         let mut guard = self.running.lock().await;
-        if guard.as_ref().is_some_and(|running| Arc::ptr_eq(&running.pending, pending)) {
+        if guard
+            .as_ref()
+            .is_some_and(|running| Arc::ptr_eq(&running.pending, pending))
+        {
             *guard = None;
         }
     }
@@ -197,12 +238,21 @@ fn parse_response(line: &str) -> Option<(u64, Reply)> {
     let id = value.get("id")?.as_u64()?;
 
     if let Some(error) = value.get("error") {
-        let code = error.get("code").and_then(Value::as_str).unwrap_or("internal");
-        let message = error.get("message").and_then(Value::as_str).unwrap_or("The engine reported an error.");
+        let code = error
+            .get("code")
+            .and_then(Value::as_str)
+            .unwrap_or("internal");
+        let message = error
+            .get("message")
+            .and_then(Value::as_str)
+            .unwrap_or("The engine reported an error.");
         return Some((id, Err(EngineError::new(code, message))));
     }
 
-    let result = value.get_mut("result").map(Value::take).unwrap_or(Value::Null);
+    let result = value
+        .get_mut("result")
+        .map(Value::take)
+        .unwrap_or(Value::Null);
     Some((id, Ok(result)))
 }
 
@@ -214,14 +264,19 @@ fn validate_method(method: &str) -> Result<(), EngineError> {
     if valid {
         Ok(())
     } else {
-        Err(EngineError::new("unknown_method", "That is not a valid engine method name."))
+        Err(EngineError::new(
+            "unknown_method",
+            "That is not a valid engine method name.",
+        ))
     }
 }
 
 /// A poisoned lock only means another task panicked mid-insert; the map is
 /// still usable, so recover it rather than propagate the panic.
 fn lock<T>(mutex: &SyncMutex<T>) -> std::sync::MutexGuard<'_, T> {
-    mutex.lock().unwrap_or_else(std::sync::PoisonError::into_inner)
+    mutex
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
 }
 
 #[cfg(test)]
@@ -237,14 +292,21 @@ mod tests {
 
     #[test]
     fn parses_an_error() {
-        let (id, reply) = parse_response(r#"{"id":5,"error":{"code":"not_found","message":"No such system."}}"#).unwrap();
+        let (id, reply) =
+            parse_response(r#"{"id":5,"error":{"code":"not_found","message":"No such system."}}"#)
+                .unwrap();
         assert_eq!(id, 5);
-        assert_eq!(reply.unwrap_err(), EngineError::new("not_found", "No such system."));
+        assert_eq!(
+            reply.unwrap_err(),
+            EngineError::new("not_found", "No such system.")
+        );
     }
 
     #[test]
     fn a_null_id_or_garbage_is_unmatched() {
-        assert!(parse_response(r#"{"id":null,"error":{"code":"parse_error","message":"x"}}"#).is_none());
+        assert!(
+            parse_response(r#"{"id":null,"error":{"code":"parse_error","message":"x"}}"#).is_none()
+        );
         assert!(parse_response("not json").is_none());
     }
 
@@ -260,28 +322,42 @@ mod tests {
     /// The sidecar staged by `pnpm engine`, if it has been built.
     fn staged_engine() -> Option<Engine> {
         let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        let triple = if cfg!(all(windows, target_arch = "x86_64")) { "x86_64-pc-windows-msvc" } else { return None };
-        let binary = root.join(format!("binaries/qurancode-engine-{triple}{}", std::env::consts::EXE_SUFFIX));
+        let triple = if cfg!(all(windows, target_arch = "x86_64")) {
+            "x86_64-pc-windows-msvc"
+        } else {
+            return None;
+        };
+        let binary = root.join(format!(
+            "binaries/qurancode-engine-{triple}{}",
+            std::env::consts::EXE_SUFFIX
+        ));
         let content = root.join("resources/content.db");
         (binary.exists() && content.exists()).then(|| Engine::new(binary, content))
     }
 
     #[tokio::test]
     async fn round_trips_through_the_real_sidecar() {
-        let Some(engine) = staged_engine() else { return };
+        let Some(engine) = staged_engine() else {
+            return;
+        };
 
         // Holds for whichever edition is staged: classic 6236 rows, Submission 6346.
         let info = engine.call("engine.info", None).await.unwrap();
         assert_eq!(info["chapterCount"], 114);
         assert!(info["rowCount"].as_u64().unwrap() >= info["verseCount"].as_u64().unwrap());
 
-        let error = engine.call("chapter.verses", Some(json!({ "chapter": 115 }))).await.unwrap_err();
+        let error = engine
+            .call("chapter.verses", Some(json!({ "chapter": 115 })))
+            .await
+            .unwrap_err();
         assert_eq!(error.code, "invalid_params");
     }
 
     #[tokio::test]
     async fn respawns_after_the_engine_dies() {
-        let Some(engine) = staged_engine() else { return };
+        let Some(engine) = staged_engine() else {
+            return;
+        };
         engine.call("engine.info", None).await.unwrap();
 
         {
@@ -297,7 +373,10 @@ mod tests {
 
     #[tokio::test]
     async fn a_missing_binary_is_reported_not_panicked() {
-        let engine = Engine::new(PathBuf::from("definitely-not-here.exe"), PathBuf::from("content.db"));
+        let engine = Engine::new(
+            PathBuf::from("definitely-not-here.exe"),
+            PathBuf::from("content.db"),
+        );
         let error = engine.call("engine.info", None).await.unwrap_err();
         assert_eq!(error.code, "engine_unavailable");
     }

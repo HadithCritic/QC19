@@ -9,7 +9,11 @@ use tauri::Manager;
 /// The one command the webview may call. Everything the UI does goes through
 /// the engine's own method table, which validates its parameters.
 #[tauri::command]
-async fn engine(state: tauri::State<'_, Engine>, method: String, params: Option<Value>) -> Result<Value, EngineError> {
+async fn engine(
+    state: tauri::State<'_, Engine>,
+    method: String,
+    params: Option<Value>,
+) -> Result<Value, EngineError> {
     state.call(&method, params).await
 }
 
@@ -17,7 +21,9 @@ async fn engine(state: tauri::State<'_, Engine>, method: String, params: Option<
 /// copies it into the target directory) and in an installed bundle.
 fn sidecar_path() -> std::io::Result<PathBuf> {
     let exe = std::env::current_exe()?;
-    let dir = exe.parent().ok_or_else(|| std::io::Error::other("the app executable has no parent directory"))?;
+    let dir = exe
+        .parent()
+        .ok_or_else(|| std::io::Error::other("the app executable has no parent directory"))?;
     Ok(dir.join(format!("qurancode-engine{}", std::env::consts::EXE_SUFFIX)))
 }
 
