@@ -9,3 +9,6 @@ obj/
 
 # Published output
 publish/
+
+# Python bytecode from the content pipeline
+__pycache__/
