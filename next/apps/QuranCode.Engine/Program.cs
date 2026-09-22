@@ -1,5 +1,6 @@
 using System.Text;
 using QuranCode.Core;
+using QuranCode.Core.Numbers;
 using QuranCode.Engine.Host;
 
 // qurancode-engine --content <path-to-content.db>
@@ -8,7 +9,8 @@ using QuranCode.Engine.Host;
 // stderr carries diagnostics only and is never shown to the user verbatim.
 
 var utf8 = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
-TextWriter log = new StreamWriter(Console.OpenStandardError(), utf8) { AutoFlush = true };
+// Synchronized: the background warm-up and the request loop may both log.
+TextWriter log = TextWriter.Synchronized(new StreamWriter(Console.OpenStandardError(), utf8) { AutoFlush = true });
 
 string? contentPath = null;
 for (int i = 0; i < args.Length - 1; i++)
@@ -31,7 +33,36 @@ if (!File.Exists(contentPath))
 using var engine = new QuranCodeEngine(contentPath);
 var dispatcher = new Dispatcher(new Handlers(engine), log);
 
+// Build the number index in the background: classifying a whole-book value
+// needs it (about 160 ms the first time), and NumberTheory is thread-safe.
+// The engine's own caches are not, so nothing else is warmed off the request
+// loop, and the loop starts at once.
+if (!args.Contains("--no-warmup"))
+{
+    _ = Task.Run(() =>
+    {
+        try
+        {
+            NumberTheory.CountUpTo(NumberClass.AdditiveComposite, WarmNumberLimit);
+        }
+        catch (Exception ex)
+        {
+            // Only means the first request builds it instead.
+            log.WriteLine($"warm-up failed: {ex.Message}");
+        }
+    });
+}
+
 using var input = new StreamReader(Console.OpenStandardInput(), utf8);
 using var output = new StreamWriter(Console.OpenStandardOutput(), utf8) { AutoFlush = false };
 
 return StdioHost.Run(input, output, dispatcher);
+
+internal static partial class Program
+{
+    /// <summary>
+    /// Covers whole-book values under the shipped systems (about 19.6 to 24
+    /// million); larger values extend the index when first asked for.
+    /// </summary>
+    private const long WarmNumberLimit = 30_000_000;
+}

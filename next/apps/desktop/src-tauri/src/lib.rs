@@ -33,6 +33,15 @@ pub fn run() {
         .setup(|app| {
             let content = app.path().resource_dir()?.join("content.db");
             app.manage(Engine::new(sidecar_path()?, content));
+
+            // Start the engine now, so it warms up while the window loads
+            // instead of when the first screen asks for data.
+            let handle = app.handle().clone();
+            tauri::async_runtime::spawn(async move {
+                if let Err(error) = handle.state::<Engine>().call("engine.info", None).await {
+                    eprintln!("[engine] could not start early: {}", error.message);
+                }
+            });
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![engine])

@@ -90,6 +90,30 @@ public sealed class NumberClassTests
     }
 
     [Theory]
+    [InlineData(65_535)]
+    [InlineData(65_536)]
+    [InlineData(65_537)]
+    [InlineData(131_072)]
+    [InlineData(200_003)]
+    public void IndexedCountsMatchABruteForceCount(long limit)
+    {
+        // The counts are served from a per-block prefix index; check them
+        // against classifying every number, on and around block boundaries.
+        var expected = new Dictionary<NumberClass, long>();
+        for (long n = 1; n <= limit; n++)
+        {
+            NumberClass c = NumberTheory.Classify(n);
+            expected[c] = expected.GetValueOrDefault(c) + 1;
+        }
+
+        foreach (NumberClass c in new[] { NumberClass.AdditivePrime, NumberClass.NonAdditivePrime,
+                                          NumberClass.AdditiveComposite, NumberClass.NonAdditiveComposite })
+        {
+            Assert.Equal(expected.GetValueOrDefault(c), NumberTheory.CountUpTo(c, limit));
+        }
+    }
+
+    [Theory]
     [InlineData(NumberClass.AdditivePrime, NumberClass.Prime)]
     [InlineData(NumberClass.NonAdditivePrime, NumberClass.Prime)]
     [InlineData(NumberClass.AdditiveComposite, NumberClass.Composite)]

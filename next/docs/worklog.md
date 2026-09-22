@@ -137,3 +137,45 @@ and the oracle reproduces every golden file including the new
 
 ## Phase 2: Performance
 
+### 2.1 Measurements
+
+Rewrote `tools/QuranCode.Bench` to time the calls the app makes, cold and
+warm. Findings:
+
+- **The recorded "per-verse valuation is 42% slower" was a benchmark artifact.**
+  The old benchmark re-normalized every verse on every call; the app values
+  from a segmentation built once. Measured correctly: 31 ms against the
+  original's 59 ms.
+- **Real hotspot:** a large number's position in its class walked every number
+  up to it, about 230 ms per whole-book statistic.
+- The Values view normalized the text twice per system (276 systems).
+- First-screen requests wait on engine start and the first segmentation.
+
+### 2.2 Fixes
+
+- Per-block count index for additive and non-additive primes and composites,
+  with a running digit sum: position lookups 230 ms to about 1 ms after a
+  one-time 158 ms build. Checked against brute-force counts at block
+  boundaries.
+- Values handler normalizes once per text mode: 258 ms to 34 ms.
+- The Rust bridge starts the engine at app launch; the engine builds the
+  number index to 30 million on a background thread (NumberTheory is
+  thread-safe; the engine's caches are not, so nothing else is warmed off the
+  request loop). **Decision:** an earlier version warmed synchronously and
+  delayed the first answer from about 410 ms to about 980 ms after process
+  start, so it was replaced.
+- Measured through the sidecar: every first-screen request returns within
+  43 ms; whole-book statistics 159 ms to 9 ms.
+
+`docs/audit/performance-comparison.md` updated, including the distribution
+figures of the Tauri build (5.2 MB installer, 13.2 MB installed).
+
+### Phase 2 checks
+
+All passing: engine 203, protocol 35, interface 15, Rust 7, rustfmt, clippy,
+oracle reproduces. **Phase 2 complete.**
+
+---
+
+## Phase 3: Navigation and your own data
+

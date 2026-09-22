@@ -106,24 +106,103 @@ public static partial class NumberTheory
         return CountUpTo(numberClass, (long)magnitude);
     }
 
+    /// <summary>
+    /// Block size of the subclass count index: a count up to any limit is a
+    /// stored prefix plus a scan of at most this many numbers.
+    /// </summary>
+    private const int CountBlock = 1 << 16;
+
+    // _subclassPrefix[k][b] = how many numbers in [1, b * CountBlock) are in
+    // subclass k (AP, XP, AC, XC). Grown on demand, never recomputed.
+    private static readonly List<long>[] SubclassPrefix = [[0], [0], [0], [0]];
+
+    private static int SubclassIndex(NumberClass numberClass) => numberClass switch
+    {
+        NumberClass.AdditivePrime => 0,
+        NumberClass.NonAdditivePrime => 1,
+        NumberClass.AdditiveComposite => 2,
+        _ => 3,
+    };
+
+    /// <remarks>
+    /// Counting additive composites up to the whole-book value (about 19.6
+    /// million) walked every number on every request: about 230 ms each time a
+    /// selection statistic or a value was classified. The prefix index makes
+    /// the walk happen once per block for the life of the process.
+    /// </remarks>
     private static long CountSubclass(PrimeSieve sieve, NumberClass numberClass, long limit)
     {
-        bool wantPrime = numberClass.Family() == NumberClass.Prime;
-        long count = 0;
+        int k = SubclassIndex(numberClass);
+        long block = limit / CountBlock;
+        long start = block * CountBlock;
 
-        for (long n = wantPrime ? 2 : 4; n <= limit; n++)
+        long prefix;
+        lock (SieveGate)
         {
-            if (sieve.IsPrime(n) != wantPrime) continue;
+            while (SubclassPrefix[k].Count <= block) ExtendSubclassPrefix(sieve);
+            prefix = SubclassPrefix[k][(int)block];
+        }
+        return prefix + CountInRange(sieve, numberClass, Math.Max(start, 1), limit);
+    }
 
-            long digitSum = DigitSum(n);
-            bool additive = wantPrime ? IsPrime(digitSum) : IsComposite(digitSum);
-            NumberClass actual = wantPrime
-                ? (additive ? NumberClass.AdditivePrime : NumberClass.NonAdditivePrime)
-                : (additive ? NumberClass.AdditiveComposite : NumberClass.NonAdditiveComposite);
+    // Digit sums of numbers below 10^18 are at most 162, so their primality is
+    // a table lookup rather than a trial division per number.
+    private static readonly bool[] SmallPrime = Enumerable.Range(0, 200).Select(n => IsPrime(n)).ToArray();
 
-            if (actual == numberClass) count++;
+    /// <summary>Adds one block to every subclass prefix. Caller holds <see cref="SieveGate"/>.</summary>
+    /// <remarks>
+    /// The digit sum is carried from one number to the next instead of being
+    /// recomputed: adding one raises it by one and removes 9 for each trailing 9.
+    /// </remarks>
+    private static void ExtendSubclassPrefix(PrimeSieve sieve)
+    {
+        long first = Math.Max((SubclassPrefix[0].Count - 1) * (long)CountBlock, 2);
+        long last = (SubclassPrefix[0].Count) * (long)CountBlock - 1;
+        Span<long> counts = stackalloc long[4];
+
+        long digitSum = DigitSum(first);
+        for (long n = first; n <= last; n++)
+        {
+            bool additive;
+            int k;
+            if (sieve.IsPrime(n))
+            {
+                additive = SmallPrime[digitSum];
+                k = additive ? 0 : 1;
+            }
+            else
+            {
+                // Composite digit sum: above 1 and not prime.
+                additive = digitSum > 1 && !SmallPrime[digitSum];
+                k = additive ? 2 : 3;
+            }
+            counts[k]++;
+
+            for (long m = n; m % 10 == 9; m /= 10) digitSum -= 9;
+            digitSum++;
+        }
+        for (int k = 0; k < 4; k++) SubclassPrefix[k].Add(SubclassPrefix[k][^1] + counts[k]);
+    }
+
+    private static long CountInRange(PrimeSieve sieve, NumberClass numberClass, long from, long to)
+    {
+        long count = 0;
+        for (long n = Math.Max(from, 2); n <= to; n++)
+        {
+            if (Classify(sieve, n) == numberClass) count++;
         }
         return count;
+    }
+
+    /// <summary>Leaf class of n >= 2 using the sieve for primality.</summary>
+    private static NumberClass Classify(PrimeSieve sieve, long n)
+    {
+        long digitSum = DigitSum(n);
+        if (sieve.IsPrime(n))
+        {
+            return IsPrime(digitSum) ? NumberClass.AdditivePrime : NumberClass.NonAdditivePrime;
+        }
+        return IsComposite(digitSum) ? NumberClass.AdditiveComposite : NumberClass.NonAdditiveComposite;
     }
 
     private static PrimeSieve SieveTo(long limit)

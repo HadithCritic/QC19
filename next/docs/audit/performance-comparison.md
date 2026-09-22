@@ -44,59 +44,64 @@ superseded graph is not released promptly. The new engine stays flat.
 
 ## Operations
 
-| Operation | Legacy | New | Change |
-| --- | ---: | ---: | ---: |
-| Value whole book | 34 ms | 22 ms | −35% |
-| **Value all 6,236 verses individually** | **57 ms** | **81 ms** | **+42%** |
-| Switch value system | 1,811 ms | 48 ms | **−97%** |
+Remeasured 2026-09-22 through the engine calls the app makes
+(`next/tools/QuranCode.Bench`, classic text so both sides value the same
+words; best of five warm runs, cold run shown where it matters). Legacy figures
+are from the committed `performance-baseline.tsv`.
 
-### The regression, stated plainly
+| Operation | Legacy | New |
+| --- | ---: | ---: |
+| Value all 6,236 verses one at a time | 59 ms | 31 ms |
+| Value whole book | 34 ms | 16 ms |
+| Statistics for the whole book | n/a | 7 ms (20 ms cold) |
+| Switch value system, first use | 1,371 ms | 136 ms |
+| Classify the whole-book value, with its position | n/a | 1 ms (172 ms once, now built in the background at start) |
+| Value a verse in all 276 visible systems | n/a | 63 ms |
+| Search "الله" anywhere | n/a | 4 ms (13 ms cold) |
 
-Valuing verses one at a time is **42% slower** than the legacy engine.
+### The earlier per-verse regression
 
-The cause is known and is a consequence of the design, not a bug: the legacy
-engine pre-normalized every verse while building the book, so per-verse
-valuation was pure arithmetic over a ready object. The new engine normalizes on
-demand, so this loop pays for 6,236 separate normalizations.
+This document used to report per-verse valuation as 42% slower than the
+original. That figure came from a benchmark that normalized every verse's text
+again on every call, which is not what the app does: the app normalizes the
+text once into a segmentation and values verses from it. Measured the way the
+app actually works, the same loop is **31 ms against the original's 59 ms**.
 
-It is a fair trade at this stage — 24 ms lost on a bulk operation against
-3,672 ms and 134 MB saved at startup — but it is a real regression and it is not
-being reported as a win. The fix is to normalize once and index verse offsets
-into the result, which is what `segmentations` in the schema exists for. Not yet
-implemented.
+### Fixed in Phase 2
 
-Switching value systems is 48 ms against 1,811 ms because it no longer implies
-rebuilding anything.
+- **Number positions.** Finding a large number's position among additive or
+  non-additive primes or composites walked every number up to it on every
+  request: about 230 ms for the whole-book value, paid by every whole-book
+  statistic. A per-block count index (`NumberTheory.CountSubclass`) now does
+  that walk once per block for the life of the process; later lookups take
+  about 1 ms. The engine builds the index up to 30 million on a background
+  thread at start.
+- **Values of a text in every system** normalized the text twice per system.
+  The protocol handler now normalizes once per text mode (8 modes, 276
+  systems).
+- **Startup.** The app starts the engine as soon as it launches, so opening
+  the database overlaps the window loading.
+
+Measured through the real sidecar process, the requests the first screen
+makes all return within 43 ms, the slowest being the first chapter's values,
+which builds the default segmentation.
 
 ## Distribution
 
-Measured on a published build (`win-x64`, framework-dependent, content
-included), confirmed to launch.
+Measured on the Tauri release build (`pnpm release`), installed silently into
+a scratch folder, launched, and uninstalled.
 
 | | Legacy | New |
 | --- | ---: | ---: |
-| **Total install** | **615 MB** | **35 MB** |
-| Canonical content | ~21 MB loose files (`Data/`, `Values/`, `Rules/`) | 3.1 MB `content.db` |
-| Precomputed number tables | 63 MB | 0 — computed by a sieve |
-| Offline translations | 156 MB | 0 — optional packs |
-| Help PDFs and images | 40 MB | 0 — fetched on demand |
-| Executables | 17 | 1 |
-| Full-text index | none | included |
-| Files in install root | 4,388 | 43 |
-
-**-94%.**
-
-Two caveats, both real:
-
-- The 35 MB excludes the .NET 9 runtime, which the legacy install also
-  excluded (it needed .NET Framework 4.0). A self-contained build would add
-  roughly 70 MB.
-- 105 MB of that was third-party native `.pdb` files that SkiaSharp and
-  HarfBuzzSharp ship inside their NuGet packages and the SDK copies on
-  publish. They are debug symbols for native code this project does not
-  debug, and a `RemoveNativeSymbols` target now drops them. Without that
-  target the figure is 140 MB, which is still -77%, but shipping another
-  project's debug symbols is not a reduction anyone should have to accept.
+| **Installer** | n/a (615 MB loose install) | **5.2 MB** (NSIS) |
+| **Installed** | **615 MB** | **about 13 MB** |
+| App | 17 executables, 13 DLLs | `qurancode-desktop.exe` 4.1 MB |
+| Engine | in the app | `qurancode-engine.exe` 4.0 MB, Native AOT |
+| SQLite | none | `e_sqlite3.dll` 2 MB |
+| Canonical content | about 21 MB of loose files | `content.db` 3 MB |
+| Precomputed number tables | 63 MB | none; computed by a sieve |
+| Offline translations and help | 196 MB | none in the base install |
+| Runtime needed | .NET Framework 4.0 | none; WebView2 ships with Windows 11 |
 
 ## Honest summary
 
@@ -107,14 +112,13 @@ Measured and favorable:
 | Startup to usable | −93% |
 | Managed heap after startup | −98% |
 | Working set after startup | −81% |
-| Switching value system | −97% |
-| Value whole book | −35% |
-| Install size | −94% |
+| Switching value system | −90% |
+| Value whole book | −53% |
+| Value every verse one at a time | −47% |
+| Install size | −98% |
 
-Measured and adverse: per-verse valuation **+42%**, for the reason given
-above. It is a known consequence of normalizing on demand, and the fix is
-designed but not built.
+Measured and adverse: nothing currently. The earlier per-verse figure was a
+benchmark artifact (see Operations).
 
-Not measured, because not built: large-result rendering with virtualization,
-cold start of an installed application, and search latency under the UI
-rather than in a test.
+Not measured yet: rendering very large search results, and cold start of an
+installed application on a clean machine.

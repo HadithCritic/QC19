@@ -3,6 +3,7 @@ using QuranCode.Core;
 using QuranCode.Core.Analysis;
 using QuranCode.Core.Content;
 using QuranCode.Core.Numbers;
+using QuranCode.Core.Numerology;
 using QuranCode.Core.Search;
 using QuranCode.Core.Text;
 using QuranCode.Engine.Protocol;
@@ -123,12 +124,20 @@ internal sealed class Handlers
             ? names.Distinct(StringComparer.Ordinal).Select(RequireSystem)
             : _systems.Values;
 
+        // Normalize once per text mode, not once per system: 276 systems share
+        // eight text modes.
+        var normalizedByMode = new Dictionary<string, (string Text, int Letters)>(StringComparer.Ordinal);
         return systems
             .Select(s =>
             {
-                string normalized = _engine.Pipeline(s.TextMode).Normalize(p.Text);
-                int letters = normalized.Count(char.IsLetter);
-                return new SystemValueDto(s.Name, letters, Number(_engine.Value(p.Text, s.Name, s.TextMode)));
+                if (!normalizedByMode.TryGetValue(s.TextMode, out (string Text, int Letters) normalized))
+                {
+                    string text = _engine.Pipeline(s.TextMode).Normalize(p.Text);
+                    normalized = (text, text.Count(char.IsLetter));
+                    normalizedByMode[s.TextMode] = normalized;
+                }
+                long value = ValueCalculator.Calculate(normalized.Text, _engine.ValueSystem(s.Name));
+                return new SystemValueDto(s.Name, normalized.Letters, Number(value));
             })
             .ToArray();
     }
