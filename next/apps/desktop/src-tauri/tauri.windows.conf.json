@@ -1,0 +1,8 @@
+{
+  "bundle": {
+    "resources": {
+      "resources/content.db": "content.db",
+      "resources/e_sqlite3.dll": "e_sqlite3.dll"
+    }
+  }
+}

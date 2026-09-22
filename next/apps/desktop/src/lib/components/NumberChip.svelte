@@ -1,0 +1,89 @@
+<script lang="ts">
+  import type { ClassCode } from "../engine/types";
+  import { CLASS_NAMES } from "../numbers";
+
+  interface Props {
+    value: string;
+    code: ClassCode;
+    size?: "sm" | "md" | "lg";
+    /** When given, the chip is a button that opens the number. */
+    onselect?: (value: string) => void;
+  }
+
+  let { value, code, size = "md", onselect }: Props = $props();
+
+  const label = $derived(`${value}, ${CLASS_NAMES[code].toLowerCase()}`);
+</script>
+
+{#if onselect}
+  <button type="button" class="chip {size}" data-class={code} aria-label="{label}. Open number" onclick={() => onselect(value)}>
+    <span class="value num">{value}</span>
+    {#if code}<span class="code" aria-hidden="true">{code}</span>{/if}
+  </button>
+{:else}
+  <span class="chip {size}" data-class={code} aria-label={label}>
+    <span class="value num">{value}</span>
+    {#if code}<span class="code" aria-hidden="true">{code}</span>{/if}
+  </span>
+{/if}
+
+<style>
+  .chip {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.4em;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--ink);
+    text-align: start;
+  }
+
+  button.chip {
+    border-radius: var(--radius-sm);
+  }
+
+  button.chip:hover .value {
+    text-decoration: underline;
+    text-decoration-color: var(--class);
+    text-underline-offset: 0.2em;
+  }
+
+  .value {
+    font-weight: 500;
+  }
+
+  .code {
+    font-family: var(--font-mono);
+    font-size: 0.72em;
+    font-weight: 500;
+    line-height: 1;
+    padding: 0.2em 0.35em 0.15em;
+    border-radius: 3px;
+    color: var(--class);
+    background: color-mix(in srgb, var(--class) 13%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--class) 30%, transparent);
+  }
+
+  .sm {
+    font-size: var(--text-sm);
+  }
+
+  .md {
+    font-size: var(--text-md);
+  }
+
+  .lg {
+    font-size: var(--text-2xl);
+    letter-spacing: -0.02em;
+  }
+
+  .lg .value {
+    font-weight: 400;
+  }
+
+  .lg .code {
+    font-size: 0.36em;
+    transform: translateY(-0.9em);
+  }
+</style>

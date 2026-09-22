@@ -1,0 +1,132 @@
+/*
+  Design tokens. Two sources: the illuminated mushaf (lapis and gilt on a
+  cool paper ground) and the legacy app's number classes, whose hues
+  (pink, blue, green, red, brown) are kept because researchers read them.
+  They are retuned here for contrast, and never carry meaning alone: every
+  class color travels with its code (U, AP, XP, AC, XC).
+*/
+
+:root {
+  --paper: #f2f4f7;
+  --surface: #ffffff;
+  --surface-sunk: #e9edf2;
+  --ink: #172033;
+  --ink-muted: #5a6478;
+  --ink-faint: #8a93a5;
+  --rule: #d9dee6;
+  --rule-strong: #c3cad6;
+  --lapis: #2c47a5;
+  --lapis-soft: #e3e8f7;
+  --lapis-ink: #ffffff;
+  --gilt: #a9832a;
+  --gilt-soft: #f4ecd8;
+  --rail: #172033;
+  --rail-ink: #eef1f6;
+  --danger: #b3261e;
+  --danger-soft: #fbe9e7;
+
+  --class-u: #c0397a;
+  --class-ap: #2563c7;
+  --class-xp: #2a8352;
+  --class-ac: #c2382e;
+  --class-xc: #8b5a2a;
+  --class-none: #8a93a5;
+
+  --font-ui: "Instrument Sans Variable", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", monospace;
+  --font-quran: "Amiri Quran", "Amiri", serif;
+  --font-arabic: "Amiri", "Amiri Quran", serif;
+
+  --text-xs: 0.75rem;
+  --text-sm: 0.8125rem;
+  --text-md: 0.9375rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.5rem;
+  --text-2xl: 2.25rem;
+  --text-quran: 1.75rem;
+
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+
+  --shadow-pop: 0 1px 2px rgb(23 32 51 / 0.06), 0 8px 24px rgb(23 32 51 / 0.1);
+  --focus: 0 0 0 2px var(--surface), 0 0 0 4px var(--lapis);
+
+  --rail-width: 4.5rem;
+  --index-width: 15rem;
+  --inspector-width: 21rem;
+  --topbar-height: 3.25rem;
+
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+  --duration: 140ms;
+
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0e131b;
+    --surface: #151c27;
+    --surface-sunk: #1c2533;
+    --ink: #e6eaf0;
+    --ink-muted: #a3adbf;
+    --ink-faint: #717c90;
+    --rule: #263142;
+    --rule-strong: #34415a;
+    --lapis: #8fa5f0;
+    --lapis-soft: #1e2a4d;
+    --lapis-ink: #0e131b;
+    --gilt: #d4b060;
+    --gilt-soft: #2c2616;
+    --rail: #090d13;
+    --danger: #f2998f;
+    --danger-soft: #3a1c1a;
+
+    --class-u: #f08cb8;
+    --class-ap: #7eaaf5;
+    --class-xp: #74c79a;
+    --class-ac: #f28b80;
+    --class-xc: #d0a070;
+    --class-none: #717c90;
+
+    --shadow-pop: 0 1px 2px rgb(0 0 0 / 0.3), 0 8px 24px rgb(0 0 0 / 0.4);
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --paper: #0e131b;
+  --surface: #151c27;
+  --surface-sunk: #1c2533;
+  --ink: #e6eaf0;
+  --ink-muted: #a3adbf;
+  --ink-faint: #717c90;
+  --rule: #263142;
+  --rule-strong: #34415a;
+  --lapis: #8fa5f0;
+  --lapis-soft: #1e2a4d;
+  --lapis-ink: #0e131b;
+  --gilt: #d4b060;
+  --gilt-soft: #2c2616;
+  --rail: #090d13;
+  --danger: #f2998f;
+  --danger-soft: #3a1c1a;
+
+  --class-u: #f08cb8;
+  --class-ap: #7eaaf5;
+  --class-xp: #74c79a;
+  --class-ac: #f28b80;
+  --class-xc: #d0a070;
+  --class-none: #717c90;
+
+  --shadow-pop: 0 1px 2px rgb(0 0 0 / 0.3), 0 8px 24px rgb(0 0 0 / 0.4);
+  color-scheme: dark;
+}
