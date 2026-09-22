@@ -1,5 +1,7 @@
 # Build output (csproj OutputPath is ..\Build\Release\)
 /C#/Build/
+# Belt and braces: catch any output that escapes the source tree.
+/Build/
 [Oo]bj/
 
 # Tools now built as part of Solution.sln (converted from HintPath to
@@ -19,3 +21,6 @@
 *.user
 *.userprefs
 .vs/
+
+# Release archives produced by build.ps1
+*.zip
