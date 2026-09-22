@@ -115,7 +115,7 @@ try
             if (positional.Count == 0) { Console.Error.WriteLine("verse: need a reference"); return 2; }
             Verse verse = Resolve(engine, positional[0]);
             Console.WriteLine($"{verse.ChapterNumber}:{verse.NumberInChapter}\t{verse.Text}");
-            Console.WriteLine($"value\t{N(engine.ValueOfVerse(verse.Number, valueSystem, textMode))}");
+            Console.WriteLine($"value\t{N((engine.ValueOfVerse(verse.Number, valueSystem, textMode) ?? throw new InvalidOperationException("that verse is not counted")))}");
             break;
         }
 
@@ -175,7 +175,7 @@ try
         {
             if (positional.Count == 0) { Console.Error.WriteLine("value-verse: need a reference"); return 2; }
             Verse verse = Resolve(engine, positional[0]);
-            Console.WriteLine(N(engine.ValueOfVerse(verse.Number, valueSystem, textMode)));
+            Console.WriteLine(N((engine.ValueOfVerse(verse.Number, valueSystem, textMode) ?? throw new InvalidOperationException("that verse is not counted"))));
             break;
         }
 
@@ -242,9 +242,10 @@ return 0;
 
 static Verse Resolve(QuranCodeEngine engine, string reference)
 {
-    if (QuranCodeEngine.TryParseReference(reference, out int chapter, out int verse))
-    {
-        return engine.Verse(chapter, verse);
-    }
-    return engine.Verse(int.Parse(reference));
+    // "2:255" or "2:0" is a reference; a bare number is an absolute verse number.
+    if (!reference.Contains(':')) return engine.Verse(int.Parse(reference));
+
+    ReferenceParseResult parsed = engine.ParseReference(reference);
+    if (!parsed.IsSuccess) throw new ArgumentException(parsed.Error);
+    return engine.Verse(parsed.Range.First);
 }

@@ -4,23 +4,17 @@ using QuranCode.Core.Text;
 
 namespace QuranCode.Core.Content;
 
-/// <summary>A chapter, as a value rather than an object with back-references.</summary>
-public readonly record struct Chapter(
-    int Number,
+/// <summary>A value system's identity, without loading its letter map.</summary>
+/// <param name="ResearchOnly">
+/// Hidden unless research mode is on: the system matches the legacy
+/// <c>Values/_ExtraSystems.txt</c>, or its text mode is research-only.
+/// </param>
+public readonly record struct ValueSystemSummary(
     string Name,
-    string TransliteratedName,
-    string EnglishName,
-    int RevelationOrder,
-    string RevelationPlace,
-    int VerseCount,
-    int FirstVerse);
-
-/// <summary>A verse, carrying its canonical text and nothing derived.</summary>
-public readonly record struct Verse(
-    int Number,
-    int ChapterNumber,
-    int NumberInChapter,
-    string Text);
+    string TextMode,
+    string LetterOrder,
+    string LetterValue,
+    bool ResearchOnly);
 
 /// <summary>
 /// Read access to <c>content.db</c>.
@@ -50,8 +44,13 @@ public sealed class ContentRepository : IDisposable
 {
     private readonly SqliteConnection _connection;
 
+    /// <summary>Oldest schema this code reads: v3 added editions and verse 0.</summary>
+    public const int MinimumSchemaVersion = 3;
+
     private Chapter[]? _chapters;
     private Verse[]? _verses;
+    private CorpusInfo? _corpus;
+    private VerseRules? _verseRules;
     private readonly Dictionary<string, TextMode> _textModes = [];
     private readonly Dictionary<string, ValueSystem> _valueSystems = [];
 
@@ -71,20 +70,73 @@ public sealed class ContentRepository : IDisposable
         };
         _connection = new SqliteConnection(builder.ToString());
         _connection.Open();
+        RequireSchema(databasePath);
+    }
+
+    private void RequireSchema(string databasePath)
+    {
+        using SqliteCommand command = _connection.CreateCommand();
+        command.CommandText = "SELECT MAX(version) FROM schema_version";
+        long version = command.ExecuteScalar() is long v ? v : 0;
+        if (version < MinimumSchemaVersion)
+        {
+            _connection.Dispose();
+            throw new InvalidOperationException(
+                $"{Path.GetFileName(databasePath)} uses content schema v{version}; this build needs v{MinimumSchemaVersion}. " +
+                "Rebuild it with next/data/import/build_content.py.");
+        }
+    }
+
+    /// <summary>Which edition the database holds.</summary>
+    public CorpusInfo Corpus => _corpus ??= LoadCorpus();
+
+    /// <summary>Verse-scoped word rules for this edition.</summary>
+    public VerseRules VerseRules => _verseRules ??= LoadVerseRules();
+
+    private CorpusInfo LoadCorpus()
+    {
+        using SqliteCommand command = _connection.CreateCommand();
+        command.CommandText = "SELECT key, value FROM corpus";
+        var values = new Dictionary<string, string>();
+        using (SqliteDataReader reader = command.ExecuteReader())
+        {
+            while (reader.Read()) values[reader.GetString(0)] = reader.GetString(1);
+        }
+
+        string edition = values.GetValueOrDefault("edition", "classic");
+        BasmalaMode basmala = values.GetValueOrDefault("basmala", "prefix") switch
+        {
+            "prefix" => BasmalaMode.Prefix,
+            "verse-zero" => BasmalaMode.VerseZero,
+            string other => throw new InvalidOperationException($"unknown basmala mode in corpus table: {other}"),
+        };
+        return new CorpusInfo(edition, basmala);
+    }
+
+    private VerseRules LoadVerseRules()
+    {
+        using SqliteCommand command = _connection.CreateCommand();
+        command.CommandText = "SELECT verse_number, find, replace_with FROM verse_rules ORDER BY verse_number, ordinal";
+        var rules = new Dictionary<int, List<(string, string)>>();
+        using SqliteDataReader reader = command.ExecuteReader();
+        while (reader.Read())
+        {
+            int verse = reader.GetInt32(0);
+            if (!rules.TryGetValue(verse, out List<(string, string)>? list)) rules[verse] = list = [];
+            list.Add((reader.GetString(1), reader.GetString(2)));
+        }
+        return new VerseRules(rules.ToDictionary(p => p.Key, p => p.Value.ToArray()));
     }
 
     /// <summary>All 114 chapters, loaded on first use.</summary>
     public IReadOnlyList<Chapter> Chapters => _chapters ??= LoadChapters();
 
-    /// <summary>All 6,236 verses in canonical order, loaded on first use.</summary>
+    /// <summary>
+    /// Every verse row in canonical order, loaded on first use: 6,236 in the
+    /// classic edition, 6,346 in the Submission edition (its 112 verse-0
+    /// Bismillahs included).
+    /// </summary>
     public IReadOnlyList<Verse> Verses => _verses ??= LoadVerses();
-
-    /// <summary>Verses of one chapter, without loading the rest.</summary>
-    public ReadOnlySpan<Verse> VersesOf(int chapterNumber)
-    {
-        Chapter chapter = Chapters[chapterNumber - 1];
-        return Verses.ToArray().AsSpan(chapter.FirstVerse - 1, chapter.VerseCount);
-    }
 
     private Chapter[] LoadChapters()
     {
@@ -92,7 +144,7 @@ public sealed class ContentRepository : IDisposable
         command.CommandText =
             """
             SELECT number, name, transliterated_name, english_name,
-                   revelation_order, revelation_place, verse_count, first_verse
+                   revelation_order, revelation_place, verse_count, first_verse, has_verse_zero
             FROM chapters ORDER BY number
             """;
 
@@ -103,7 +155,7 @@ public sealed class ContentRepository : IDisposable
             result.Add(new Chapter(
                 reader.GetInt32(0), reader.GetString(1), reader.GetString(2),
                 reader.GetString(3), reader.GetInt32(4), reader.GetString(5),
-                reader.GetInt32(6), reader.GetInt32(7)));
+                reader.GetInt32(6), reader.GetInt32(7), reader.GetBoolean(8)));
         }
         return [.. result];
     }
@@ -112,14 +164,14 @@ public sealed class ContentRepository : IDisposable
     {
         using SqliteCommand command = _connection.CreateCommand();
         command.CommandText =
-            "SELECT number, chapter_number, number_in_chapter, text FROM verses ORDER BY number";
+            "SELECT number, chapter_number, number_in_chapter, text, is_basmala FROM verses ORDER BY number";
 
-        var result = new List<Verse>(6236);
+        var result = new List<Verse>(6346);
         using SqliteDataReader reader = command.ExecuteReader();
         while (reader.Read())
         {
             result.Add(new Verse(
-                reader.GetInt32(0), reader.GetInt32(1), reader.GetInt32(2), reader.GetString(3)));
+                reader.GetInt32(0), reader.GetInt32(1), reader.GetInt32(2), reader.GetString(3), reader.GetBoolean(4)));
         }
         return [.. result];
     }
@@ -210,6 +262,31 @@ public sealed class ContentRepository : IDisposable
         var result = new List<string>();
         using SqliteDataReader reader = command.ExecuteReader();
         while (reader.Read()) result.Add(reader.GetString(0));
+        return result;
+    }
+
+    /// <summary>Every installed value system, ordered by name.</summary>
+    public IReadOnlyList<ValueSystemSummary> ValueSystemSummaries()
+    {
+        using SqliteCommand command = _connection.CreateCommand();
+        command.CommandText =
+            """
+            SELECT s.name, s.text_mode_name, s.letter_order, s.letter_value,
+                   s.research_only OR EXISTS (
+                       SELECT 1 FROM text_modes m
+                       WHERE m.name = s.text_mode_name AND m.research_only = 1)
+            FROM value_systems s
+            ORDER BY s.name
+            """;
+
+        var result = new List<ValueSystemSummary>();
+        using SqliteDataReader reader = command.ExecuteReader();
+        while (reader.Read())
+        {
+            result.Add(new ValueSystemSummary(
+                reader.GetString(0), reader.GetString(1), reader.GetString(2),
+                reader.GetString(3), reader.GetBoolean(4)));
+        }
         return result;
     }
 

@@ -20,7 +20,7 @@ namespace QuranCode.Core.Numbers;
 /// Results are memoized per limit, so a caller that asks repeatedly pays once.
 /// </para>
 /// </remarks>
-public static class NumberTheory
+public static partial class NumberTheory
 {
     private static readonly Lock Gate = new();
     private static long[]? _primes;
@@ -56,37 +56,24 @@ public static class NumberTheory
 
     private static long[] Sieve(int limit)
     {
-        if (limit < 2) return [];
+        var sieve = new PrimeSieve(limit);
+        var primes = new long[sieve.CountPrimes(limit)];
 
-        var composite = new bool[limit + 1];
-        for (int i = 2; (long)i * i <= limit; i++)
-        {
-            if (composite[i]) continue;
-            for (long j = (long)i * i; j <= limit; j += i) composite[j] = true;
-        }
-
-        int count = 0;
-        for (int i = 2; i <= limit; i++) if (!composite[i]) count++;
-
-        var primes = new long[count];
         int index = 0;
-        for (int i = 2; i <= limit; i++) if (!composite[i]) primes[index++] = i;
+        if (limit >= 2) primes[index++] = 2;
+        for (long n = 3; n <= limit; n += 2)
+        {
+            if (sieve.IsPrime(n)) primes[index++] = n;
+        }
         return primes;
     }
 
     /// <summary>Whether a number is prime.</summary>
-    public static bool IsPrime(long value)
-    {
-        if (value < 2) return false;
-        if (value < 4) return true;
-        if (value % 2 == 0) return false;
-
-        for (long i = 3; i * i <= value; i += 2)
-        {
-            if (value % i == 0) return false;
-        }
-        return true;
-    }
+    /// <remarks>
+    /// Tests the magnitude, as the legacy <c>Numbers.IsPrime</c> does, so -7 is
+    /// prime. Totals go negative under sign alternation and are still colored.
+    /// </remarks>
+    public static bool IsPrime(long value) => IsPrimeMagnitude(Magnitude(value));
 
     /// <summary>
     /// Whether a number is an additive prime: prime, and with a prime digit sum.
@@ -148,24 +135,24 @@ public static class NumberTheory
         return result;
     }
 
-    /// <summary>Sum of the decimal digits.</summary>
+    /// <summary>Sum of the decimal digits of the magnitude.</summary>
     public static long DigitSum(long value)
     {
-        value = Math.Abs(value);
+        ulong magnitude = Magnitude(value);
         long sum = 0;
-        while (value > 0)
+        while (magnitude > 0)
         {
-            sum += value % 10;
-            value /= 10;
+            sum += (long)(magnitude % 10);
+            magnitude /= 10;
         }
         return sum;
     }
 
-    /// <summary>Repeated digit sum until one digit remains.</summary>
+    /// <summary>Repeated digit sum of the magnitude until one digit remains.</summary>
     public static long DigitalRoot(long value)
     {
-        value = Math.Abs(value);
-        return value == 0 ? 0 : 1 + (value - 1) % 9;
+        ulong magnitude = Magnitude(value);
+        return magnitude == 0 ? 0 : (long)(1 + (magnitude - 1) % 9);
     }
 
     /// <summary>Prime factorization, ascending, with repeats.</summary>

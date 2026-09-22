@@ -48,6 +48,24 @@ internal static class TestPaths
         }
     }
 
+    /// <summary>The Submission edition's database, built from the wikisubmission.org export.</summary>
+    public static string SubmissionDatabase
+    {
+        get
+        {
+            string path = Path.Combine(NextRoot.Value, "data", "submission.db");
+            if (!File.Exists(path))
+            {
+                throw new FileNotFoundException(
+                    $"submission.db not found at {path}. Build it with:\n" +
+                    "  python next/data/import/build_content.py <install-root> --edition submission " +
+                    "-o next/data/submission.db",
+                    path);
+            }
+            return path;
+        }
+    }
+
     /// <summary>
     /// Data rows of a golden TSV: comments and the header are skipped.
     /// </summary>

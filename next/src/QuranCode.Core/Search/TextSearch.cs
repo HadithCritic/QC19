@@ -75,12 +75,7 @@ public sealed class TextSearch
         // letters, not words, so rebuilding a word's string per query would
         // dominate the search cost.
         _wordTexts = new string[segmentation.WordCount];
-        for (int w = 0; w < segmentation.WordCount; w++)
-        {
-            int first = segmentation.WordFirstLetter[w];
-            int count = segmentation.WordLetterCount[w];
-            _wordTexts[w] = new string(segmentation.LetterChars, first, count);
-        }
+        for (int w = 0; w < segmentation.WordCount; w++) _wordTexts[w] = segmentation.WordText(w);
     }
 
     /// <summary>Words already normalized, in corpus order.</summary>

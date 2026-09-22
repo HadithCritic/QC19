@@ -102,6 +102,18 @@ public sealed class Segmentation
     public int WordCount => WordVerse.Length;
     public int LetterCount => LetterChars.Length;
 
+    /// <summary>A word's normalized text, by 0-based corpus index.</summary>
+    public string WordText(int word) => new(LetterChars, WordFirstLetter[word], WordLetterCount[word]);
+
+    /// <summary>A verse's normalized words, by 0-based verse index.</summary>
+    public string[] VerseWords(int verse)
+    {
+        int first = VerseFirstWord[verse];
+        var words = new string[VerseWordCount[verse]];
+        for (int i = 0; i < words.Length; i++) words[i] = WordText(first + i);
+        return words;
+    }
+
     private Segmentation(
         int[] verseChapter, int[] verseNumberInChapter, int[] verseFirstWord, int[] verseWordCount,
         int[] wordVerse, int[] wordNumberInVerse, int[] wordNumberInChapter,
@@ -153,9 +165,14 @@ public sealed class Segmentation
     /// verse after the first chapter.
     /// </para>
     /// </param>
+    /// <param name="verseRules">
+    /// Edition word rules applied to a verse before the pipeline; none when omitted.
+    /// </param>
     public static Segmentation Build(
-        IReadOnlyList<Verse> verses, TextPipeline pipeline, bool distancesWithinChapters = true)
+        IReadOnlyList<Verse> verses, TextPipeline pipeline, bool distancesWithinChapters = true,
+        VerseRules? verseRules = null)
     {
+        verseRules ??= VerseRules.None;
         ArgumentNullException.ThrowIfNull(verses);
         ArgumentNullException.ThrowIfNull(pipeline);
 
@@ -197,7 +214,7 @@ public sealed class Segmentation
             verseNumberInChapter[v] = verse.NumberInChapter;
             verseFirstWord[v] = wordVerse.Count;
 
-            string normalized = pipeline.Normalize(verse.Text);
+            string normalized = pipeline.Normalize(verseRules.Apply(verse.Number, verse.Text));
 
             int wordInVerse = 0;
             int letterInVerse = 0;
