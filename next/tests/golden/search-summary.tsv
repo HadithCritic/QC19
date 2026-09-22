@@ -1,0 +1,14 @@
+# Text search results from the legacy engine.
+# system=Original_Alphabet_Primes1, text_mode=Original, scope=Book
+# case_sensitive=false, with_diacritics=false, multiplicity=-1/None (MainForm defaults)
+query	term	wordness	matched_words	matched_verses	first_verses
+allah_any	الله	Any	2669	1842	1,8,14,15,16
+allah_whole	الله	WholeWord	2265	1663	1,8,14,16,17
+allah_part	الله	PartOfWord	404	371	15,26,35,69,74
+rahman_any	الرحمن	Any	160	159	1,3,8,170,294
+rahman_whole	الرحمن	WholeWord	157	156	1,3,8,170,294
+min_any	من	Any	5375	3092	1,3,8,10,11
+min_whole	من	WholeWord	2763	2023	11,12,15,26,28
+kitab_any	كتاب	Any	4	4	1745,1806,2167,3160
+salat_any	الصلوه	Any	64	61	10,50,52,90,117
+yawm_whole	يوم	WholeWord	217	211	4,120,181,219,261

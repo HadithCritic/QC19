@@ -58,6 +58,7 @@ internal static class Program
             DumpLetterFrequencies(client, outputDir);
             Positions.Dump(client, SampleVerses, outputDir);
             Modifiers.Dump(client, outputDir);
+            Searches.Dump(client, outputDir);
         }
         catch (Exception ex)
         {
