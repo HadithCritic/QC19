@@ -98,7 +98,7 @@ if (database.Length == 0)
 if (database.Length == 0 || !File.Exists(database))
 {
     Console.Error.WriteLine("content.db not found. Pass --db <path>, or build it with:");
-    Console.Error.WriteLine("  python next/data/import/build_content.py <install-root> -o next/data/content.db");
+    Console.Error.WriteLine("  python next/data/import/build_content.py -o next/data/content.db");
     return 2;
 }
 

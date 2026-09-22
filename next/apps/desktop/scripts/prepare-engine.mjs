@@ -92,8 +92,8 @@ if (!contentDb) fail(`unknown QURANCODE_EDITION "${edition}"; use ${Object.keys(
 if (!existsSync(contentDb)) {
   const how =
     edition === "submission"
-      ? "python next/data/import/build_content.py <install-root> --edition submission -o next/data/submission.db"
-      : "python next/data/import/build_content.py <install-root> -o next/data/content.db";
+      ? "python next/data/import/build_content.py --edition submission -o next/data/submission.db"
+      : "python next/data/import/build_content.py -o next/data/content.db";
   fail(`${contentDb} is missing. Build it with: ${how}`);
 }
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build content.db from the legacy QuranCode data tree.
+"""Build content.db from the legacy QuranCode source tree.
 
 A build-time tool. It never ships with the application; the application only
 ever reads the database this produces.
@@ -13,15 +13,15 @@ Arabic text. Normalization is expressed as text-mode rules stored alongside the
 text, applied later by the engine, never baked in here.
 
 Usage:
-    python build_content.py <install-root> [-o content.db]
-    python build_content.py <install-root> --edition submission -o submission.db
+    python build_content.py -o content.db
+    python build_content.py --edition submission -o submission.db
 
 The classic edition is the legacy Tanzil text and is what the golden tests
 check against. The submission edition is the app's authoritative text: its
 text, verse index and chapter names come from the wikisubmission.org export in
 next/data/sources/submission/ (override with --submission-dir), and everything
 else (value systems, text-mode rules, page and part boundaries) from the
-install root.
+legacy source tree in C#/ (override with --legacy-root).
 """
 
 from __future__ import annotations
@@ -32,9 +32,9 @@ import io
 import os
 import sqlite3
 import sys
+from datetime import datetime, timezone
 
 import submission
-from datetime import datetime, timezone
 
 SCHEMA_VERSION = 3
 
@@ -51,6 +51,17 @@ TEXT_MODES = [
     "Original", "Simplified28", "Simplified29", "Simplified30",
     "Simplified31", "Simplified36", "SimplifiedDots", "SimplifiedMarks",
 ]
+
+# Where each install-layout folder lives in the legacy source tree. Data is
+# split between two projects; the first match wins.
+LEGACY_LAYOUT = {
+    "Data": ["DataAccess/Data", "Model/Data"],
+    "Values": ["Server/Values"],
+    "Rules": ["Server/Rules"],
+}
+
+DEFAULT_LEGACY_ROOT = os.path.normpath(
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "C#"))
 
 PARTITION_SECTIONS = {
     "station": "station", "part": "part", "group": "group", "half": "half",
@@ -109,7 +120,20 @@ class Importer:
     # -- infrastructure ---------------------------------------------------
 
     def path(self, *parts: str) -> str:
-        return os.path.join(self.root, *parts)
+        """Resolves an install-layout path ("Data/quran-metadata.txt") in the legacy source tree.
+
+        The legacy projects keep their data beside the code that loads it
+        (LEGACY_LAYOUT); a release copies it into Data/, Values/ and Rules/.
+        Reading the source tree means the repository holds one copy.
+        """
+        relative = os.path.normpath(os.path.join(*parts))
+        head, _, rest = relative.partition(os.sep)
+        bases = LEGACY_LAYOUT.get(head, [head])
+        for base in bases:
+            candidate = os.path.join(self.root, base, rest)
+            if os.path.exists(candidate):
+                return candidate
+        return os.path.join(self.root, bases[0], rest)
 
     def register_source(self, key: str, name: str, kind: str, rel_path: str,
                         origin: str = "", license_: str = "") -> int:
@@ -574,7 +598,8 @@ class Importer:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("root", help="QuranCode install root")
+    parser.add_argument("--legacy-root", default=DEFAULT_LEGACY_ROOT,
+                        help="the legacy QuranCode source tree (default: the repository's C# folder)")
     parser.add_argument("-o", "--output", default="content.db")
     parser.add_argument("--edition", choices=["classic", "submission"], default="classic")
     parser.add_argument("--submission-dir", default=submission.DEFAULT_DIR,
@@ -582,8 +607,8 @@ def main() -> int:
                              "(default: next/data/sources/submission)")
     args = parser.parse_args()
 
-    if not os.path.isdir(os.path.join(args.root, "Data")):
-        print(f"not a QuranCode install root: {args.root}", file=sys.stderr)
+    if not os.path.isdir(os.path.join(args.legacy_root, "Server", "Values")):
+        print(f"not the legacy QuranCode source tree: {args.legacy_root}", file=sys.stderr)
         return 2
     if args.edition == "submission":
         names = (submission.INDEX_FILE, submission.TEXT_FILE, submission.CHAPTERS_FILE)
@@ -592,7 +617,7 @@ def main() -> int:
         if missing:
             print(f"--submission-dir must contain {', '.join(missing)}", file=sys.stderr)
             return 2
-    return Importer(args.root, args.output, args.edition, args.submission_dir).run()
+    return Importer(args.legacy_root, args.output, args.edition, args.submission_dir).run()
 
 
 if __name__ == "__main__":

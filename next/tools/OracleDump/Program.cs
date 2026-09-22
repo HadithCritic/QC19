@@ -28,6 +28,7 @@ internal static class Program
         if (!Directory.Exists(Path.Combine(installRoot, "Data")))
         {
             Console.Error.WriteLine("Not a QuranCode install root (no Data directory): " + installRoot);
+            Console.Error.WriteLine("Build the legacy solution (C#/Solution.sln); its output, C#/Build/Release, is one.");
             return 2;
         }
 

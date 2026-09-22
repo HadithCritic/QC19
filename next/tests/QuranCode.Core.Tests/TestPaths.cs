@@ -41,7 +41,7 @@ internal static class TestPaths
             {
                 throw new FileNotFoundException(
                     $"content.db not found at {path}. Build it with:\n" +
-                    "  python next/data/import/build_content.py <install-root> -o next/data/content.db",
+                    "  python next/data/import/build_content.py -o next/data/content.db",
                     path);
             }
             return path;
@@ -58,7 +58,7 @@ internal static class TestPaths
             {
                 throw new FileNotFoundException(
                     $"submission.db not found at {path}. Build it with:\n" +
-                    "  python next/data/import/build_content.py <install-root> --edition submission " +
+                    "  python next/data/import/build_content.py --edition submission " +
                     "-o next/data/submission.db",
                     path);
             }

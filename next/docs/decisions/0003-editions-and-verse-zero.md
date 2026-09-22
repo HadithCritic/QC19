@@ -28,7 +28,7 @@ legacy engine, and those tests are the evidence the engine computes correctly.
    `data/sources/submission/` and is the authoritative text of the app.
    Text, verse index and chapter names come from it;
    value systems, text-mode rules and page/part/bowing boundaries come from the
-   install root, remapped onto the new verse numbering. The app ships the
+   legacy source tree in `C#/`, remapped onto the new verse numbering. The app ships the
    Submission database; `QURANCODE_EDITION=classic` stages the classic one.
 2. **The database describes itself.** A `corpus` table records the edition and
    the Bismillah convention (`prefix` or `verse-zero`). The engine reads it and

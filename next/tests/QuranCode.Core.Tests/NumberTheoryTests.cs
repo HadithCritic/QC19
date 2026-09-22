@@ -4,27 +4,28 @@ using Xunit;
 namespace QuranCode.Core.Tests;
 
 /// <summary>
-/// Checks the computed sequences against the tables the legacy install ships.
+/// Checks the computed sequences against the tables the legacy software ships.
 /// </summary>
 /// <remarks>
 /// The claim being tested is that 63 MB of precomputed number tables under
-/// <c>Numbers/</c> can be deleted because a sieve reproduces them. That claim is
-/// only worth making if the output is identical, so these compare element by
-/// element against the shipped files rather than spot-checking.
+/// <c>C#/Utilities/Numbers/</c> need not ship with the app because a sieve
+/// reproduces them. That claim is only worth making if the output is
+/// identical, so these compare element by element against the legacy files
+/// rather than spot-checking.
 ///
 /// <para>
-/// The files live in the legacy install, not in this repository, so the tests
-/// skip when the install is not present rather than failing.
+/// The tests skip when the legacy source tree is not beside <c>next/</c>.
 /// </para>
 /// </remarks>
 public sealed class NumberTheoryTests
 {
     private static string? NumbersDirectory()
     {
+        // The tables ship with the legacy Utilities project.
         var directory = new DirectoryInfo(AppContext.BaseDirectory);
         while (directory is not null)
         {
-            string candidate = Path.Combine(directory.FullName, "Numbers");
+            string candidate = Path.Combine(directory.FullName, "C#", "Utilities", "Numbers");
             if (File.Exists(Path.Combine(candidate, "primes.txt"))) return candidate;
             directory = directory.Parent;
         }
@@ -51,7 +52,7 @@ public sealed class NumberTheoryTests
     public void PrimesMatchShippedTable()
     {
         List<long>? expected = ReadTable("primes.txt");
-        if (expected is null) return; // legacy install not present
+        if (expected is null) return; // legacy source tree not present
 
         ReadOnlySpan<long> actual = NumberTheory.Primes((int)expected[^1]);
 
