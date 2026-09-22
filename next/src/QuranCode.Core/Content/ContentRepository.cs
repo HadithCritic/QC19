@@ -51,6 +51,7 @@ public sealed class ContentRepository : IDisposable
     private Verse[]? _verses;
     private CorpusInfo? _corpus;
     private VerseRules? _verseRules;
+    private Dictionary<string, Partition[]>? _partitions;
     private WawWords? _wawWords;
     private readonly Dictionary<string, TextMode> _textModes = [];
     private readonly Dictionary<string, ValueSystem> _valueSystems = [];
@@ -93,6 +94,24 @@ public sealed class ContentRepository : IDisposable
 
     /// <summary>Verse-scoped word rules for this edition.</summary>
     public VerseRules VerseRules => _verseRules ??= LoadVerseRules();
+
+    /// <summary>Pages, parts, stations, groups, halves, quarters and bowings, by kind, ordered by number.</summary>
+    public IReadOnlyDictionary<string, Partition[]> Partitions => _partitions ??= LoadPartitions();
+
+    private Dictionary<string, Partition[]> LoadPartitions()
+    {
+        using SqliteCommand command = _connection.CreateCommand();
+        command.CommandText = "SELECT kind, number, first_verse, last_verse FROM partitions ORDER BY kind, number";
+        var result = new Dictionary<string, List<Partition>>(StringComparer.Ordinal);
+        using SqliteDataReader reader = command.ExecuteReader();
+        while (reader.Read())
+        {
+            string kind = reader.GetString(0);
+            if (!result.TryGetValue(kind, out List<Partition>? list)) result[kind] = list = [];
+            list.Add(new Partition(kind, reader.GetInt32(1), reader.GetInt32(2), reader.GetInt32(3)));
+        }
+        return result.ToDictionary(p => p.Key, p => p.Value.ToArray(), StringComparer.Ordinal);
+    }
 
     /// <summary>Words whose leading waw belongs to the word, for waw-as-word.</summary>
     public WawWords WawWords => _wawWords ??= LoadWawWords();

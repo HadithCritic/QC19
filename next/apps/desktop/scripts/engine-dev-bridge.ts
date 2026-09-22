@@ -42,7 +42,9 @@ class DevEngine {
     // binary; put that directory on the DLL search path, as the Rust bridge does.
     const nativeDir = dirname(this.content);
     const env = { ...process.env, PATH: `${nativeDir}${delimiter}${process.env.PATH ?? ""}` };
-    const child = spawn(this.binary, ["--content", this.content], { stdio: "pipe", env });
+    // Development user data sits in the ignored target folder, never in the source tree.
+    const user = join(dirname(dirname(this.content)), "target", "dev-user.db");
+    const child = spawn(this.binary, ["--content", this.content, "--user", user], { stdio: "pipe", env });
     createInterface({ input: child.stdout }).on("line", (line) => this.receive(line));
     createInterface({ input: child.stderr }).on("line", (line) => console.error(`[engine] ${line}`));
     child.on("exit", () => {

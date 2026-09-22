@@ -7,12 +7,14 @@
   import NumbersView from "./views/NumbersView.svelte";
   import ReadView from "./views/ReadView.svelte";
   import SearchView from "./views/SearchView.svelte";
+  import SavedView from "./views/SavedView.svelte";
   import ValuesView from "./views/ValuesView.svelte";
 
   const VIEWS: { id: View; label: string; icon: string }[] = [
     { id: "read", label: "Read", icon: "M4 5.5C4 4.7 4.7 4 5.5 4H11v15H5.5c-.8 0-1.5-.7-1.5-1.5v-12ZM13 4h5.5c.8 0 1.5.7 1.5 1.5v12c0 .8-.7 1.5-1.5 1.5H13V4Z" },
     { id: "search", label: "Search", icon: "M10.5 4a6.5 6.5 0 1 0 3.9 11.7l4.4 4.4 1.4-1.4-4.4-4.4A6.5 6.5 0 0 0 10.5 4Zm0 2a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9Z" },
     { id: "values", label: "Values", icon: "M6 4h12v2.5H9.2l4.6 5.5-4.6 5.5H18V20H6v-2.2l5.2-5.8L6 6.2V4Z" },
+    { id: "saved", label: "Saved", icon: "M6 3h12v18l-6-4-6 4V3Z" },
     { id: "numbers", label: "Numbers", icon: "M9 3 8.3 7H5v2h3l-.7 4H4v2h3l-.7 4h2l.7-4h4l-.7 4h2l.7-4H19v-2h-3.3l.7-4H20V7h-3.3L17.4 3h-2l-.7 4h-4l.7-4H9Zm1 6h4l-.7 4h-4L10 9Z" },
   ];
 
@@ -84,6 +86,8 @@
         <SearchView />
       {:else if app.view === "values"}
         <ValuesView />
+      {:else if app.view === "saved"}
+        <SavedView />
       {:else}
         <NumbersView />
       {/if}

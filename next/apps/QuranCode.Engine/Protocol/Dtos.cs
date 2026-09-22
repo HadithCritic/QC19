@@ -67,10 +67,14 @@ internal sealed record LetterCountDto(string Letter, int Count);
 /// </summary>
 internal sealed record VerseValueDto(int Number, string? Value, string? Code);
 
+/// <summary>Counted verses before and after the selection (Features.txt #11).</summary>
+internal sealed record PositionDto(int BeforeInChapter, int AfterInChapter, int BeforeInBook, int AfterInBook);
+
 internal sealed record StatsDto(
     int First,
     int Last,
     string ValueSystem,
+    PositionDto Position,
     NumberDto Chapters,
     NumberDto Verses,
     NumberDto Words,
@@ -80,6 +84,21 @@ internal sealed record StatsDto(
     IReadOnlyList<LetterCountDto> LetterFrequencies);
 
 internal sealed record RangeDto(int First, int Last);
+
+/// <summary>One chapter's figures under the current system and counting, for sorting.</summary>
+internal sealed record ChapterStatsDto(int Chapter, int Verses, int Words, int Letters, string Value, string Code);
+
+internal sealed record WordLocationDto(int Verse, int Word);
+
+internal sealed record DistanceDto(int Chapters, int Verses, int Words, int Letters);
+
+/// <summary>
+/// A bookmark. <c>First</c> and <c>Last</c> are absolute verse numbers in the
+/// open edition, null when the stored chapter:verse does not exist in it.
+/// </summary>
+internal sealed record BookmarkDto(long Id, string Reference, int? First, int? Last, string Note, string CreatedUtc, string UpdatedUtc);
+
+internal sealed record HistoryDto(long Id, string Kind, string? Reference, int? First, int? Last, string? Term, string? Wordness, string AtUtc);
 
 /// <summary>One system's value for a text, with how many letters that system's text mode counts.</summary>
 internal sealed record SystemValueDto(string ValueSystem, int LetterCount, NumberDto Value);
@@ -131,7 +150,21 @@ internal sealed record ChapterValuesParams(int Chapter, string? ValueSystem = nu
 
 internal sealed record RangeParams(int First, int Last, string? ValueSystem = null, CountingDto? Counting = null);
 
-internal sealed record ReferenceParams(string Text);
+internal sealed record ReferenceParams(string Text, string? ValueSystem = null, CountingDto? Counting = null);
+
+internal sealed record ChaptersStatsParams(string? ValueSystem = null, CountingDto? Counting = null);
+
+internal sealed record DistanceParams(WordLocationDto From, WordLocationDto To, string? ValueSystem = null, CountingDto? Counting = null);
+
+internal sealed record BookmarkSaveParams(int First, int Last, string Note = "");
+
+internal sealed record IdParams(long Id);
+
+internal sealed record HistoryListParams(string Kind, int Limit = 50);
+
+internal sealed record HistoryAddParams(string Kind, int? First = null, int? Last = null, string? Term = null, string? Wordness = null);
+
+internal sealed record HistoryClearParams(string Kind);
 
 internal sealed record NumberParams(string Value);
 

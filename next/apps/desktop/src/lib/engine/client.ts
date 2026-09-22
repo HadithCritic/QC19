@@ -1,6 +1,12 @@
 import type {
+  Bookmark,
   Chapter,
+  ChapterStats,
   CountingOptions,
+  Distance,
+  HistoryEntry,
+  HistoryKind,
+  WordLocation,
   EngineInfo,
   NumberInfo,
   SearchResult,
@@ -88,7 +94,19 @@ export const engine = {
     call<VerseValue[]>("chapter.values", { chapter, valueSystem, counting }),
   stats: (range: VerseRange, valueSystem: string, counting: CountingOptions) =>
     call<Stats>("selection.stats", { ...range, valueSystem, counting }),
-  parseReference: (text: string) => call<VerseRange>("reference.parse", { text }),
+  parseReference: (text: string, valueSystem: string, counting: CountingOptions) =>
+    call<VerseRange>("reference.parse", { text, valueSystem, counting }),
+  chapterStats: (valueSystem: string, counting: CountingOptions) =>
+    call<ChapterStats[]>("chapters.stats", { valueSystem, counting }),
+  distance: (from: WordLocation, to: WordLocation, valueSystem: string, counting: CountingOptions) =>
+    call<Distance>("words.distance", { from, to, valueSystem, counting }),
+  bookmarks: () => call<Bookmark[]>("bookmarks.list"),
+  saveBookmark: (range: VerseRange, note: string) => call<Bookmark>("bookmarks.save", { ...range, note }),
+  deleteBookmark: (id: number) => call<boolean>("bookmarks.delete", { id }),
+  history: (kind: HistoryKind, limit = 50) => call<HistoryEntry[]>("history.list", { kind, limit }),
+  addBrowse: (range: VerseRange) => call<boolean>("history.add", { kind: "browse", ...range }),
+  addFind: (term: string, wordness: Wordness) => call<boolean>("history.add", { kind: "find", term, wordness }),
+  clearHistory: (kind: HistoryKind) => call<boolean>("history.clear", { kind }),
   analyzeNumber: (value: string) => call<NumberInfo>("number.analyze", { value }),
   textValues: (text: string, valueSystems?: string[]) =>
     call<SystemValue[]>("text.values", valueSystems ? { text, valueSystems } : { text }),

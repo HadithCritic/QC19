@@ -227,8 +227,60 @@ public sealed class QuranCodeEngine : IDisposable
             profile ?? CalculationProfile.Default, modifiers ?? ModifierSet.None);
     }
 
-    /// <summary>Parses a typed reference such as "2:255-257" or "2:0".</summary>
-    public ReferenceParseResult ParseReference(string text) => ReferenceParser.Parse(text, Chapters);
+    /// <summary>Statistics for every chapter, for sorting and chapter details (Features.txt #29, #59).</summary>
+    public IReadOnlyList<SelectionStatistics> ChapterStatistics(
+        string valueSystem = DefaultValueSystem, CountingOptions? counting = null) =>
+        Chapters.Select(c => Statistics(new VerseRange(c.FirstVerse, c.LastVerse), valueSystem, counting: counting)).ToArray();
+
+    /// <summary>
+    /// Distance between two words the reader clicked, in chapters, verses,
+    /// words and letters of the counted text; null when either is not counted.
+    /// </summary>
+    public WordDistance? Distance(
+        WordLocation from, WordLocation to, string textMode = DefaultTextMode, CountingOptions? counting = null)
+    {
+        Segmentation segmentation = Segmentation(textMode, counting);
+        CorpusView view = View(counting);
+        CountingText text = CountingText(textMode, counting);
+
+        CountedWord? Find(WordLocation location)
+        {
+            if (location.Verse < 1 || location.Verse > Verses.Count) return null;
+            Verse verse = Verse(location.Verse);
+            return WordDistance.Locate(location, verse, Display(verse), segmentation, view, text.NormalizeWord);
+        }
+
+        return Find(from) is CountedWord a && Find(to) is CountedWord b ? WordDistance.Between(a, b) : null;
+    }
+
+    /// <summary>Pages, parts, stations and the other divisions, by kind.</summary>
+    public IReadOnlyDictionary<string, Partition[]> Partitions => _content.Partitions;
+
+    /// <summary>
+    /// Parses a typed reference: by chapter ("2:255-257", "3-4", "2:0") or by
+    /// unit ("page 10", "part 3-4", "word 100"). Word and letter numbers follow
+    /// the text as counted under the text mode and options.
+    /// </summary>
+    public ReferenceParseResult ParseReference(
+        string text, string textMode = DefaultTextMode, CountingOptions? counting = null)
+    {
+        if (!UnitReferences.LooksLikeUnit(text ?? "")) return ReferenceParser.Parse(text, Chapters);
+
+        return UnitReferences.Parse(
+            text!, Partitions, Verses.Count,
+            word => VerseOfUnit(word, textMode, counting, letters: false),
+            letter => VerseOfUnit(letter, textMode, counting, letters: true));
+    }
+
+    private int? VerseOfUnit(int number, string textMode, CountingOptions? counting, bool letters)
+    {
+        Segmentation segmentation = Segmentation(textMode, counting);
+        int count = letters ? segmentation.LetterCount : segmentation.WordCount;
+        if (number < 1 || number > count) return null;
+
+        int word = letters ? segmentation.LetterWord[number - 1] : number - 1;
+        return View(counting).Verses[segmentation.WordVerse[word]].Number;
+    }
 
     public void Dispose() => _content.Dispose();
 }

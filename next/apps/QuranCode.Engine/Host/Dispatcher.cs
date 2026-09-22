@@ -19,6 +19,11 @@ internal sealed class Dispatcher
     private readonly TextWriter _log;
 
     public Dispatcher(Handlers handlers, TextWriter log)
+        : this(handlers, null, log)
+    {
+    }
+
+    public Dispatcher(Handlers handlers, UserHandlers? user, TextWriter log)
     {
         _log = log;
         WireJson json = WireJson.Default;
@@ -35,7 +40,20 @@ internal sealed class Dispatcher
             ["number.analyze"] = With(json.NumberParams, handlers.AnalyzeNumber, json.NumberDto),
             ["text.values"] = With(json.TextValuesParams, handlers.TextValues, json.IReadOnlyListSystemValueDto),
             ["search.text"] = With(json.SearchParams, handlers.Search, json.SearchResultDto),
+            ["chapters.stats"] = WithDefault(json.ChaptersStatsParams, new ChaptersStatsParams(), handlers.ChapterStats, json.IReadOnlyListChapterStatsDto),
+            ["words.distance"] = With(json.DistanceParams, handlers.Distance, json.DistanceDto),
         };
+
+        // The reader's own data needs a writable user.db; without one these
+        // methods report that it is unavailable rather than being absent.
+        Func<UserHandlers> requireUser = () => user ?? throw new RpcException(
+            ErrorCodes.Unavailable, "Bookmarks and history are not available: no user data file was given.");
+        _methods["bookmarks.list"] = NoParams(() => requireUser().Bookmarks(), json.IReadOnlyListBookmarkDto);
+        _methods["bookmarks.save"] = With(json.BookmarkSaveParams, p => requireUser().SaveBookmark(p), json.BookmarkDto);
+        _methods["bookmarks.delete"] = With(json.IdParams, p => requireUser().DeleteBookmark(p), json.Boolean);
+        _methods["history.list"] = With(json.HistoryListParams, p => requireUser().History(p), json.IReadOnlyListHistoryDto);
+        _methods["history.add"] = With(json.HistoryAddParams, p => requireUser().AddHistory(p), json.Boolean);
+        _methods["history.clear"] = With(json.HistoryClearParams, p => requireUser().ClearHistory(p), json.Boolean);
     }
 
     public IReadOnlyCollection<string> MethodNames => _methods.Keys;
@@ -99,6 +117,17 @@ internal sealed class Dispatcher
             }
             TParams typed = value.Deserialize(parameters)
                 ?? throw RpcException.InvalidParams("This method needs a params object.");
+            JsonSerializer.Serialize(writer, handler(typed), result);
+        };
+
+    /// <summary>For methods whose parameters are all optional: a missing params object means the defaults.</summary>
+    private static Method WithDefault<TParams, TResult>(
+        JsonTypeInfo<TParams> parameters, TParams defaults, Func<TParams, TResult> handler, JsonTypeInfo<TResult> result) =>
+        (element, writer) =>
+        {
+            TParams typed = element is { ValueKind: JsonValueKind.Object } value
+                ? value.Deserialize(parameters) ?? defaults
+                : defaults;
             JsonSerializer.Serialize(writer, handler(typed), result);
         };
 

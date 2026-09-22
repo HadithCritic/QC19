@@ -1,10 +1,14 @@
 import { describeError, engine } from "../engine/client";
-import type { Chapter, CountingOptions, EngineInfo, ValueSystem, VerseRange } from "../engine/types";
+import type { Bookmark, Chapter, CountingOptions, Distance, EngineInfo, ValueSystem, VerseRange, WordLocation, Wordness } from "../engine/types";
 import { DEFAULT_COUNTING, parseCounting, type CountingKey } from "../counting";
+import { back, canGoBack, canGoForward, current, EMPTY_NAVIGATION, forward, visit, type Navigation } from "../navigation";
 import { chapterOfVerse, lastVerse } from "../numbers";
 import { visibleSystems } from "../systems";
 
-export type View = "read" | "search" | "values" | "numbers";
+export type View = "read" | "search" | "values" | "numbers" | "saved";
+
+/** How long a selection must stay before it is written to browse history. */
+const BROWSE_RECORD_DELAY_MS = 1000;
 export type Theme = "system" | "light" | "dark";
 
 interface Settings {
@@ -59,6 +63,22 @@ class AppState {
   selection = $state<VerseRange | null>(null);
   /** Verse to bring into view in the reader, set by navigation. */
   focusVerse = $state<number | null>(null);
+  /** Ranges visited this session, for Back and Forward. */
+  navigation = $state<Navigation>(EMPTY_NAVIGATION);
+  canGoBack = $derived(canGoBack(this.navigation));
+  canGoForward = $derived(canGoForward(this.navigation));
+  private browseTimer: ReturnType<typeof setTimeout> | undefined;
+
+  /** A search requested from elsewhere (search history); the search view runs it. */
+  pendingSearch = $state<{ term: string; wordness: Wordness } | null>(null);
+
+  /** Bookmarks, loaded at start; null while unavailable (no user data file). */
+  bookmarks = $state<Bookmark[] | null>(null);
+
+  /** Alt+click a word to start measuring; the next Alt+click measures to it. */
+  measureFrom = $state<WordLocation | null>(null);
+  measurement = $state<{ from: WordLocation; to: WordLocation; distance: Distance } | null>(null);
+  measureError = $state<string | null>(null);
 
   theme = $state<Theme>("system");
   research = $state(false);
@@ -93,6 +113,7 @@ class AppState {
       const remembered = visibleSystems(systems, this.research).some((s) => s.name === this.valueSystem);
       if (!remembered) this.valueSystem = info.defaultValueSystem;
       this.status = "ready";
+      void this.loadBookmarks();
     } catch (error) {
       this.startupError = describeError(error);
       this.status = "failed";
@@ -141,30 +162,119 @@ class AppState {
 
   /** Opens the reader on a range and selects it. */
   goTo(range: VerseRange): void {
-    const chapter = this.chapterOf(range.first);
-    if (!chapter) return;
-    this.chapter = chapter.number;
-    this.selection = range;
-    this.focusVerse = range.first;
+    if (!this.show(range, range.first)) return;
     this.view = "read";
   }
 
   openChapter(number: number): void {
-    this.chapter = number;
-    this.focusVerse = null;
     const chapter = this.chapters[number - 1];
-    if (chapter) this.selection = { first: chapter.firstVerse, last: lastVerse(chapter) };
+    if (chapter) this.show({ first: chapter.firstVerse, last: lastVerse(chapter) }, null);
   }
 
   /** Click selects one verse; shift-click extends from the current anchor. */
   selectVerse(verse: number, extend: boolean): void {
     const anchor = this.selection;
-    if (extend && anchor) {
-      const start = anchor.first;
-      this.selection = verse >= start ? { first: start, last: verse } : { first: verse, last: anchor.last };
-    } else {
-      this.selection = { first: verse, last: verse };
+    const range =
+      extend && anchor
+        ? verse >= anchor.first
+          ? { first: anchor.first, last: verse }
+          : { first: verse, last: anchor.last }
+        : { first: verse, last: verse };
+    this.select(range);
+  }
+
+  /** Measures from the previous Alt+clicked word to this one, then starts again from it. */
+  async measureTo(to: WordLocation): Promise<void> {
+    const from = this.measureFrom;
+    this.measureFrom = to;
+    this.measureError = null;
+    if (!from) {
+      this.measurement = null;
+      return;
     }
+    try {
+      const distance = await engine.distance(from, to, this.valueSystem, { ...this.counting });
+      this.measurement = { from, to, distance };
+    } catch (error) {
+      this.measurement = null;
+      this.measureError = describeError(error);
+    }
+  }
+
+  searchFor(term: string, wordness: Wordness): void {
+    this.pendingSearch = { term, wordness };
+    this.view = "search";
+  }
+
+  async loadBookmarks(): Promise<void> {
+    try {
+      this.bookmarks = await engine.bookmarks();
+    } catch {
+      this.bookmarks = null; // bookmarks unavailable: the controls hide themselves
+    }
+  }
+
+  bookmarkFor(range: VerseRange): Bookmark | undefined {
+    return this.bookmarks?.find((b) => b.first === range.first && b.last === range.last);
+  }
+
+  /** Adds or updates the bookmark on a range. */
+  async saveBookmark(range: VerseRange, note: string): Promise<Bookmark> {
+    const saved = await engine.saveBookmark(range, note);
+    const others = (this.bookmarks ?? []).filter((b) => b.id !== saved.id);
+    this.bookmarks = [...others, saved];
+    return saved;
+  }
+
+  async deleteBookmark(id: number): Promise<void> {
+    await engine.deleteBookmark(id);
+    this.bookmarks = (this.bookmarks ?? []).filter((b) => b.id !== id);
+  }
+
+  clearMeasurement(): void {
+    this.measureFrom = null;
+    this.measurement = null;
+    this.measureError = null;
+  }
+
+  goBack(): void {
+    this.navigation = back(this.navigation);
+    this.showCurrent();
+  }
+
+  goForward(): void {
+    this.navigation = forward(this.navigation);
+    this.showCurrent();
+  }
+
+  private showCurrent(): void {
+    const range = current(this.navigation);
+    if (range) this.show(range, range.first, false);
+    this.view = "read";
+  }
+
+  /** Selects a range in its chapter; false when no chapter holds it. */
+  private show(range: VerseRange, focus: number | null, record = true): boolean {
+    const chapter = this.chapterOf(range.first);
+    if (!chapter) return false;
+    this.chapter = chapter.number;
+    this.focusVerse = focus;
+    this.select(range, record);
+    return true;
+  }
+
+  private select(range: VerseRange, record = true): void {
+    this.selection = range;
+    if (!record) return;
+    this.navigation = visit(this.navigation, range);
+
+    // Only a selection the reader stays on is worth keeping in history.
+    clearTimeout(this.browseTimer);
+    this.browseTimer = setTimeout(() => {
+      engine.addBrowse(range).catch(() => {
+        // History is a convenience; failing to record it is not an error to show.
+      });
+    }, BROWSE_RECORD_DELAY_MS);
   }
 }
 

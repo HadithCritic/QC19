@@ -1,4 +1,5 @@
 <script lang="ts">
+  import BookmarkControl from "../lib/components/BookmarkControl.svelte";
   import NumberChip from "../lib/components/NumberChip.svelte";
   import NumberDetail from "../lib/components/NumberDetail.svelte";
   import Notice from "../lib/components/Notice.svelte";
@@ -84,6 +85,15 @@
       {/if}
     </header>
 
+    <p class="position">
+      <span class="num">{stats.position.beforeInChapter}</span> verses before in its chapter,
+      <span class="num">{stats.position.afterInChapter}</span> after;
+      <span class="num">{stats.position.beforeInBook}</span> before in the book,
+      <span class="num">{stats.position.afterInBook}</span> after.
+    </p>
+
+    <BookmarkControl range={{ first: stats.first, last: stats.last }} />
+
     <section class="value" aria-label="Value">
       <NumberChip value={stats.value.value} code={stats.value.code} size="lg" onselect={() => (focused = { label: "Value", info: stats!.value })} />
     </section>
@@ -98,6 +108,26 @@
         {/each}
       </dl>
     </section>
+
+    {#if app.measurement || app.measureFrom || app.measureError}
+      <section class="measure" aria-label="Distance between words" aria-live="polite">
+        <h3 class="eyebrow">Distance</h3>
+        {#if app.measureError}
+          <p class="hint error">{app.measureError}</p>
+        {:else if app.measurement}
+          <dl class="distance">
+            <div><dt>Chapters</dt><dd class="num">{app.measurement.distance.chapters}</dd></div>
+            <div><dt>Verses</dt><dd class="num">{app.measurement.distance.verses}</dd></div>
+            <div><dt>Words</dt><dd class="num">{app.measurement.distance.words}</dd></div>
+            <div><dt>Letters</dt><dd class="num">{app.measurement.distance.letters}</dd></div>
+          </dl>
+          <p class="hint">Alt+click another word to measure on from this one.</p>
+        {:else}
+          <p class="hint">Alt+click a second word to measure the distance.</p>
+        {/if}
+        <button type="button" class="link" onclick={() => app.clearMeasurement()}>Clear</button>
+      </section>
+    {/if}
 
     {#if focused}
       <section class="focused" aria-label="Number detail">
@@ -152,6 +182,55 @@
 
   .value {
     padding-bottom: var(--space-2);
+  }
+
+  .position {
+    margin: calc(-1 * var(--space-3)) 0 0;
+    font-size: var(--text-xs);
+    color: var(--ink-muted);
+  }
+
+  .measure {
+    padding: var(--space-3) var(--space-4);
+    background: var(--gilt-soft);
+    border-radius: var(--radius-md);
+  }
+
+  .distance {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--space-2);
+    margin: 0;
+  }
+
+  .distance dt {
+    font-size: var(--text-xs);
+    color: var(--ink-muted);
+  }
+
+  .distance dd {
+    margin: 0;
+    font-size: var(--text-lg);
+  }
+
+  .hint {
+    margin: var(--space-2) 0 0;
+    font-size: var(--text-xs);
+    color: var(--ink-muted);
+  }
+
+  .hint.error {
+    color: var(--danger);
+  }
+
+  .link {
+    margin-top: var(--space-1);
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--lapis);
+    font-size: var(--text-xs);
+    font-weight: 550;
   }
 
   .counts {

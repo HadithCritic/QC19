@@ -179,3 +179,40 @@ oracle reproduces. **Phase 2 complete.**
 
 ## Phase 3: Navigation and your own data
 
+### 3.1 What was built
+
+- Units in the reference box (#61): page, station, part, group, half,
+  quarter, bowing, verse, word and letter, plus chapter ranges such as `3-4`.
+  Word and letter numbers follow the counting options.
+- Verses before and after the selection, in the chapter and the book (#11).
+- Chapter list sort by every field, both directions (#59), and a hover or
+  focus card with the chapter's counts and value (#29).
+- Alt+click a second word to measure the distance to it (#63).
+- A separate `user.db` (never the content database) holds bookmarks with
+  notes (#70) and browse and find history (#69). Positions are stored as
+  chapter:verse, so they survive a change of edition; a stored verse missing
+  from the open edition shows but cannot be opened.
+- Back and forward through the selections (#68); the Saved view lists
+  bookmarks and both histories; the search view shows recent searches.
+
+### 3.2 Decisions
+
+- **Decision:** history entries are written only after a selection stays for
+  about a second, so arrow-key stepping does not flood the list. The original
+  added every change; this is a usability choice and does not change counts.
+- **Decision:** searching with "shadda as a letter" (or "waw as a word")
+  searches the changed text, as the original does (`Server.BuildSimplifiedBook`
+  rebuilds the book with the options before any search). So `الرحمن` finds
+  one verse with shadda counted, and `الررحمن` finds the rest. Kept for
+  parity; the search view now says so when either option is on.
+- Engine methods for bookmarks and history answer `unavailable` when the app
+  starts without a user file, so the reader still works.
+
+### Phase 3 checks
+
+All passing: engine 210, protocol 43, interface 22, Rust 7, rustfmt, clippy,
+svelte-check 0 errors, oracle reproduces. Checked in the browser: bookmark
+with a note, recent searches, Saved view lists and reopens entries.
+**Phase 3 complete.**
+
+---

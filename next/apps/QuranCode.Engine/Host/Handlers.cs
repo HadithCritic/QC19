@@ -92,8 +92,10 @@ internal sealed class Handlers
         string system = RequireSystem(p.ValueSystem).Name;
         SelectionStatistics s = _engine.Statistics(range, system, counting: Counting(p.Counting));
 
+        SelectionPosition position = s.Position;
         return new StatsDto(
             range.First, range.Last, system,
+            new PositionDto(position.BeforeInChapter, position.AfterInChapter, position.BeforeInBook, position.AfterInBook),
             Number(s.ChapterCount), Number(s.VerseCount), Number(s.WordCount),
             Number(s.LetterCount), Number(s.DistinctLetterCount), Number(s.Value),
             s.LetterFrequencies.Select(f => new LetterCountDto(f.Letter.ToString(), f.Count)).ToArray());
@@ -101,7 +103,8 @@ internal sealed class Handlers
 
     public RangeDto ParseReference(ReferenceParams p)
     {
-        ReferenceParseResult result = _engine.ParseReference(p.Text);
+        RequireText(p.Text, "text");
+        ReferenceParseResult result = _engine.ParseReference(p.Text, RequireSystem(p.ValueSystem).TextMode, Counting(p.Counting));
         if (!result.IsSuccess) throw RpcException.InvalidParams(result.Error!);
         return new RangeDto(result.Range.First, result.Range.Last);
     }
@@ -140,6 +143,28 @@ internal sealed class Handlers
                 return new SystemValueDto(s.Name, normalized.Letters, Number(value));
             })
             .ToArray();
+    }
+
+    public IReadOnlyList<ChapterStatsDto> ChapterStats(ChaptersStatsParams p)
+    {
+        string system = RequireSystem(p.ValueSystem).Name;
+        return _engine.ChapterStatistics(system, Counting(p.Counting))
+            .Select((s, i) => new ChapterStatsDto(
+                i + 1, s.VerseCount, s.WordCount, s.LetterCount,
+                s.Value.ToString(CultureInfo.InvariantCulture), NumberTheory.Classify(s.Value).Code()))
+            .ToArray();
+    }
+
+    public DistanceDto Distance(DistanceParams p)
+    {
+        ArgumentNullException.ThrowIfNull(p.From);
+        ArgumentNullException.ThrowIfNull(p.To);
+        string textMode = RequireSystem(p.ValueSystem).TextMode;
+        WordDistance distance = _engine.Distance(
+                new WordLocation(p.From.Verse, p.From.Word), new WordLocation(p.To.Verse, p.To.Word),
+                textMode, Counting(p.Counting))
+            ?? throw RpcException.NotFound("One of those words is not counted, so there is no distance to measure.");
+        return new DistanceDto(distance.Chapters, distance.Verses, distance.Words, distance.Letters);
     }
 
     public SearchResultDto Search(SearchParams p)

@@ -16,7 +16,7 @@
     busy = true;
     error = null;
     try {
-      app.goTo(await engine.parseReference(text));
+      app.goTo(await engine.parseReference(text, app.valueSystem, { ...app.counting }));
       text = "";
       input?.blur();
     } catch (e) {
@@ -27,6 +27,13 @@
   }
 
   function onGlobalKey(event: KeyboardEvent): void {
+    // Alt+Left and Alt+Right step through browse history, as in a browser.
+    if (event.altKey && (event.key === "ArrowLeft" || event.key === "ArrowRight")) {
+      event.preventDefault();
+      if (event.key === "ArrowLeft") app.goBack();
+      else app.goForward();
+      return;
+    }
     const target = event.target as HTMLElement | null;
     const typing = target?.closest("input, textarea, select, [contenteditable]") !== null;
     const shortcut = (event.key === "k" && (event.ctrlKey || event.metaKey)) || (event.key === "/" && !typing);
@@ -40,6 +47,15 @@
 
 <svelte:window onkeydown={onGlobalKey} />
 
+<div class="history-nav">
+  <button type="button" class="nav" disabled={!app.canGoBack} onclick={() => app.goBack()} aria-label="Back" title="Back (Alt+Left)">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15.4 5.4 14 4l-8 8 8 8 1.4-1.4L8.8 12z" /></svg>
+  </button>
+  <button type="button" class="nav" disabled={!app.canGoForward} onclick={() => app.goForward()} aria-label="Forward" title="Forward (Alt+Right)">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.6 18.6 10 20l8-8-8-8-1.4 1.4 6.6 6.6z" /></svg>
+  </button>
+</div>
+
 <form class="reference" onsubmit={go} role="search">
   <label class="visually-hidden" for="reference-input">Go to chapter or verse</label>
   <input
@@ -47,7 +63,8 @@
     bind:this={input}
     bind:value={text}
     class="field num"
-    placeholder="Go to 2:255"
+    placeholder="Go to 2:255 or page 10"
+    title="A chapter (2, 3-4), a verse (2:255, 2:255-257, 24:35-27:62), or a unit: page, station, part, group, half, quarter, bowing, verse, word or letter, such as page 10 or part 3-4"
     autocomplete="off"
     spellcheck="false"
     aria-describedby={error ? "reference-error" : undefined}
@@ -63,6 +80,39 @@
 </form>
 
 <style>
+  .history-nav {
+    display: flex;
+    gap: 2px;
+  }
+
+  .nav {
+    display: grid;
+    place-items: center;
+    width: 2rem;
+    height: 2rem;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-md);
+    background: none;
+    color: var(--ink-muted);
+  }
+
+  .nav:hover:not(:disabled) {
+    background: var(--surface-sunk);
+    color: var(--ink);
+  }
+
+  .nav:disabled {
+    opacity: 0.35;
+    cursor: default;
+  }
+
+  .nav svg {
+    width: 1.1rem;
+    height: 1.1rem;
+    fill: currentColor;
+  }
+
   .reference {
     position: relative;
     width: 13rem;

@@ -22,6 +22,12 @@ public sealed record SelectionStatistics(
     IReadOnlyList<LetterFrequency> LetterFrequencies)
 {
     /// <summary>
+    /// Counted verses before the selection and after it, within its chapter
+    /// and within the book: Features.txt #11.
+    /// </summary>
+    public SelectionPosition Position { get; init; } = SelectionPosition.None;
+
+    /// <summary>
     /// Computes statistics over a segmentation.
     /// </summary>
     /// <remarks>
@@ -66,6 +72,8 @@ public sealed record SelectionStatistics(
             return new SelectionStatistics(range, system.Name, 0, 0, 0, 0, 0, 0, []);
         }
 
+        SelectionPosition position = SelectionPosition.Of(segmentation, view, chapters, firstIndex, lastIndex);
+
         int firstWord = segmentation.VerseFirstWord[firstIndex];
         int endWord = segmentation.VerseFirstWord[lastIndex] + segmentation.VerseWordCount[lastIndex];
         int firstLetter = segmentation.WordFirstLetter[firstWord];
@@ -98,7 +106,10 @@ public sealed record SelectionStatistics(
             endLetter - firstLetter,
             frequencies.Length,
             ValueOf(segmentation, view, chapters, firstIndex, lastIndex, system, profile, modifiers),
-            frequencies);
+            frequencies)
+        {
+            Position = position,
+        };
     }
 
     private static long ValueOf(

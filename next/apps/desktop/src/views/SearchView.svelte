@@ -1,7 +1,7 @@
 <script lang="ts">
   import Notice from "../lib/components/Notice.svelte";
   import { describeError, engine } from "../lib/engine/client";
-  import type { SearchResult, SearchVerse, Wordness } from "../lib/engine/types";
+  import type { HistoryEntry, SearchResult, SearchVerse, Wordness } from "../lib/engine/types";
   import { app } from "../lib/state/app.svelte";
   import { humanize } from "../lib/systems";
 
@@ -20,6 +20,30 @@
   let error = $state<string | null>(null);
   let loading = $state(false);
 
+  let recent = $state<HistoryEntry[]>([]);
+
+  async function loadRecent(): Promise<void> {
+    try {
+      recent = await engine.history("find", 8);
+    } catch {
+      recent = []; // history unavailable: no suggestions, nothing else changes
+    }
+  }
+
+  // A search chosen from history runs as soon as the view opens.
+  $effect(() => {
+    const pending = app.pendingSearch;
+    if (!pending) return;
+    app.pendingSearch = null;
+    term = pending.term;
+    wordness = pending.wordness;
+    void run(0);
+  });
+
+  $effect(() => {
+    void loadRecent();
+  });
+
   async function run(offset: number): Promise<void> {
     if (!term.trim()) return;
     loading = true;
@@ -28,6 +52,9 @@
       const page = await engine.search(term, wordness, app.valueSystem, { ...app.counting }, offset, PAGE);
       result = page;
       verses = offset === 0 ? page.verses : [...verses, ...page.verses];
+      if (offset === 0) {
+        engine.addFind(term.trim(), wordness).then(loadRecent, () => {});
+      }
     } catch (e) {
       error = describeError(e);
     } finally {
@@ -59,6 +86,10 @@
     <h1 id="search-title">Search the text</h1>
     <p class="hint">
       Matching ignores diacritics and letter forms, as the {humanize(app.currentSystem?.textMode ?? "Original")} text mode defines them.
+      {#if app.counting.shaddaAsLetter || app.counting.wawAsWord}
+        With {app.counting.shaddaAsLetter ? "shadda counted as a letter" : "waw counted as a word"} the searched text
+        changes too, so type the word as it is then counted{app.counting.shaddaAsLetter ? ", with the doubled letter" : ""}.
+      {/if}
     </p>
 
     <form onsubmit={submit}>
@@ -76,6 +107,14 @@
 
       <button type="submit" class="button primary" disabled={loading || !term.trim()}>Search</button>
     </form>
+    {#if recent.length > 0}
+      <p class="recent">
+        <span>Recent</span>
+        {#each recent as entry (entry.id)}
+          <button type="button" class="chip arabic" lang="ar" dir="rtl" onclick={() => { term = entry.term ?? ""; wordness = entry.wordness ?? "any"; void run(0); }}>{entry.term}</button>
+        {/each}
+      </p>
+    {/if}
   </header>
 
   <div class="results" aria-live="polite" aria-busy={loading}>
@@ -194,6 +233,29 @@
     position: absolute;
     opacity: 0;
     pointer-events: none;
+  }
+
+  .recent {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+    margin: var(--space-3) 0 0;
+    font-size: var(--text-xs);
+    color: var(--ink-muted);
+  }
+
+  .chip {
+    padding: 0 var(--space-2);
+    border: 1px solid var(--rule-strong);
+    border-radius: 999px;
+    background: var(--surface);
+    font-size: 1rem;
+    line-height: 1.7;
+  }
+
+  .chip:hover {
+    border-color: var(--lapis);
   }
 
   .results {

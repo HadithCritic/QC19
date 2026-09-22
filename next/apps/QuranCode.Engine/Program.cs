@@ -1,6 +1,7 @@
 using System.Text;
 using QuranCode.Core;
 using QuranCode.Core.Numbers;
+using QuranCode.Core.User;
 using QuranCode.Engine.Host;
 
 // qurancode-engine --content <path-to-content.db>
@@ -13,14 +14,16 @@ var utf8 = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
 TextWriter log = TextWriter.Synchronized(new StreamWriter(Console.OpenStandardError(), utf8) { AutoFlush = true });
 
 string? contentPath = null;
+string? userPath = null;
 for (int i = 0; i < args.Length - 1; i++)
 {
     if (args[i] == "--content") contentPath = args[i + 1];
+    if (args[i] == "--user") userPath = args[i + 1];
 }
 
 if (contentPath is null)
 {
-    log.WriteLine("usage: qurancode-engine --content <path-to-content.db>");
+    log.WriteLine("usage: qurancode-engine --content <path-to-content.db> [--user <path-to-user.db>]");
     return 2;
 }
 
@@ -31,7 +34,23 @@ if (!File.Exists(contentPath))
 }
 
 using var engine = new QuranCodeEngine(contentPath);
-var dispatcher = new Dispatcher(new Handlers(engine), log);
+
+// The reader's own data. Optional: without it the engine still serves the
+// text, and bookmark and history methods say they are unavailable.
+UserStore? store = null;
+if (userPath is not null)
+{
+    try
+    {
+        store = new UserStore(userPath);
+    }
+    catch (Exception ex)
+    {
+        log.WriteLine($"user data unavailable: {ex.Message}");
+    }
+}
+using UserStore? ownedStore = store;
+var dispatcher = new Dispatcher(new Handlers(engine), store is null ? null : new UserHandlers(engine, store), log);
 
 // Build the number index in the background: classifying a whole-book value
 // needs it (about 160 ms the first time), and NumberTheory is thread-safe.

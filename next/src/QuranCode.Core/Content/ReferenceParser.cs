@@ -19,8 +19,8 @@ public readonly record struct ReferenceParseResult(VerseRange Range, string? Err
 }
 
 /// <summary>
-/// Parses the references a reader types: <c>2</c>, <c>2:255</c>,
-/// <c>2:255-257</c> and <c>1:7-2:2</c>.
+/// Parses the references a reader types: <c>2</c>, <c>3-4</c>, <c>2:255</c>,
+/// <c>2:255-257</c>, <c>3-4:19</c> and <c>24:35-27:62</c>.
 /// </summary>
 /// <remarks>
 /// Features.txt #60. Arabic-Indic and Persian digits are accepted because an
@@ -59,10 +59,17 @@ public static class ReferenceParser
                 return ReferenceParseResult.Fail(error!);
             }
         }
+        else if (!ends[0].Contains(':'))
+        {
+            // "3-4": whole chapters.
+            if (!TryParsePoint(ends[1], chapters, isEnd: true, out last, out error))
+            {
+                return ReferenceParseResult.Fail(error!);
+            }
+        }
         else
         {
             // "2:255-257": the end is a verse in the same chapter.
-            if (!ends[0].Contains(':')) return FormatError(text!);
             string chapterPart = ends[0][..ends[0].IndexOf(':')];
             if (!TryParsePoint($"{chapterPart}:{ends[1]}", chapters, isEnd: true, out last, out error))
             {

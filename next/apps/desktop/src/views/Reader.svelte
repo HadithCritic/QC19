@@ -77,6 +77,23 @@
     }
   }
 
+  // Alt+click measures from the previous Alt+clicked word (Features.txt #63);
+  // a plain click selects the verse.
+  function onVerseClick(event: MouseEvent, verse: number): void {
+    const word = (event.target as HTMLElement).closest<HTMLElement>("[data-word]");
+    if (event.altKey && word) {
+      event.preventDefault();
+      void app.measureTo({ verse, word: Number(word.dataset.word) });
+      return;
+    }
+    app.selectVerse(verse, event.shiftKey);
+  }
+
+  function isMeasured(verse: number, word: number, end: "from" | "to"): boolean {
+    const location = end === "from" ? (app.measurement?.from ?? app.measureFrom) : app.measurement?.to;
+    return location !== null && location !== undefined && location.verse === verse && location.word === word;
+  }
+
   function uncounted(verse: Verse): boolean {
     return verse.isBasmala && app.verseZeroExcluded;
   }
@@ -122,9 +139,13 @@
           tabindex="0"
           aria-pressed={isSelected(verse.number)}
           aria-label={label(verse)}
-          onclick={(e) => app.selectVerse(verse.number, e.shiftKey)}
+          onclick={(e) => onVerseClick(e, verse.number)}
           onkeydown={(e) => onKey(e, verse.number)}
-        >{verse.words.join(" ")}<Rosette number={verse.numberInChapter} code={codes.get(verse.number)?.code ?? null} />{#if uncounted(verse)}<span class="note" lang="en" dir="ltr">not counted</span>{/if}</div></li>
+        >{#each verse.words as word, index (index)}<span
+              class="word"
+              class:measure-from={isMeasured(verse.number, index, "from")}
+              class:measure-to={isMeasured(verse.number, index, "to")}
+              data-word={index}>{word}</span>{" "}{/each}<Rosette number={verse.numberInChapter} code={codes.get(verse.number)?.code ?? null} />{#if uncounted(verse)}<span class="note" lang="en" dir="ltr">not counted</span>{/if}</div></li>
       {/each}
     </ol>
 
@@ -230,6 +251,16 @@
 
   .verse.selected {
     background: var(--lapis-soft);
+  }
+
+  .word {
+    border-radius: 3px;
+  }
+
+  .word.measure-from,
+  .word.measure-to {
+    background: var(--gilt-soft);
+    box-shadow: 0 0 0 1px var(--gilt);
   }
 
   .verse.basmala {

@@ -20,6 +20,9 @@ internal static class ErrorCodes
 
     public const string UnknownMethod = "unknown_method";
 
+    /// <summary>A feature needs something this engine was started without (such as user.db).</summary>
+    public const string Unavailable = "unavailable";
+
     /// <summary>A bug. Details go to stderr, never to the UI.</summary>
     public const string Internal = "internal";
 }

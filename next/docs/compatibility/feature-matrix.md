@@ -22,16 +22,16 @@ without a row here saying so and why.
 
 | # | Feature | Class | Status | Notes |
 | ---: | --- | --- | --- | --- |
-| 11 | Verses before/after, in chapter and book | port | engine | Derivable from `Segmentation` |
+| 11 | Verses before/after, in chapter and book | port | **done** | `selection.stats` position; Inspector shows it; follows the Bismillah option |
 | 28 | Show Original text, use Simplified29 counts | port | done | This is what `Original` mode already does; see text-normalization spec |
-| 29 | Chapter info on hover | port | todo | UI |
-| 59 | Sort chapters by number/name/revelation/counts/value | port | engine | All fields present in `chapters` |
+| 29 | Chapter info on hover | port | **done** | Chapter list card on hover or focus: verses, words, letters, value |
+| 59 | Sort chapters by number/name/revelation/counts/value | port | **done** | Chapter list sort menu, both directions; counts from `chapters.stats` |
 | 60 | Direct chapter/verse entry (`5:55`, `6:19-23`, …) | port | **done** | Chapters, verses, ranges and verse 0 (`2`, `2:255`, `2:255-257`, `1:7-2:2`, `2:0`), Arabic-Indic digits |
-| 61 | Direct page/station/part/… entry | port | engine | `partitions` table holds all 7 kinds |
-| 63 | Distances on text clicks | port | engine | `Segmentation` distance arrays |
-| 68 | Back/forward through browse and find history | port | todo | Belongs in `user.db` |
-| 69 | Find and browse history | port | todo | `user.db` |
-| 70 | Bookmarks with notes, auto-save | port | todo | `user.db` |
+| 61 | Direct page/station/part/… entry | port | **done** | `page 1`, `part 30`, `verse 262`, `word 40`, `letter 139`, chapter ranges `3-4` |
+| 63 | Distances on text clicks | port | **done** | Alt+click a second word: chapters, verses, words, letters between (`words.distance`) |
+| 68 | Back/forward through browse and find history | port | **done** | Back/forward buttons and Alt+Left/Right; searches rerun from history |
+| 69 | Find and browse history | port | **done** | `user.db`, 500 per kind, repeats skipped; Saved view and recent searches |
+| 70 | Bookmarks with notes, auto-save | port | **done** | Inspector bookmark with an auto-saved note; Saved view lists, opens, deletes |
 | 17 | IndoPak font family support | port | todo | UI font selection |
 | 46 | Dynamic keyboard per text mode | rewrite | todo | UI |
 

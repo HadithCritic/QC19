@@ -32,7 +32,10 @@ pub fn run() {
     tauri::Builder::default()
         .setup(|app| {
             let content = app.path().resource_dir()?.join("content.db");
-            app.manage(Engine::new(sidecar_path()?, content));
+            // Bookmarks and history live in the per-user app data folder,
+            // apart from the read-only content that ships with the app.
+            let user = app.path().app_data_dir()?.join("user.db");
+            app.manage(Engine::new(sidecar_path()?, content, Some(user)));
 
             // Start the engine now, so it warms up while the window loads
             // instead of when the first screen asks for data.

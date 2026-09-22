@@ -75,10 +75,19 @@ export interface LetterCount {
   count: number;
 }
 
+/** Counted verses before and after a selection, in its chapter and in the book. */
+export interface Position {
+  beforeInChapter: number;
+  afterInChapter: number;
+  beforeInBook: number;
+  afterInBook: number;
+}
+
 export interface Stats {
   first: number;
   last: number;
   valueSystem: string;
+  position: Position;
   chapters: NumberInfo;
   verses: NumberInfo;
   words: NumberInfo;
@@ -100,6 +109,52 @@ export interface SystemValue {
 }
 
 export type Wordness = "any" | "whole" | "part";
+
+export interface ChapterStats {
+  chapter: number;
+  verses: number;
+  words: number;
+  letters: number;
+  value: string;
+  code: ClassCode;
+}
+
+export interface WordLocation {
+  verse: number;
+  /** 0-based display word within the verse. */
+  word: number;
+}
+
+export interface Distance {
+  chapters: number;
+  verses: number;
+  words: number;
+  letters: number;
+}
+
+/** First and last are null when the stored chapter:verse does not exist in this edition. */
+export interface Bookmark {
+  id: number;
+  reference: string;
+  first: number | null;
+  last: number | null;
+  note: string;
+  createdUtc: string;
+  updatedUtc: string;
+}
+
+export type HistoryKind = "browse" | "find";
+
+export interface HistoryEntry {
+  id: number;
+  kind: HistoryKind;
+  reference: string | null;
+  first: number | null;
+  last: number | null;
+  term: string | null;
+  wordness: Wordness | null;
+  atUtc: string;
+}
 
 /** How the text is counted: the original's Statistics-panel options. */
 export interface CountingOptions {

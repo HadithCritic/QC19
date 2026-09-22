@@ -70,15 +70,19 @@ struct Running {
 pub struct Engine {
     binary: PathBuf,
     content: PathBuf,
+    user: Option<PathBuf>,
     next_id: AtomicU64,
     running: Mutex<Option<Running>>,
 }
 
 impl Engine {
-    pub fn new(binary: PathBuf, content: PathBuf) -> Self {
+    /// `user` is the reader's writable data file; without it, bookmarks and
+    /// history report that they are unavailable.
+    pub fn new(binary: PathBuf, content: PathBuf, user: Option<PathBuf>) -> Self {
         Self {
             binary,
             content,
+            user,
             next_id: AtomicU64::new(1),
             running: Mutex::new(None),
         }
@@ -144,6 +148,11 @@ impl Engine {
         command
             .arg("--content")
             .arg(&self.content)
+            .args(
+                self.user
+                    .iter()
+                    .flat_map(|user| [std::ffi::OsStr::new("--user"), user.as_os_str()]),
+            )
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
@@ -332,7 +341,7 @@ mod tests {
             std::env::consts::EXE_SUFFIX
         ));
         let content = root.join("resources/content.db");
-        (binary.exists() && content.exists()).then(|| Engine::new(binary, content))
+        (binary.exists() && content.exists()).then(|| Engine::new(binary, content, None))
     }
 
     #[tokio::test]
@@ -376,6 +385,7 @@ mod tests {
         let engine = Engine::new(
             PathBuf::from("definitely-not-here.exe"),
             PathBuf::from("content.db"),
+            None,
         );
         let error = engine.call("engine.info", None).await.unwrap_err();
         assert_eq!(error.code, "engine_unavailable");
