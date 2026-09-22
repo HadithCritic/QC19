@@ -1,6 +1,6 @@
 # ADR 0001: Keep the computational core in C#; reject a Rust rewrite
 
-Status: accepted
+Status: accepted; UI choice superseded by ADR 0002
 Date: 2026-09-22
 
 ## Context
@@ -131,9 +131,9 @@ which case Electron is only an expensive browser.
 This ADR keeps the *language*. It explicitly does **not** keep the
 architecture. Still to be replaced, per the brief:
 
-- the eager object graph (→ columnar data + SQLite, ADR 0002)
+- the eager object graph (→ columnar arrays + SQLite; see `data/schema/content.sql`)
 - static god-objects `Server` / `Client` (→ explicit services)
-- the 87k-line `MainForm` (→ Avalonia feature modules)
+- the 87k-line `MainForm` (→ feature modules in the UI shell)
 - 63 MB of precomputed number text (→ computed at runtime)
 - 156 MB of always-shipped translations (→ optional packs)
 

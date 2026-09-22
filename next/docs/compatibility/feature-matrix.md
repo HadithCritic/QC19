@@ -57,7 +57,7 @@ without a row here saying so and why.
 | # | Feature | Class | Status | Notes |
 | ---: | --- | --- | --- | --- |
 | — | Arabic text search, 3 wordness modes | port | **done** | 10 queries, 9,582 verse entries verified |
-| 1 | Ctrl+Click for same-root verses | port | engine | `roots` and `word_roots` imported (2,053 roots) |
+| 1 | Ctrl+Click for same-root verses | port | data | 2,053 roots imported, but `word_roots` is empty: roots are not yet linked to words |
 | 53 | Root search, multi-root, +/- include/exclude | port | todo | Data present, query layer todo |
 | 52 | Search across all text modes | port | engine | Engine caches a search per mode |
 | 51 | Search in one or all translations | port | data | Needs translation packs |
@@ -96,7 +96,7 @@ without a row here saying so and why.
 | ---: | --- | --- | --- | --- |
 | 18 | Waw as a word | port | engine | Modeled in `segmentations`; not yet applied |
 | 19 | Shadda as a double letter | port | engine | Same |
-| 20 | BismAllah chapter prefixes | port | engine | Same |
+| 20 | BismAllah chapter prefixes | port | **done** | Submission edition: verse 0, counted or not (ADR 0003) |
 | 4 | Updated root database | port | done | 2,053 roots imported with provenance |
 | 62 | Word grammar, Arabic and English | port | data | `word_grammar` table exists; corpus.quran.com data not imported |
 | 64 | Word meaning and transliteration on hover | port | data | Same |
