@@ -5,6 +5,7 @@
   import SystemPicker from "./lib/components/SystemPicker.svelte";
   import { app, type Theme, type View } from "./lib/state/app.svelte";
   import FindingsView from "./views/FindingsView.svelte";
+  import InitialsView from "./views/InitialsView.svelte";
   import NumbersView from "./views/NumbersView.svelte";
   import StatisticsView from "./views/StatisticsView.svelte";
   import ReadView from "./views/ReadView.svelte";
@@ -18,6 +19,7 @@
     { id: "values", label: "Values", icon: "M6 4h12v2.5H9.2l4.6 5.5-4.6 5.5H18V20H6v-2.2l5.2-5.8L6 6.2V4Z" },
     { id: "statistics", label: "Stats", icon: "M4 20V10h3v10H4Zm6.5 0V4h3v16h-3ZM17 20v-7h3v7h-3Z" },
     { id: "findings", label: "Findings", icon: "M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2Z" },
+    { id: "initials", label: "Initials", icon: "M5 4h5v2.5H8.8V13H6.2V6.5H5V4Zm6.5 0H14v4.3h2.5V4H19v11.5h-2.5v-4.7H14v4.7h-2.5V4ZM5 17h14v2.5H5V17Z" },
     { id: "saved", label: "Saved", icon: "M6 3h12v18l-6-4-6 4V3Z" },
     { id: "numbers", label: "Numbers", icon: "M9 3 8.3 7H5v2h3l-.7 4H4v2h3l-.7 4h2l.7-4h4l-.7 4h2l.7-4H19v-2h-3.3l.7-4H20V7h-3.3L17.4 3h-2l-.7 4h-4l.7-4H9Zm1 6h4l-.7 4h-4L10 9Z" },
   ];
@@ -96,6 +98,8 @@
         <StatisticsView />
       {:else if app.view === "findings"}
         <FindingsView />
+      {:else if app.view === "initials"}
+        <InitialsView />
       {:else}
         <NumbersView />
       {/if}

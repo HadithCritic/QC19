@@ -115,7 +115,9 @@ public sealed class StatisticsProtocolTests : IDisposable
     {
         JsonElement findings = Result("findings.list", new { });
         Assert.True(findings.GetArrayLength() >= 5);
-        Assert.All(findings.EnumerateArray(), f => Assert.True(
+        JsonElement[] gated = [.. findings.EnumerateArray().Where(f => f.GetProperty("check").GetString() == "gate")];
+        Assert.NotEmpty(gated);
+        Assert.All(gated, f => Assert.True(
             f.GetProperty("holds").GetBoolean(),
             $"{f.GetProperty("id").GetString()} computed {f.GetProperty("computed").GetInt64()}, " +
             $"published {f.GetProperty("expected").GetInt64()}"));
@@ -129,9 +131,30 @@ public sealed class StatisticsProtocolTests : IDisposable
         Assert.Equal("numbered verses only", allah.GetProperty("convention").GetString());
         Assert.Equal("Appendix 1", allah.GetProperty("source").GetString());
 
+        JsonElement alif = findings.EnumerateArray().Single(f => f.GetProperty("id").GetString() == "alm-2-alif");
+        Assert.Equal("open", alif.GetProperty("check").GetString());
+        Assert.False(alif.GetProperty("holds").GetBoolean());
+
         JsonElement qaf = findings.EnumerateArray().Single(f => f.GetProperty("id").GetString() == "qaf-in-chapter-50");
         Assert.Equal("stated", qaf.GetProperty("basis").GetString());
         Assert.Equal("chapter 50", qaf.GetProperty("scope").GetString());
+    }
+
+    [Fact]
+    public void InitialsListTheTwentyNineChapters()
+    {
+        JsonElement chapters = Result("initials.list", new { });
+        Assert.Equal(29, chapters.GetArrayLength());
+
+        JsonElement qaf = chapters.EnumerateArray().Single(c => c.GetProperty("chapter").GetInt32() == 50);
+        JsonElement count = qaf.GetProperty("counts")[0];
+        Assert.Equal("ق", count.GetProperty("letter").GetString());
+        Assert.Equal(57, count.GetProperty("count").GetInt64());
+        Assert.True(count.GetProperty("multipleOf19").GetBoolean());
+
+        JsonElement shura = chapters.EnumerateArray().Single(c => c.GetProperty("chapter").GetInt32() == 42);
+        Assert.Equal(2, shura.GetProperty("verses").GetInt32());
+        Assert.Equal(5, shura.GetProperty("counts").GetArrayLength());
     }
 
     [Fact]

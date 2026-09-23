@@ -16,6 +16,9 @@
   let openId = $state<string | null>(null);
 
   const holding = $derived(findings.filter((f) => f.holds).length);
+  const open = $derived(findings.filter((f) => f.check === "open").length);
+  // A gated finding that fails is a regression; an open one is a known gap.
+  const broken = $derived(findings.filter((f) => f.check === "gate" && !f.holds).length);
 
   function load(): void {
     loading = true;
@@ -39,7 +42,7 @@
     <h1>Findings</h1>
     {#if !loading && !error && findings.length > 0}
       <p class="tally">
-        {holding} of {findings.length} reproduce from this text
+        {holding} of {findings.length} reproduce from this text{#if open > 0}; {open} open{/if}{#if broken > 0}; <strong class="broken">{broken} no longer reproduce</strong>{/if}
       </p>
     {/if}
   </header>
@@ -54,14 +57,16 @@
     {:else}
       <ul>
         {#each findings as f (f.id)}
-          <li class:disagrees={!f.holds}>
+          <li class:disagrees={!f.holds && f.check === "gate"} class:open={f.check === "open"}>
             <button
               type="button"
               class="head"
               aria-expanded={openId === f.id}
               onclick={() => (openId = openId === f.id ? null : f.id)}
             >
-              <span class="mark" class:holds={f.holds} aria-hidden="true">{f.holds ? "✓" : "✕"}</span>
+              <span class="mark" class:holds={f.holds} class:open={!f.holds && f.check === "open"} aria-hidden="true"
+                >{f.holds ? "✓" : f.check === "open" ? "?" : "✕"}</span
+              >
               <span class="claim">{f.claim}</span>
               <span class="value" class:divisible={f.multipleOf19}>
                 {group(f.computed)}
@@ -70,8 +75,9 @@
             </button>
 
             {#if !f.holds}
-              <p class="mismatch">
-                Computed {group(f.computed)}, published {group(f.expected)}.
+              <p class="mismatch" class:open={f.check === "open"}>
+                Computed {group(f.computed)}, published {group(f.expected)}, a gap of {group(Math.abs(f.expected - f.computed))}.
+                {#if f.check === "open"}Open: the cause is not settled, so this does not fail the build.{/if}
               </p>
             {/if}
 
@@ -199,6 +205,22 @@
     color: var(--ink-muted);
     font-size: var(--text-xs);
     font-style: normal;
+  }
+
+  li.open {
+    border-color: var(--gilt);
+  }
+
+  .mark.open {
+    color: var(--gilt);
+  }
+
+  .mismatch.open {
+    color: var(--gilt);
+  }
+
+  .broken {
+    color: var(--danger);
   }
 
   .mismatch {

@@ -9,7 +9,10 @@ public enum FindingMeasure
     /// <summary>Counted letters in the scope.</summary>
     Letters,
 
-    /// <summary>Occurrences of one letter in the scope.</summary>
+    /// <summary>
+    /// Occurrences in the scope of the letters in <see cref="Finding.Match"/>,
+    /// added together: one letter, or several such as حم.
+    /// </summary>
     LetterOccurrences,
 
     /// <summary>Words in the scope whose normalized form is in a named set.</summary>
@@ -33,13 +36,41 @@ public enum RuleBasis
     Inferred,
 }
 
-/// <summary>What a finding counts over: the whole book, a chapter, or a verse.</summary>
-public sealed record FindingScope(int? Chapter = null, int? Verse = null)
+/// <summary>
+/// What a finding counts over: the whole book, one or more chapters, or a
+/// verse. Several chapters need not be contiguous: the three chapters
+/// initialed with ص are 7, 19 and 38.
+/// </summary>
+public sealed record FindingScope(IReadOnlyList<int>? Chapters = null, int? Verse = null)
 {
     public static readonly FindingScope Book = new();
 
-    public override string ToString() =>
-        Chapter is null ? "book" : Verse is null ? $"chapter {Chapter}" : $"{Chapter}:{Verse}";
+    public FindingScope(int chapter, int? verse = null)
+        : this([chapter], verse)
+    {
+    }
+
+    public override string ToString() => Chapters switch
+    {
+        null => "book",
+        [int one] when Verse is not null => $"{one}:{Verse}",
+        [int one] => $"chapter {one}",
+        _ => $"chapters {string.Join(", ", Chapters)}",
+    };
+}
+
+/// <summary>Whether a finding must reproduce for the build to pass.</summary>
+public enum FindingCheck
+{
+    /// <summary>It reproduces, and a change that breaks it fails the build.</summary>
+    Gate,
+
+    /// <summary>
+    /// A known discrepancy: the published number and the computed one differ
+    /// and the reason is not settled. It is shown with the gap, never hidden
+    /// and never edited to agree, and it does not fail the build.
+    /// </summary>
+    Open,
 }
 
 /// <summary>
@@ -70,7 +101,8 @@ public sealed record Finding(
     string TextMode,
     RuleBasis Basis,
     string Rule,
-    string Source);
+    string Source,
+    FindingCheck Check = FindingCheck.Gate);
 
 /// <summary>A finding and what the engine computes for it.</summary>
 public sealed record FindingResult(Finding Finding, long Computed)

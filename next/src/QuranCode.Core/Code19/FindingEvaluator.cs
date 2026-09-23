@@ -22,16 +22,15 @@ public static class FindingEvaluator
 
         var counting = new CountingOptions { IncludeBasmalas = finding.IncludeBasmalas };
         Segmentation segmentation = engine.Segmentation(finding.TextMode, counting);
-        CorpusView view = engine.View(counting);
-        (int first, int last) = VerseRangeOf(finding.Scope, view, segmentation);
+        int[] verses = VersesOf(finding.Scope, segmentation);
 
         long computed = finding.Measure switch
         {
-            FindingMeasure.Words => CountWords(segmentation, first, last),
-            FindingMeasure.Letters => CountLetters(segmentation, first, last),
-            FindingMeasure.LetterOccurrences => CountLetter(segmentation, first, last, LetterOf(finding)),
-            FindingMeasure.WordFormOccurrences => CountForms(segmentation, first, last, SetOf(finding)),
-            FindingMeasure.VerseNumberSum => SumVerseNumbers(segmentation, first, last, SetOf(finding)),
+            FindingMeasure.Words => verses.Sum(v => (long)segmentation.VerseWordCount[v]),
+            FindingMeasure.Letters => verses.Sum(v => LettersIn(segmentation, v, _ => true)),
+            FindingMeasure.LetterOccurrences => CountLetters(segmentation, verses, LettersOf(finding)),
+            FindingMeasure.WordFormOccurrences => verses.Sum(v => FormsIn(segmentation, v, SetOf(finding))),
+            FindingMeasure.VerseNumberSum => SumVerseNumbers(segmentation, verses, SetOf(finding)),
             _ => throw new ArgumentException($"unknown measure {finding.Measure}", nameof(finding)),
         };
         return new FindingResult(finding, computed);
@@ -48,80 +47,53 @@ public static class FindingEvaluator
         WordForms.Named(finding.Match ?? "")
         ?? throw new ArgumentException($"no word-form set named \"{finding.Match}\"", nameof(finding));
 
-    private static char LetterOf(Finding finding) =>
-        finding.Match is { Length: 1 } match
-            ? match[0]
-            : throw new ArgumentException($"\"{finding.Match}\" is not a single letter", nameof(finding));
+    private static HashSet<char> LettersOf(Finding finding) =>
+        finding.Match is { Length: > 0 } match
+            ? [.. match]
+            : throw new ArgumentException("a letter count needs at least one letter", nameof(finding));
 
-    /// <summary>The scope as an inclusive range of view indexes.</summary>
-    private static (int First, int Last) VerseRangeOf(FindingScope scope, CorpusView view, Segmentation segmentation)
+    /// <summary>The scope as view indexes of the verses it covers, in order.</summary>
+    private static int[] VersesOf(FindingScope scope, Segmentation segmentation)
     {
-        if (scope.Chapter is null) return (0, segmentation.VerseCount - 1);
+        if (scope.Chapters is null) return [.. Enumerable.Range(0, segmentation.VerseCount)];
 
-        var indexes = new List<int>();
-        for (int i = 0; i < segmentation.VerseCount; i++)
+        var chapters = new HashSet<int>(scope.Chapters);
+        var verses = new List<int>();
+        for (int v = 0; v < segmentation.VerseCount; v++)
         {
-            if (segmentation.VerseChapter[i] != scope.Chapter) continue;
-            if (scope.Verse is not null && segmentation.VerseNumberInChapter[i] != scope.Verse) continue;
-            indexes.Add(i);
+            if (!chapters.Contains(segmentation.VerseChapter[v])) continue;
+            if (scope.Verse is not null && segmentation.VerseNumberInChapter[v] != scope.Verse) continue;
+            verses.Add(v);
         }
-        if (indexes.Count == 0)
+        if (verses.Count == 0)
             throw new ArgumentException($"scope {scope} selects no verse in this edition", nameof(scope));
-        _ = view;
-        return (indexes[0], indexes[^1]);
+        return [.. verses];
     }
 
-    private static long CountWords(Segmentation s, int first, int last)
+    private static long LettersIn(Segmentation s, int verse, Func<char, bool> counts)
     {
-        long total = 0;
-        for (int v = first; v <= last; v++) total += s.VerseWordCount[v];
-        return total;
-    }
-
-    private static long CountLetters(Segmentation s, int first, int last)
-    {
-        long total = 0;
-        for (int w = s.VerseFirstWord[first]; w < s.VerseFirstWord[last] + s.VerseWordCount[last]; w++)
-            total += s.WordLetterCount[w];
-        return total;
-    }
-
-    private static long CountLetter(Segmentation s, int first, int last, char letter)
-    {
-        int from = s.WordFirstLetter[s.VerseFirstWord[first]];
-        int lastWord = s.VerseFirstWord[last] + s.VerseWordCount[last] - 1;
+        int firstWord = s.VerseFirstWord[verse];
+        int lastWord = firstWord + s.VerseWordCount[verse] - 1;
+        if (lastWord < firstWord) return 0;
         int to = s.WordFirstLetter[lastWord] + s.WordLetterCount[lastWord];
         long total = 0;
-        for (int i = from; i < to; i++)
-            if (s.LetterChars[i] == letter) total++;
+        for (int i = s.WordFirstLetter[firstWord]; i < to; i++)
+            if (counts(s.LetterChars[i])) total++;
         return total;
     }
 
-    private static long CountForms(Segmentation s, int first, int last, IReadOnlySet<string> forms)
+    private static long CountLetters(Segmentation s, int[] verses, HashSet<char> letters) =>
+        verses.Sum(v => LettersIn(s, v, letters.Contains));
+
+    private static long FormsIn(Segmentation s, int verse, IReadOnlySet<string> forms)
     {
         long total = 0;
-        for (int v = first; v <= last; v++)
-        {
-            int start = s.VerseFirstWord[v];
-            for (int w = start; w < start + s.VerseWordCount[v]; w++)
-                if (forms.Contains(s.WordText(w))) total++;
-        }
+        int start = s.VerseFirstWord[verse];
+        for (int w = start; w < start + s.VerseWordCount[verse]; w++)
+            if (forms.Contains(s.WordText(w))) total++;
         return total;
     }
 
-    private static long SumVerseNumbers(Segmentation s, int first, int last, IReadOnlySet<string> forms)
-    {
-        long total = 0;
-        for (int v = first; v <= last; v++)
-        {
-            int start = s.VerseFirstWord[v];
-            for (int w = start; w < start + s.VerseWordCount[v]; w++)
-            {
-                if (!forms.Contains(s.WordText(w))) continue;
-                total += s.VerseNumberInChapter[v];
-                break;
-            }
-        }
-        return total;
-    }
+    private static long SumVerseNumbers(Segmentation s, int[] verses, IReadOnlySet<string> forms) =>
+        verses.Where(v => FormsIn(s, v, forms) > 0).Sum(v => (long)s.VerseNumberInChapter[v]);
 }

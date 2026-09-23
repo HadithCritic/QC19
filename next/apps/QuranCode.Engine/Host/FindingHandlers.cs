@@ -26,7 +26,26 @@ internal sealed partial class Handlers
             r.Finding.Basis == RuleBasis.Inferred ? "inferred" : "stated",
             r.Finding.Rule,
             Convention(r.Finding),
-            r.Finding.Source)),
+            r.Finding.Source,
+            r.Finding.Check == FindingCheck.Open ? "open" : "gate")),
+    ];
+
+    /// <summary>
+    /// The 29 initialed chapters, each with how often its own initials occur
+    /// in it (Features.txt #76). The counts are computed, not stated; a
+    /// published figure for one of them belongs in the findings catalog.
+    /// </summary>
+    public IReadOnlyList<InitialedChapterDto> Initials() =>
+    [
+        .. QuranicInitials.Chapters.Select(chapter => new InitialedChapterDto(
+            chapter.Chapter,
+            _engine.Chapters[chapter.Chapter - 1].Name,
+            chapter.Letters,
+            chapter.Verses,
+            [
+                .. QuranicInitials.CountsIn(_engine, chapter).Select(c =>
+                    new InitialCountDto(c.Letter.ToString(), c.Count, c.Count % 19 == 0)),
+            ])),
     ];
 
     private static string Name(FindingMeasure measure) => measure switch

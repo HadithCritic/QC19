@@ -180,10 +180,25 @@ internal sealed record WordInfoDto(
     IReadOnlyList<WordPartDto> Parts);
 
 /// <param name="Pack">Whether it comes from an optional translation pack rather than the edition itself.</param>
+/// <summary>One initialed chapter and how often each of its own initials occurs in it.</summary>
+/// <param name="Letters">Its initials in order, one char each.</param>
+/// <param name="Verses">Opening verses carrying them: 1 everywhere except chapter 42.</param>
+/// <param name="Counts">One entry per distinct initial, in the order the letters appear.</param>
+internal sealed record InitialedChapterDto(
+    int Chapter,
+    string Name,
+    string Letters,
+    int Verses,
+    IReadOnlyList<InitialCountDto> Counts);
+
+/// <param name="MultipleOf19">The count divides by 19.</param>
+internal sealed record InitialCountDto(string Letter, long Count, bool MultipleOf19);
+
 /// <summary>One published Code 19 result and what the engine computes for it.</summary>
 /// <param name="Basis">"stated" when the source gives the counting rule, "inferred" when it was derived.</param>
 /// <param name="Convention">The counting convention this finding holds under, in words.</param>
 /// <param name="Multiple">Computed divided by 19 when it divides, else null.</param>
+/// <param name="Check">"gate" when it must reproduce, "open" for a known, unsettled discrepancy.</param>
 internal sealed record FindingDto(
     string Id,
     string Claim,
@@ -198,7 +213,8 @@ internal sealed record FindingDto(
     string Basis,
     string Rule,
     string Convention,
-    string Source);
+    string Source,
+    string Check);
 
 internal sealed record TranslationDto(string Key, string Language, string Name, string Translator, string Kind, bool RightToLeft);
 

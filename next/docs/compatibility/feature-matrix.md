@@ -130,7 +130,7 @@ Brief §17: these become modules in one shell rather than separate executables.
 | ---: | --- | --- | --- | --- |
 | 74 | QuranNet 3D word graph | port | out | ADR 0004 |
 | 75 | QuranLab (114 verse-count properties) | port | out | ADR 0004 |
-| 76 | InitialLetters sentence builder | port | todo | **Kept by ADR 0004** and central to Code 19; roadmap stage C |
+| 76 | InitialLetters sentence builder | port | **done** | Kept by ADR 0004 as the Initials view, not a tool: the 29 chapters, 14 letters and their counts. The original's sentence builder is not carried over; the counts are what Code 19 needs |
 | 77 | Prime Calculator with Yafu | **rewrite** | out | ADR 0004. Number factoring is already in the Numbers view |
 | 79 | Composites analysis | port | out | ADR 0004 |
 
@@ -170,9 +170,9 @@ capability.
 
 | Status | Count |
 | --- | ---: |
-| done | 60 |
+| done | 61 |
 | engine (no UI yet) | 1 (#72) |
-| todo | 3 (#30, #46, #76) |
+| todo | 2 (#30, #46) |
 | out (ADR 0004) | 13 |
 | drop | 1 (#36) |
 | part of another row | 1 (#37, see #70) |
@@ -182,12 +182,10 @@ Counted per numbered feature, 79 in all; a row such as 32–35 counts as four.
 Arabic text search, which `Features.txt` does not number, is also done. The
 11 other standalone tools listed above are all todo and are not part of the 79.
 
-Three numbered features remain in scope, all of them kept deliberately by
-ADR 0004:
+Two numbered features remain in scope, both kept deliberately by ADR 0004:
 
 | # | Feature | Where |
 | ---: | --- | --- |
-| 76 | InitialLetters | Roadmap stage C; central to Code 19 |
 | 30 | Expression calculator | Roadmap stage D |
 | 46 | Character palette | Roadmap stage A, reduced |
 

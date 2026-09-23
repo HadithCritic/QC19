@@ -10,6 +10,7 @@ import type {
   EngineInfo,
   AllahSummary,
   Finding,
+  InitialedChapter,
   LetterScope,
   LetterStatistic,
   Maths,
@@ -130,6 +131,7 @@ export const engine = {
   numberDetails: (value: string) => call<NumberDetails>("number.details", { value }),
   translations: () => call<Translation[]>("translations.list"),
   findings: () => call<Finding[]>("findings.list"),
+  initials: () => call<InitialedChapter[]>("initials.list"),
   wordInfo: (verse: number, word: number) => call<WordInfo>("word.info", { verse, word }),
   translationText: (keys: string[], range: VerseRange) => call<TranslationText[]>("translations.text", { keys, ...range }),
   selectionWords: (range: VerseRange, valueSystem: string, counting: CountingOptions, withMarks: boolean) =>

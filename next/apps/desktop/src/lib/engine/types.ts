@@ -229,6 +229,19 @@ export interface Finding {
   /** The counting convention this finding holds under, in words. */
   convention: string;
   source: string;
+  /** "gate" must reproduce; "open" is a known discrepancy whose cause is not settled. */
+  check: "gate" | "open";
+}
+
+/** One of the 29 chapters that open with Quranic Initials. */
+export interface InitialedChapter {
+  chapter: number;
+  name: string;
+  /** Its initials in order, one character each. */
+  letters: string;
+  /** Opening verses carrying them: 1 everywhere except chapter 42. */
+  verses: number;
+  counts: { letter: string; count: number; multipleOf19: boolean }[];
 }
 
 export interface TranslationText {

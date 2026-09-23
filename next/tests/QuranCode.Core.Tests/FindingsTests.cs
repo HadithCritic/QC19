@@ -20,16 +20,20 @@ public sealed class FindingsTests : IDisposable
         SqliteConnection.ClearAllPools();
     }
 
-    public static TheoryData<string> Ids()
+    public static TheoryData<string> Gated() => IdsWhere(FindingCheck.Gate);
+
+    public static TheoryData<string> Open() => IdsWhere(FindingCheck.Open);
+
+    private static TheoryData<string> IdsWhere(FindingCheck check)
     {
         var data = new TheoryData<string>();
-        foreach (Finding finding in FindingCatalog.All) data.Add(finding.Id);
+        foreach (Finding finding in FindingCatalog.All.Where(f => f.Check == check)) data.Add(finding.Id);
         return data;
     }
 
     [Theory]
-    [MemberData(nameof(Ids))]
-    public void EachFindingReproduces(string id)
+    [MemberData(nameof(Gated))]
+    public void EachGatedFindingReproduces(string id)
     {
         Finding finding = FindingCatalog.All.Single(f => f.Id == id);
         FindingResult result = FindingEvaluator.Evaluate(_engine, finding);
@@ -37,6 +41,22 @@ public sealed class FindingsTests : IDisposable
             result.Holds,
             $"{finding.Id}: computed {result.Computed}, published {finding.Expected}. " +
             $"Rule ({finding.Basis}): {finding.Rule} Source: {finding.Source}");
+    }
+
+    /// <summary>
+    /// An open finding is a known discrepancy. If one starts to reproduce, a
+    /// change has settled it, and the row should become a gate rather than
+    /// sit marked open while it quietly holds.
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(Open))]
+    public void EachOpenFindingStillDisagrees(string id)
+    {
+        Finding finding = FindingCatalog.All.Single(f => f.Id == id);
+        FindingResult result = FindingEvaluator.Evaluate(_engine, finding);
+        Assert.False(
+            result.Holds,
+            $"{finding.Id} now reproduces ({result.Computed}). Change its check from open to gate.");
     }
 
     [Fact]
@@ -137,9 +157,41 @@ public sealed class FindingsTests : IDisposable
     {
         Assert.Throws<InvalidDataException>(() => Read("too\tfew\tfields"));
         Assert.Throws<InvalidDataException>(() =>
-            Read("id\tclaim\t1\tnosuchmeasure\tbook\tallah\tno\tOriginal\tstated\trule\tsource"));
+            Read("id\tclaim\t1\tnosuchmeasure\tbook\tallah\tno\tOriginal\tstated\trule\tsource\tgate"));
         Assert.Throws<InvalidDataException>(() =>
-            Read("id\tclaim\t1\twords\tbook\t \tmaybe\tOriginal\tstated\trule\tsource"));
+            Read("id\tclaim\t1\twords\tbook\t \tmaybe\tOriginal\tstated\trule\tsource\tgate"));
+        Assert.Throws<InvalidDataException>(() =>
+            Read("id\tclaim\t1\twords\tbook\t \tyes\tOriginal\tstated\trule\tsource\tsometimes"));
+        Assert.Throws<InvalidDataException>(() =>
+            Read("id\tclaim\t1\twords\tchapters:9-2\t \tyes\tOriginal\tstated\trule\tsource\tgate"));
+    }
+
+    [Fact]
+    public void ScopesReadSeveralChapters()
+    {
+        Finding list = Read("a\tc\t1\twords\tchapters:7,19,38\t \tyes\tOriginal\tstated\tr\ts\tgate")[0];
+        Assert.Equal([7, 19, 38], list.Scope.Chapters);
+        Assert.Equal("chapters 7, 19, 38", list.Scope.ToString());
+
+        Finding range = Read("a\tc\t1\twords\tchapters:40-46\t \tyes\tOriginal\tstated\tr\ts\tgate")[0];
+        Assert.Equal([40, 41, 42, 43, 44, 45, 46], range.Scope.Chapters);
+    }
+
+    /// <summary>
+    /// The initial-letter totals hold only when the Basmalahs are counted, the
+    /// opposite of the Allah count. This is the case ADR 0004 §7 describes:
+    /// no single global setting can serve both.
+    /// </summary>
+    [Fact]
+    public void TheInitialsNeedTheBasmalahsTheAllahCountDoesNot()
+    {
+        Finding noon = FindingCatalog.All.Single(f => f.Id == "noon-68");
+        Assert.True(noon.IncludeBasmalas);
+        Assert.Equal(133, FindingEvaluator.Evaluate(_engine, noon).Computed);
+        Assert.Equal(132, FindingEvaluator.Evaluate(_engine, noon with { IncludeBasmalas = false }).Computed);
+
+        Finding allah = FindingCatalog.All.Single(f => f.Id == "allah-count");
+        Assert.False(allah.IncludeBasmalas);
     }
 
     private static IReadOnlyList<Finding> Read(string line) =>

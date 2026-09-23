@@ -341,8 +341,7 @@ mod tests {
             std::env::consts::EXE_SUFFIX
         ));
         let content = root.join("resources/content.db");
-        (binary.exists() && content.exists())
-            .then(|| Engine::new(binary, content, None))
+        (binary.exists() && content.exists()).then(|| Engine::new(binary, content, None))
     }
 
     #[tokio::test]

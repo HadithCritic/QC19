@@ -34,8 +34,8 @@ public static class FindingCatalog
             if (line.Length == 0 || line[0] == '#') continue;
 
             string[] f = line.Split('\t');
-            if (f.Length != 11)
-                throw new InvalidDataException($"findings line {lineNumber}: {f.Length} fields, expected 11");
+            if (f.Length != 12)
+                throw new InvalidDataException($"findings line {lineNumber}: {f.Length} fields, expected 12");
             findings.Add(new Finding(
                 Id: f[0],
                 Claim: f[1],
@@ -47,7 +47,8 @@ public static class FindingCatalog
                 TextMode: f[7],
                 Basis: ParseBasis(f[8], lineNumber),
                 Rule: f[9],
-                Source: f[10]));
+                Source: f[10],
+                Check: ParseCheck(f[11], lineNumber)));
         }
 
         var duplicate = findings.GroupBy(x => x.Id).FirstOrDefault(g => g.Count() > 1);
@@ -72,6 +73,13 @@ public static class FindingCatalog
         _ => throw new InvalidDataException($"findings line {line}: basis is \"stated\" or \"inferred\", not \"{text}\""),
     };
 
+    private static FindingCheck ParseCheck(string text, int line) => text switch
+    {
+        "gate" => FindingCheck.Gate,
+        "open" => FindingCheck.Open,
+        _ => throw new InvalidDataException($"findings line {line}: check is \"gate\" or \"open\", not \"{text}\""),
+    };
+
     private static bool ParseYesNo(string text, int line) => text switch
     {
         "yes" => true,
@@ -79,13 +87,15 @@ public static class FindingCatalog
         _ => throw new InvalidDataException($"findings line {line}: basmalas is \"yes\" or \"no\", not \"{text}\""),
     };
 
-    /// <summary>"book", "chapter:50" or "50:1".</summary>
+    /// <summary>"book", "chapter:50", "chapters:7,19,38", "chapters:40-46" or "50:1".</summary>
     private static FindingScope ParseScope(string text, int line)
     {
         if (text == "book") return FindingScope.Book;
         if (text.StartsWith("chapter:", StringComparison.Ordinal)
             && int.TryParse(text.AsSpan("chapter:".Length), CultureInfo.InvariantCulture, out int chapter))
             return new FindingScope(chapter);
+        if (text.StartsWith("chapters:", StringComparison.Ordinal))
+            return new FindingScope(ParseChapterList(text["chapters:".Length..], text, line));
 
         string[] parts = text.Split(':');
         if (parts.Length == 2
@@ -93,6 +103,32 @@ public static class FindingCatalog
             && int.TryParse(parts[1], CultureInfo.InvariantCulture, out int v))
             return new FindingScope(c, v);
 
-        throw new InvalidDataException($"findings line {line}: scope is \"book\", \"chapter:N\" or \"C:V\", not \"{text}\"");
+        throw new InvalidDataException(
+            $"findings line {line}: scope is \"book\", \"chapter:N\", \"chapters:A,B\", \"chapters:A-B\" or \"C:V\", not \"{text}\"");
+    }
+
+    private static int[] ParseChapterList(string list, string text, int line)
+    {
+        var chapters = new List<int>();
+        foreach (string part in list.Split(','))
+        {
+            string[] range = part.Split('-');
+            if (range.Length == 1 && int.TryParse(range[0], CultureInfo.InvariantCulture, out int one))
+            {
+                chapters.Add(one);
+            }
+            else if (range.Length == 2
+                && int.TryParse(range[0], CultureInfo.InvariantCulture, out int from)
+                && int.TryParse(range[1], CultureInfo.InvariantCulture, out int to)
+                && from <= to)
+            {
+                for (int c = from; c <= to; c++) chapters.Add(c);
+            }
+            else
+            {
+                throw new InvalidDataException($"findings line {line}: cannot read the chapters in \"{text}\"");
+            }
+        }
+        return [.. chapters];
     }
 }

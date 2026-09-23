@@ -80,7 +80,7 @@ its own test. Measuring the substring rule while building this corrected
 ADR 0004 §7, which had said it over-counts by 12 — it is 28, across 16 word
 types.
 
-## Stage C: Quranic Initials
+## Stage C: Quranic Initials — **done**
 
 The largest missing computation, and the one Code 19 rests on most heavily
 after the word counts. Feature 76 in the matrix; nothing computes it today.
@@ -95,6 +95,26 @@ A view rather than the original's standalone tool, per ADR 0004 §2.
 
 **Done when** the table reproduces and its rows are findings in Stage B's
 sense, with the same provenance fields.
+
+Built as `Code19/QuranicInitials.cs` and an Initials view: the 29 chapters and
+14 letters as stated data, tested against the edition's own marking and
+against each chapter's opening words, with each chapter's own initials
+counted through it. Two conventions are pinned by tests: chapter 42 carries
+its initials over two verses, and chapter 68 writes its single ن out as نون.
+
+The published figures came from Appendix 1 rather than Table 9, whose scan
+does not OCR reliably. Ten became findings, and eight reproduce exactly: ل and
+م in chapters 2 and 3, ص in 7, 19 and 38 (152), ن in 68 (133), يس in 36 (285)
+and حم in 40 to 46 (2,147), along with ق in 42 matching ق in 50 (57 each).
+All of them hold only with the Basmalahs counted, the opposite of the Allah
+count. The appendix does not state that convention, so it is marked inferred.
+
+**Alif does not reproduce.** Appendix 1 gives 4,502 in chapter 2 and 2,521 in
+chapter 3; the engine gives 4,217 and 2,353 in every stock text mode. Which
+written forms count as alif is the open question. Both are in the catalog
+with the new `open` check: shown with their gap, never edited to agree, not
+failing the build, and tested to still disagree so that a change settling
+them is noticed.
 
 ## Stage D: 19-hunting
 

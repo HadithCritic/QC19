@@ -11,9 +11,24 @@
 #            derived. An inferred rule is shown as inferred wherever the
 #            finding appears.
 #
-# id	claim	expected	measure	scope	match	basmalas	textMode	basis	rule	source
-allah-count	The word God (Allah) occurs 2,698 times, 19x142	2698	wordFormOccurrences	book	allah	no	Simplified29	inferred	Count a word when its whole normalized form is one of the eleven written forms, in numbered verses only. Never a substring. اللهم is not one of them.	Appendix 1
-allah-verse-number-sum	The verse numbers of those verses add up to 118,123, 19x6217	118123	verseNumberSum	book	allah	no	Simplified29	inferred	Add the in-chapter verse number of every numbered verse holding at least one of the eleven forms. A verse counts once however many it holds.	Appendix 1
-qaf-in-chapter-50	The letter Q occurs 57 times in chapter 50, 19x3	57	letterOccurrences	chapter:50	ق	yes	Simplified29	stated	Count the letter ق through the chapter that opens with it.	Mysterious Alphabets, Table 9
-basmalah-words	The Basmalah is 4 words	4	words	1:1	 	yes	Original	stated	The words of 1:1, which is the Basmalah of chapter 1.	Appendix 1
-basmalah-letters	The Basmalah is 19 letters	19	letters	1:1	 	yes	Original	stated	The letters of 1:1.	Appendix 1
+# check      gate: must reproduce, and a change that breaks it fails the build.
+#            open: a known discrepancy with an unsettled cause. Shown with the
+#            gap, never edited to agree, and it does not fail the build.
+#
+# id	claim	expected	measure	scope	match	basmalas	textMode	basis	rule	source	check
+allah-count	The word God (Allah) occurs 2,698 times, 19x142	2698	wordFormOccurrences	book	allah	no	Simplified29	inferred	Count a word when its whole normalized form is one of the eleven written forms, in numbered verses only. Never a substring. اللهم is not one of them.	Appendix 1	gate
+allah-verse-number-sum	The verse numbers of those verses add up to 118,123, 19x6217	118123	verseNumberSum	book	allah	no	Simplified29	inferred	Add the in-chapter verse number of every numbered verse holding at least one of the eleven forms. A verse counts once however many it holds.	Appendix 1	gate
+qaf-in-chapter-50	The letter Q occurs 57 times in chapter 50, 19x3	57	letterOccurrences	chapter:50	ق	yes	Simplified29	stated	Count the letter ق through the chapter that opens with it.	Mysterious Alphabets, Table 9	gate
+basmalah-words	The Basmalah is 4 words	4	words	1:1	 	yes	Original	stated	The words of 1:1, which is the Basmalah of chapter 1.	Appendix 1	gate
+basmalah-letters	The Basmalah is 19 letters	19	letters	1:1	 	yes	Original	stated	The letters of 1:1.	Appendix 1	gate
+qaf-in-chapter-42	The letter Q occurs 57 times in chapter 42 as well	57	letterOccurrences	chapter:42	ق	yes	Simplified29	stated	Count the letter ق through the other chapter initialed with it.	Mysterious Alphabets, p. 70	gate
+alm-2-lam	The letter L occurs 3,202 times in chapter 2	3202	letterOccurrences	chapter:2	ل	yes	Simplified29	inferred	Count ل through chapter 2. The Basmalah (verse 0) is counted: the appendix does not say so, but leaving it out breaks the total.	Appendix 1, table of A.L.M. chapters	gate
+alm-2-mim	The letter M occurs 2,195 times in chapter 2	2195	letterOccurrences	chapter:2	م	yes	Simplified29	inferred	Count م through chapter 2. The Basmalah (verse 0) is counted: the appendix does not say so, but leaving it out breaks the total.	Appendix 1, table of A.L.M. chapters	gate
+alm-3-lam	The letter L occurs 1,892 times in chapter 3	1892	letterOccurrences	chapter:3	ل	yes	Simplified29	inferred	Count ل through chapter 3. The Basmalah (verse 0) is counted: the appendix does not say so, but leaving it out breaks the total.	Appendix 1, table of A.L.M. chapters	gate
+alm-3-mim	The letter M occurs 1,249 times in chapter 3	1249	letterOccurrences	chapter:3	م	yes	Simplified29	inferred	Count م through chapter 3. The Basmalah (verse 0) is counted: the appendix does not say so, but leaving it out breaks the total.	Appendix 1, table of A.L.M. chapters	gate
+alm-2-alif	The letter A occurs 4,502 times in chapter 2	4502	letterOccurrences	chapter:2	ا	yes	Simplified29	inferred	Count ا through chapter 2. No text mode reproduces this: which written forms count as alif is not settled here.	Appendix 1, table of A.L.M. chapters	open
+alm-3-alif	The letter A occurs 2,521 times in chapter 3	2521	letterOccurrences	chapter:3	ا	yes	Simplified29	inferred	Count ا through chapter 3. No text mode reproduces this: which written forms count as alif is not settled here.	Appendix 1, table of A.L.M. chapters	open
+saad-total	The letter S (Saad) occurs 152 times in its three chapters, 19x8	152	letterOccurrences	chapters:7,19,38	ص	yes	Simplified29	stated	Count ص through the three chapters initialed with it, 7, 19 and 38. The Basmalah holds no ص, so the convention does not change this one.	Appendix 1, Table 2	gate
+noon-68	The letter N occurs 133 times in chapter 68, 19x7	133	letterOccurrences	chapter:68	ن	yes	Simplified29	inferred	Count ن through chapter 68. The opening initial is written out as نون and counts as two N, as the appendix states. The Basmalah (verse 0) is counted: the appendix does not say so, but leaving it out breaks the total.	Appendix 1	gate
+ya-seen-36	The letters Y and S occur 285 times in chapter 36, 19x15	285	letterOccurrences	chapter:36	يس	yes	Simplified29	inferred	Add ي (237) and س (48) through chapter 36. The Basmalah (verse 0) is counted: the appendix does not say so, but leaving it out breaks the total.	Appendix 1	gate
+ha-mim-40-46	The letters H and M occur 2,147 times in the seven H.M. chapters, 19x113	2147	letterOccurrences	chapters:40-46	حم	yes	Simplified29	inferred	Add ح and م through chapters 40 to 46. The Basmalah (verse 0) is counted: the appendix does not say so, but leaving it out breaks the total.	Appendix 1, Table 3	gate
