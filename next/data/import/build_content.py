@@ -122,6 +122,15 @@ def align_roots(display: list[str], source: list[tuple[str, list[int]]]
     return links if d == len(display) and s == len(source) else None
 
 
+PAUSE_MARKS = "ۖۗۘۙۚۛۜ"
+
+
+def mark_after(display_word: str) -> str | None:
+    """The last pause mark attached to a display word (36:52 has two)."""
+    found = [t for t in display_word.split(" ")[1:] if t in PAUSE_MARKS and len(t) == 1]
+    return found[-1] if found else None
+
+
 def utcnow() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
 
@@ -288,6 +297,8 @@ class Importer:
 
         texts = {r["number"]: r["text"] for r in rows}
         verse_ids = {(r["chapter"], r["verse"]): r["number"] for r in rows}
+        self.import_pause_marks(rows)
+
         rules = submission.read_verse_rules()
         for ordinal, (verse_id, find, replace_with, note) in enumerate(rules):
             chapter, verse = (int(x) for x in verse_id.split(":"))
@@ -299,6 +310,57 @@ class Importer:
                 "INSERT INTO verse_rules (verse_number, ordinal, find, replace_with, note)"
                 " VALUES (?,?,?,?,?)", (number, ordinal, find, replace_with, note))
         print(f"  verse rules        {len(rules)}")
+
+    def import_pause_marks(self, rows: list[dict]) -> None:
+        """Pause marks (ۚ ۖ ۗ ...) for the Submission text, from the classic text.
+
+        The export's arabic column has no pause marks; its arabic_clean column
+        has them but spells words differently, so its words cannot be lined
+        up reliably. The classic Tanzil text is the same script as the arabic
+        column, so its words line up as the roots do (align_roots), and each
+        word takes the mark written after its classic counterpart. Verse 0
+        takes the marks of the Bismillah that opens classic verse 1.
+        """
+        classic = self.classic_marks()
+        placed, skipped = 0, []
+        for row in rows:
+            chapter, verse = row["chapter"], row["verse"]
+            source = classic.get((chapter, max(verse, 1)), [])
+            if chapter not in (1, 9) and verse in (0, 1):
+                source = source[:4] if verse == 0 else source[4:]
+            links = align_roots(display_words(row["text"]), [(w, [i]) for i, (w, _) in enumerate(source)])
+            if links is None:
+                skipped.append(f"{chapter}:{verse}")
+                continue
+            # Where one classic word covers two display words, its mark goes on the second.
+            last_of: dict[int, int] = {}
+            for index, ids in links:
+                for i in ids:
+                    last_of[i] = index
+            for i, index in last_of.items():
+                mark = source[i][1]
+                if mark:
+                    self.db.execute(
+                        "INSERT OR REPLACE INTO pause_marks (verse_number, word_index, mark) VALUES (?, ?, ?)",
+                        (row["number"], index, mark))
+                    placed += 1
+        print(f"  pause marks        {placed} placed from the classic text, {len(skipped)} verses unaligned")
+        if skipped:
+            raise SystemExit(f"pause marks could not be aligned in {', '.join(skipped[:10])}")
+
+    def classic_marks(self) -> dict[tuple[int, int], list[tuple[str, str | None]]]:
+        """Each classic verse's display words with the pause mark after each."""
+        with io.open(self.path("Data", "quran-uthmani.txt"), encoding="utf-8") as handle:
+            texts = [l.strip() for l in handle if l.strip() and not l.startswith("#")]
+        counts = [int(r[1]) for r in self.read_metadata_sections().get("chapter", [])]
+        verses: dict[tuple[int, int], list[tuple[str, str | None]]] = {}
+        index = 0
+        for chapter, count in enumerate(counts, start=1):
+            for verse in range(1, count + 1):
+                words = display_words(texts[index])
+                verses[(chapter, verse)] = [(w.split(" ")[0], mark_after(w)) for w in words]
+                index += 1
+        return verses
 
     def import_verses(self, source_id: int) -> None:
         path = self.path("Data", "quran-uthmani.txt")

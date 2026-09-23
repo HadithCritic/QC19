@@ -349,6 +349,16 @@ CREATE TABLE verse_word_roots (
 );
 CREATE INDEX idx_verse_word_roots_root ON verse_word_roots(root_id);
 
+-- Pause marks after display words, for editions whose text does not carry
+-- them (the Submission export keeps them only in its arabic_clean column).
+-- word_index counts display words from 0, as in verse_word_roots.
+CREATE TABLE pause_marks (
+    verse_number INTEGER NOT NULL REFERENCES verses(number),
+    word_index   INTEGER NOT NULL,
+    mark         TEXT    NOT NULL,
+    PRIMARY KEY (verse_number, word_index)
+);
+
 CREATE TABLE word_grammar (
     segmentation_id INTEGER NOT NULL,
     word_number     INTEGER NOT NULL,

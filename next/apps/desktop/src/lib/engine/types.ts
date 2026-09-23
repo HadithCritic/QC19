@@ -179,6 +179,96 @@ export interface SearchVerse extends Verse {
 }
 
 export type Grouping = "any" | "all" | "phrase";
+
+export type UnitKind =
+  | "words"
+  | "verses"
+  | "chapters"
+  | "sentences"
+  | "pages"
+  | "stations"
+  | "parts"
+  | "groups"
+  | "halves"
+  | "quarters"
+  | "bowings";
+export type UnitShape = "single" | "range" | "set";
+export type ComparisonOp = "eq" | "ne" | "lt" | "le" | "gt" | "ge" | "div" | "ndiv" | "sum";
+export type NumberKind =
+  | "none"
+  | "natural"
+  | "prime"
+  | "additivePrime"
+  | "nonAdditivePrime"
+  | "composite"
+  | "additiveComposite"
+  | "nonAdditiveComposite"
+  | "odd"
+  | "even"
+  | "fibonacci"
+  | "square"
+  | "cubic"
+  | "quartic"
+  | "quintic"
+  | "sextic"
+  | "septic"
+  | "octic"
+  | "nonic"
+  | "decic";
+
+/** One constraint of a number search; `value` is a decimal string and may be negative (from the end). */
+export interface CriterionInput {
+  value?: string | undefined;
+  comparison?: ComparisonOp | undefined;
+  type?: NumberKind | undefined;
+  remainder?: number | undefined;
+}
+
+export type NumberField = "number" | "verses" | "words" | "letters" | "uniqueLetters" | "value" | "frequency" | "occurrence";
+
+export interface NumberQueryInput {
+  unit: UnitKind;
+  shape: UnitShape;
+  size?: number;
+  numberScope?: "book" | "chapter" | "verse";
+  criteria: Partial<Record<NumberField, CriterionInput>>;
+}
+
+export type LetterMatchKind = "all" | "any" | "only" | "none";
+
+export interface FrequencyQueryInput {
+  unit: "words" | "verses" | "chapters" | "sentences";
+  phrase: string;
+  shape: "single" | "range";
+  size?: number;
+  uniqueLetters: boolean;
+  sum?: CriterionInput;
+  match?: LetterMatchKind;
+}
+
+export interface FoundUnit {
+  reference: string;
+  firstVerse: number;
+  lastVerse: number;
+  verseNumbers: number[] | null;
+  verses: number;
+  words: number;
+  letters: number;
+  uniqueLetters: number;
+  value: NumberInfo;
+  letterFrequencySum: string | null;
+  preview: SearchVerse[];
+  morePreview: boolean;
+}
+
+export interface UnitSearchResult {
+  unitCount: number;
+  truncated: boolean;
+  offset: number;
+  units: FoundUnit[];
+  chapterCounts: number[];
+  verseNumbers: number[];
+}
 export type SearchMethod =
   | "search.text"
   | "search.roots"
@@ -186,6 +276,7 @@ export type SearchMethod =
   | "search.related"
   | "search.relatedVerses"
   | "search.similar";
+export type UnitSearchMethod = "search.numbers" | "search.frequency";
 export type SimilarityMethod = "text" | "words" | "roots" | "values";
 
 /** A verse range, or a list of verses; omitted means the whole book. */

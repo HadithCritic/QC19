@@ -192,6 +192,79 @@ internal sealed record SearchParams(
     string? Grouping = null,
     ScopeDto? Scope = null);
 
+/// <summary>
+/// One constraint of a number search. <c>Value</c> is a decimal string (it may
+/// be negative, counting from the end); <c>Comparison</c> is eq, ne, lt, le,
+/// gt, ge, div, ndiv or sum; <c>Type</c> is a number kind (none, natural,
+/// prime, additivePrime, nonAdditivePrime, composite, additiveComposite,
+/// nonAdditiveComposite, odd, even, fibonacci, square, cubic ... decic).
+/// </summary>
+internal sealed record CriterionDto(string? Value = null, string? Comparison = null, string? Type = null, int? Remainder = null);
+
+/// <param name="Unit">words, verses, chapters, sentences, pages, stations, parts, groups, halves, quarters or bowings.</param>
+/// <param name="Shape">single, range or set.</param>
+/// <param name="NumberScope">book, chapter or verse: which number the number constraint reads.</param>
+internal sealed record NumberSearchParams(
+    string Unit,
+    string? Shape = null,
+    int? Size = null,
+    string? NumberScope = null,
+    CriterionDto? Number = null,
+    CriterionDto? Verses = null,
+    CriterionDto? Words = null,
+    CriterionDto? Letters = null,
+    CriterionDto? UniqueLetters = null,
+    CriterionDto? Value = null,
+    CriterionDto? Frequency = null,
+    CriterionDto? Occurrence = null,
+    string? ValueSystem = null,
+    int? Offset = null,
+    int? Limit = null,
+    CountingDto? Counting = null,
+    ScopeDto? Scope = null);
+
+/// <param name="Match">Instead of a sum: all, any, only or none (of the phrase's letters).</param>
+internal sealed record FrequencySearchParams(
+    string Unit,
+    string Phrase,
+    string? Shape = null,
+    int? Size = null,
+    bool UniqueLetters = false,
+    CriterionDto? Sum = null,
+    string? Match = null,
+    string? ValueSystem = null,
+    int? Offset = null,
+    int? Limit = null,
+    CountingDto? Counting = null,
+    ScopeDto? Scope = null);
+
+/// <summary>A found unit, run or set, what it measures, and a few of its verses to show.</summary>
+/// <param name="FirstVerse">Absolute number of its first verse; with <c>LastVerse</c>, what opening it selects.</param>
+/// <param name="VerseNumbers">For a set of verses, blocks or words: the verses it covers.</param>
+/// <param name="LetterFrequencySum">For a frequency search, the sum it measured.</param>
+/// <param name="MorePreview">True when the unit has more verses than the preview shows.</param>
+internal sealed record FoundUnitDto(
+    string Reference,
+    int FirstVerse,
+    int LastVerse,
+    IReadOnlyList<int>? VerseNumbers,
+    int Verses,
+    int Words,
+    int Letters,
+    int UniqueLetters,
+    NumberDto Value,
+    string? LetterFrequencySum,
+    IReadOnlyList<SearchVerseDto> Preview,
+    bool MorePreview);
+
+internal sealed record UnitSearchResultDto(
+    int UnitCount,
+    bool Truncated,
+    int Offset,
+    IReadOnlyList<FoundUnitDto> Units,
+    IReadOnlyList<int> ChapterCounts,
+    IReadOnlyList<int> VerseNumbers);
+
 /// <summary>A search that starts from one verse, or one word of it (F4 to F6).</summary>
 /// <param name="Word">Index among the verse's display words, Bismillah header included.</param>
 /// <param name="Method">For search.similar: text, words, roots or values.</param>

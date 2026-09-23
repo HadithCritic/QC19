@@ -45,6 +45,8 @@ internal sealed class Dispatcher
             ["search.related"] = With(json.VerseSearchParams, handlers.SearchRelated, json.SearchResultDto),
             ["search.relatedVerses"] = With(json.VerseSearchParams, handlers.SearchRelatedVerses, json.SearchResultDto),
             ["search.similar"] = With(json.VerseSearchParams, handlers.SearchSimilar, json.SearchResultDto),
+            ["search.numbers"] = With(json.NumberSearchParams, handlers.SearchNumbers, json.UnitSearchResultDto),
+            ["search.frequency"] = With(json.FrequencySearchParams, handlers.SearchFrequency, json.UnitSearchResultDto),
             ["chapters.stats"] = WithDefault(json.ChaptersStatsParams, new ChaptersStatsParams(), handlers.ChapterStats, json.IReadOnlyListChapterStatsDto),
             ["words.distance"] = With(json.DistanceParams, handlers.Distance, json.DistanceDto),
         };

@@ -1,4 +1,6 @@
 <script lang="ts">
+  import FrequencyForm from "../lib/components/FrequencyForm.svelte";
+  import NumbersForm from "../lib/components/NumbersForm.svelte";
   import SearchResults from "../lib/components/SearchResults.svelte";
   import { engine } from "../lib/engine/client";
   import type { Grouping, HistoryEntry, SimilarityMethod, Wordness } from "../lib/engine/types";
@@ -7,7 +9,14 @@
   import { search } from "../lib/state/search.svelte";
   import { humanize } from "../lib/systems";
 
-  type Kind = "text" | "roots";
+  type Kind = "text" | "roots" | "numbers" | "frequency";
+
+  const KINDS: { value: Kind; label: string }[] = [
+    { value: "text", label: "Text" },
+    { value: "roots", label: "Roots" },
+    { value: "numbers", label: "Numbers" },
+    { value: "frequency", label: "Letter frequency" },
+  ];
 
   const WORDNESS: { value: Wordness; label: string }[] = [
     { value: "any", label: "Anywhere" },
@@ -55,6 +64,7 @@
   // A search started elsewhere (history, the reader) fills the form it came from.
   $effect(() => {
     const request = search.request;
+    if (request?.kind === "numbers" || request?.kind === "frequency") kind = request.kind;
     if (request?.kind === "text" || request?.kind === "roots") {
       kind = request.kind;
       term = request.term;
@@ -68,16 +78,18 @@
   let searchedWith: string | null = null;
   $effect(() => {
     const counting = JSON.stringify(app.counting);
-    if (search.result && searchedWith !== null && searchedWith !== counting) void search.rerun();
+    if ((search.result || search.unitResult) && searchedWith !== null && searchedWith !== counting) void search.rerun();
     searchedWith = counting;
   });
 
   async function submit(event: SubmitEvent): Promise<void> {
     event.preventDefault();
-    if (!term.trim()) return;
+    if (!term.trim() || (kind !== "text" && kind !== "roots")) return;
     const kindGrouping = kind === "roots" && grouping === "phrase" ? "any" : grouping;
     await search.start(
-      kind === "text" ? { kind, term, wordness, grouping: kindGrouping } : { kind, term, grouping: kindGrouping },
+      kind === "text"
+        ? { kind: "text", term, wordness, grouping: kindGrouping }
+        : { kind: "roots", term, grouping: kindGrouping },
     );
     if (kind === "text") void loadRecent();
   }
@@ -89,14 +101,24 @@
 
   const similar = $derived(search.request?.kind === "similar" ? search.request : null);
   const scopeDisabled = (value: ScopeChoice): boolean =>
-    (value === "selection" && !app.selection) || (value === "results" && !search.result?.verseCount);
+    (value === "selection" && !app.selection) || (value === "results" && !search.verseNumbers?.length);
 </script>
 
 <section class="search" aria-labelledby="search-title">
   <header>
     <h1 id="search-title">Search</h1>
+    <div class="kinds" role="group" aria-label="What to search">
+      {#each KINDS as option (option.value)}
+        <button type="button" aria-pressed={kind === option.value} onclick={() => (kind = option.value)}>{option.label}</button>
+      {/each}
+    </div>
+
     <p class="hint">
-      {#if kind === "text"}
+      {#if kind === "numbers"}
+        Find words, verses, sentences, chapters or partitions, singly, in runs or in any combination, by their counts and value.
+      {:else if kind === "frequency"}
+        For each unit, count how many of its letters are the phrase's letters, or ask which of them it has.
+      {:else if kind === "text"}
         Matching ignores diacritics and letter forms, as the {humanize(app.currentSystem?.textMode ?? "Original")} text mode defines them.
         {#if app.counting.shaddaAsLetter || app.counting.wawAsWord}
           With {app.counting.shaddaAsLetter ? "shadda counted as a letter" : "waw counted as a word"} the searched text
@@ -105,14 +127,14 @@
       {:else}
         Type roots, or words whose roots you want; each word is matched to its closest root.
       {/if}
-      Put + before a word a verse must have, and - before one it must not.
+      {#if kind === "text" || kind === "roots"}Put + before a word a verse must have, and - before one it must not.{/if}
     </p>
 
-    <div class="kinds" role="group" aria-label="What to search">
-      <button type="button" aria-pressed={kind === "text"} onclick={() => (kind = "text")}>Text</button>
-      <button type="button" aria-pressed={kind === "roots"} onclick={() => (kind = "roots")}>Roots</button>
-    </div>
-
+    {#if kind === "numbers"}
+      <NumbersForm />
+    {:else if kind === "frequency"}
+      <FrequencyForm />
+    {:else}
     <form onsubmit={submit}>
       <label class="visually-hidden" for="search-term">{kind === "text" ? "Arabic text to find" : "Roots or words to find"}</label>
       <input
@@ -138,14 +160,17 @@
 
       <button type="submit" class="button primary" disabled={search.loading || !term.trim()}>Search</button>
     </form>
+    {/if}
 
     <div class="options">
-      <label>
-        Find
-        <select class="field" bind:value={grouping}>
-          {#each GROUPINGS.filter((g) => kind === "text" || g.roots) as option (option.value)}<option value={option.value}>{option.label}</option>{/each}
-        </select>
-      </label>
+      {#if kind === "text" || kind === "roots"}
+        <label>
+          Find
+          <select class="field" bind:value={grouping}>
+            {#each GROUPINGS.filter((g) => kind === "text" || g.roots) as option (option.value)}<option value={option.value}>{option.label}</option>{/each}
+          </select>
+        </label>
+      {/if}
       <label>
         in
         <select class="field" bind:value={search.scope}>
@@ -205,6 +230,8 @@
   }
 
   header {
+    max-height: 60vh;
+    overflow-y: auto;
     padding: var(--space-5) var(--space-6) var(--space-4);
     border-bottom: 1px solid var(--rule);
     background: var(--surface);
@@ -218,7 +245,7 @@
   }
 
   .hint {
-    margin: var(--space-1) 0 var(--space-3);
+    margin: 0 0 var(--space-3);
     font-size: var(--text-sm);
     color: var(--ink-muted);
   }

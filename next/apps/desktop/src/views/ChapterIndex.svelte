@@ -52,7 +52,7 @@
 
   // While search results are shown, each chapter is shaded by its matches
   // (Features.txt #15), darker with more.
-  const matches = $derived(search.result?.chapterCounts ?? null);
+  const matches = $derived(search.chapterCounts);
   const matchingChapters = $derived(matches ? matches.filter((n) => n > 0).length : 0);
 
   function matchTitle(count: number): string | undefined {

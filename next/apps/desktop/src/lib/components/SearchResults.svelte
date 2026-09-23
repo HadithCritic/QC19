@@ -5,6 +5,7 @@
   import { app } from "../state/app.svelte";
   import { SEARCH_PAGE, search } from "../state/search.svelte";
   import Notice from "./Notice.svelte";
+  import UnitResults from "./UnitResults.svelte";
 
   // One page of results with the matched words marked. F3 and Shift+F3 step
   // through the marks shown (Features.txt #38), wrapping at either end.
@@ -36,6 +37,26 @@
 <div class="results" aria-live="polite" aria-busy={search.loading} bind:this={list}>
   {#if search.error}
     <Notice tone="error" title="The search did not run" detail={search.error} />
+  {:else if search.unitResult && search.request}
+    {#if search.unitResult.unitCount === 0}
+      <Notice title="Nothing found: {describe(search.request)}" detail="Try other numbers, another kind of unit, or the whole book." />
+    {:else}
+      <div class="summary">
+        <p>
+          <span class="num">{search.unitResult.unitCount}</span> found: {describe(search.request)}
+          {#if search.scopeFellBack}<span class="fell-back">(nothing to search within, so the whole book)</span>{/if}
+        </p>
+        {#if search.unitResult.truncated}
+          <p class="fell-back">The search stopped at {search.unitResult.unitCount} results; narrow it to see the rest.</p>
+        {/if}
+        <p class="keys">
+          {#if search.mark >= 0}Mark <span class="num">{search.mark + 1}</span> ·{/if}
+          <kbd>F3</kbd> next marked word, <kbd>Shift</kbd>+<kbd>F3</kbd> previous
+          <button type="button" class="link" onclick={() => search.clear()}>Clear results</button>
+        </p>
+      </div>
+      <UnitResults />
+    {/if}
   {:else if result && search.request && result.verseCount === 0}
     <Notice title="Nothing found for {describe(search.request)}" detail="Try fewer letters, another grouping, or the whole book." />
   {:else if result && search.request}
@@ -97,7 +118,7 @@
   {:else}
     <Notice
       title="Find a word, a root or a phrase"
-      detail="In the reader, Ctrl+click a word for words of the same root. With a word or verse chosen, F4 finds related words, F5 related verses, F6 similar verses, F7 the same text and F8 the same text with its marks."
+      detail="In the reader, Ctrl+click a word for words of the same root. With a word or verse chosen, F4 finds related words, F5 related verses, F6 similar verses, F7 the same text, F8 the same text with its marks, and F9 sentences and verses of the same value."
     />
   {/if}
 </div>

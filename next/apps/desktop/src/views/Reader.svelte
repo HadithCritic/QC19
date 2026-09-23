@@ -113,6 +113,22 @@
     return app.currentWord?.verse === verse.number && app.currentWord.word === displayIndex(verse, index);
   }
 
+  async function sameValue(range: { first: number; last: number }): Promise<void> {
+    try {
+      const stats = await engine.stats(range, app.valueSystem, { ...app.counting });
+      const value = stats.value.value;
+      await search.start({
+        kind: "numbers",
+        query: { unit: "sentences", shape: "single", criteria: { value: { value } } },
+        label: `sentences and verses with the value ${value}`,
+      });
+    } catch (e) {
+      // The reader keeps its text; the search panel says what went wrong.
+      search.error = describeError(e);
+      app.view = "search";
+    }
+  }
+
   // F3 steps through bookmarks here; F4 to F8 start searches from the clicked
   // word or the selected verse (Features.txt #38 to #43).
   function onWindowKey(event: KeyboardEvent): void {
@@ -123,6 +139,13 @@
       event.preventDefault();
       const bookmark = nextBookmark(app.bookmarks ?? [], app.selection?.first ?? null, event.shiftKey);
       if (bookmark?.first != null && bookmark.last != null) app.goTo({ first: bookmark.first, last: bookmark.last });
+      return;
+    }
+
+    // F9: sentences and verses with the selection's value (Features.txt #44).
+    if (event.key === "F9" && app.selection) {
+      event.preventDefault();
+      void sameValue(app.selection);
       return;
     }
 

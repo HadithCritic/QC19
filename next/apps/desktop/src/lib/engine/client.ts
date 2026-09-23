@@ -11,6 +11,8 @@ import type {
   NumberInfo,
   SearchMethod,
   SearchResult,
+  UnitSearchMethod,
+  UnitSearchResult,
   Stats,
   SystemValue,
   ValueSystem,
@@ -113,6 +115,7 @@ export const engine = {
     call<SystemValue[]>("text.values", valueSystems ? { text, valueSystems } : { text }),
   /** Every search method answers with one page of the same result shape. */
   search: (method: SearchMethod, params: Record<string, unknown>) => call<SearchResult>(method, params),
+  searchUnits: (method: UnitSearchMethod, params: Record<string, unknown>) => call<UnitSearchResult>(method, params),
 };
 
 /** The message to show for any thrown value. */

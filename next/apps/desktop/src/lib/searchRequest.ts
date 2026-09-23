@@ -1,4 +1,14 @@
-import type { Grouping, SearchMethod, SearchScope, SimilarityMethod, Wordness } from "./engine/types";
+import type {
+  CriterionInput,
+  FrequencyQueryInput,
+  Grouping,
+  NumberQueryInput,
+  SearchMethod,
+  SearchScope,
+  SimilarityMethod,
+  UnitSearchMethod,
+  Wordness,
+} from "./engine/types";
 
 /** What the reader asked to find. Verse and word numbers are absolute verse numbers and display word indexes. */
 export type SearchRequest =
@@ -7,21 +17,71 @@ export type SearchRequest =
   | { kind: "harakat"; term: string }
   | { kind: "related"; verse: number; word: number; label: string }
   | { kind: "relatedVerses"; verse: number; label: string }
-  | { kind: "similar"; verse: number; method: SimilarityMethod; threshold: number; label: string };
+  | { kind: "similar"; verse: number; method: SimilarityMethod; threshold: number; label: string }
+  | { kind: "numbers"; query: NumberQueryInput; label: string }
+  | { kind: "frequency"; query: FrequencyQueryInput; label: string };
+
+/** Whether a request finds units (words, verses, chapters, runs, sets) rather than verses with marked words. */
+export function findsUnits(request: SearchRequest): boolean {
+  return request.kind === "numbers" || request.kind === "frequency";
+}
 
 export type ScopeChoice = "book" | "selection" | "results";
 
-const METHODS: Record<SearchRequest["kind"], SearchMethod> = {
+const METHODS: Record<SearchRequest["kind"], SearchMethod | UnitSearchMethod> = {
   text: "search.text",
   roots: "search.roots",
   harakat: "search.harakat",
   related: "search.related",
   relatedVerses: "search.relatedVerses",
   similar: "search.similar",
+  numbers: "search.numbers",
+  frequency: "search.frequency",
 };
 
+/** A constraint counts when it has a value or a number kind. */
+export function isSet(criterion: CriterionInput | undefined): criterion is CriterionInput {
+  return criterion !== undefined && ((criterion.value ?? "").trim() !== "" || (criterion.type ?? "none") !== "none");
+}
+
+function criterionParam(criterion: CriterionInput): CriterionInput {
+  const value = (criterion.value ?? "").trim();
+  return {
+    ...(value !== "" ? { value } : {}),
+    ...(criterion.comparison && criterion.comparison !== "eq" ? { comparison: criterion.comparison } : {}),
+    ...(criterion.type && criterion.type !== "none" ? { type: criterion.type } : {}),
+    ...(criterion.comparison === "div" && criterion.remainder !== undefined ? { remainder: criterion.remainder } : {}),
+  };
+}
+
+function numbersParams(query: NumberQueryInput): Record<string, unknown> {
+  const criteria = Object.fromEntries(
+    Object.entries(query.criteria)
+      .filter(([, c]) => isSet(c))
+      .map(([field, c]) => [field, criterionParam(c as CriterionInput)]),
+  );
+  return {
+    unit: query.unit,
+    shape: query.shape,
+    ...(query.shape !== "single" && query.size ? { size: query.size } : {}),
+    ...(query.numberScope ? { numberScope: query.numberScope } : {}),
+    ...criteria,
+  };
+}
+
+function frequencyParams(query: FrequencyQueryInput): Record<string, unknown> {
+  return {
+    unit: query.unit,
+    phrase: query.phrase,
+    shape: query.shape,
+    uniqueLetters: query.uniqueLetters,
+    ...(query.shape === "range" && query.size ? { size: query.size } : {}),
+    ...(query.match ? { match: query.match } : query.sum && isSet(query.sum) ? { sum: criterionParam(query.sum) } : {}),
+  };
+}
+
 /** The engine method and the request's own parameters (paging and context are added by the caller). */
-export function toCall(request: SearchRequest): { method: SearchMethod; params: Record<string, unknown> } {
+export function toCall(request: SearchRequest): { method: SearchMethod | UnitSearchMethod; params: Record<string, unknown> } {
   const method = METHODS[request.kind];
   switch (request.kind) {
     case "text":
@@ -36,6 +96,10 @@ export function toCall(request: SearchRequest): { method: SearchMethod; params: 
       return { method, params: { verse: request.verse } };
     case "similar":
       return { method, params: { verse: request.verse, method: request.method, threshold: request.threshold } };
+    case "numbers":
+      return { method, params: numbersParams(request.query) };
+    case "frequency":
+      return { method, params: frequencyParams(request.query) };
   }
 }
 
@@ -54,6 +118,9 @@ export function describe(request: SearchRequest): string {
       return `verses related to ${request.label}`;
     case "similar":
       return `verses like ${request.label}, ${Math.round(request.threshold * 100)}% by ${request.method}`;
+    case "numbers":
+    case "frequency":
+      return request.label;
   }
 }
 

@@ -141,6 +141,29 @@ public sealed class ContentRepository : IDisposable
         return new WawWords(words, splits);
     }
 
+    private Dictionary<int, Dictionary<int, string>>? _pauseMarks;
+
+    /// <summary>
+    /// Pause marks stored apart from the text, by verse number and display
+    /// word index; empty for an edition whose text carries its own.
+    /// </summary>
+    public IReadOnlyDictionary<int, Dictionary<int, string>> PauseMarks => _pauseMarks ??= LoadPauseMarks();
+
+    private Dictionary<int, Dictionary<int, string>> LoadPauseMarks()
+    {
+        var marks = new Dictionary<int, Dictionary<int, string>>();
+        using SqliteCommand command = _connection.CreateCommand();
+        command.CommandText = "SELECT verse_number, word_index, mark FROM pause_marks";
+        using SqliteDataReader reader = command.ExecuteReader();
+        while (reader.Read())
+        {
+            int verse = reader.GetInt32(0);
+            if (!marks.TryGetValue(verse, out Dictionary<int, string>? words)) marks[verse] = words = [];
+            words[reader.GetInt32(1)] = reader.GetString(2);
+        }
+        return marks;
+    }
+
     private WordRoots? _wordRoots;
 
     /// <summary>Roots of every display word.</summary>

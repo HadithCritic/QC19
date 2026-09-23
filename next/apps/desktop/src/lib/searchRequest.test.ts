@@ -25,6 +25,45 @@ group("toCall", () => {
   });
 });
 
+group("number queries", () => {
+  it("sends only the constraints that are set", () => {
+    const call = toCall({
+      kind: "numbers",
+      label: "",
+      query: {
+        unit: "verses",
+        shape: "single",
+        size: 4,
+        criteria: {
+          words: { value: " 7 ", comparison: "eq", type: "none" },
+          letters: { value: "", type: "prime" },
+          value: { value: "", type: "none" },
+          verses: { value: "2", comparison: "div", remainder: -1 },
+        },
+      },
+    });
+    expect(call).toEqual({
+      method: "search.numbers",
+      params: {
+        unit: "verses",
+        shape: "single",
+        words: { value: "7" },
+        letters: { type: "prime" },
+        verses: { value: "2", comparison: "div", remainder: -1 },
+      },
+    });
+  });
+
+  it("sends a letter match instead of a sum", () => {
+    const call = toCall({
+      kind: "frequency",
+      label: "",
+      query: { unit: "words", phrase: "ا", shape: "range", size: 3, uniqueLetters: true, sum: { value: "4" }, match: "none" },
+    });
+    expect(call.params).toEqual({ unit: "words", phrase: "ا", shape: "range", uniqueLetters: true, size: 3, match: "none" });
+  });
+});
+
 group("scopeFor", () => {
   it("uses the selection or the previous results, else the book", () => {
     expect(scopeFor("selection", { first: 8, last: 20 }, null)).toEqual({ first: 8, last: 20 });

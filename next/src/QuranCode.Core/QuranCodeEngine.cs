@@ -2,6 +2,7 @@ using QuranCode.Core.Analysis;
 using QuranCode.Core.Content;
 using QuranCode.Core.Numerology;
 using QuranCode.Core.Search;
+using QuranCode.Core.Search.Numbers;
 using QuranCode.Core.Text;
 
 namespace QuranCode.Core;
@@ -44,6 +45,7 @@ public sealed class QuranCodeEngine : IDisposable
     private readonly Dictionary<bool, RootSearch> _rootSearches = [];
     private readonly Dictionary<(string, CountingOptions), VerseSimilarity> _similarities = [];
     private readonly Dictionary<(string, CountingOptions), long[]> _wordValues = [];
+    private readonly Dictionary<(string, CountingOptions), NumberSearch> _numberSearches = [];
 
     /// <summary>The text mode used when none is named.</summary>
     public const string DefaultTextMode = "Original";
@@ -189,6 +191,57 @@ public sealed class QuranCodeEngine : IDisposable
             for (int l = first; l < first + segmentation.WordLetterCount[w]; l++) values[w] += system[segmentation.LetterChars[l]];
         }
         return _wordValues[key] = values;
+    }
+
+    /// <summary>Number and frequency searches under a value system (and its text mode) and options.</summary>
+    public NumberSearch NumberSearch(string valueSystem = DefaultValueSystem, CountingOptions? counting = null)
+    {
+        ValueSystem system = ValueSystem(valueSystem);
+        string textMode = system.TextModeName;
+        CountingOptions effective = Effective(textMode, counting);
+        var key = (valueSystem, effective);
+        if (_numberSearches.TryGetValue(key, out NumberSearch? cached)) return cached;
+
+        CorpusView view = View(effective);
+        var index = new UnitIndex(
+            Segmentation(textMode, effective), view.Verses, WordValues(valueSystem, effective),
+            CountingText(textMode, effective), Display, _content.PauseMarks);
+        return _numberSearches[key] = new NumberSearch(index, Blocks(view));
+    }
+
+    private static readonly (UnitKind Unit, string Kind)[] PartitionUnits =
+    [
+        (UnitKind.Pages, "page"), (UnitKind.Stations, "station"), (UnitKind.Parts, "part"), (UnitKind.Groups, "group"),
+        (UnitKind.Halves, "half"), (UnitKind.Quarters, "quarter"), (UnitKind.Bowings, "bowing"),
+    ];
+
+    /// <summary>Chapters and partitions as runs of the counted verses.</summary>
+    private Dictionary<UnitKind, IReadOnlyList<Block>> Blocks(CorpusView view)
+    {
+        IReadOnlyList<Verse> verses = view.Verses;
+        Block? Over(int number, int firstVerse, int lastVerse)
+        {
+            int first = -1, last = -1;
+            for (int v = 0; v < verses.Count; v++)
+            {
+                if (verses[v].Number < firstVerse || verses[v].Number > lastVerse) continue;
+                if (first < 0) first = v;
+                last = v;
+            }
+            return first < 0 ? null : new Block(number, first, last);
+        }
+
+        var blocks = new Dictionary<UnitKind, IReadOnlyList<Block>>
+        {
+            [UnitKind.Chapters] = Chapters.Select(c => Over(c.Number, c.FirstVerse, c.LastVerse)).OfType<Block>().ToArray(),
+        };
+        foreach ((UnitKind unit, string kind) in PartitionUnits)
+        {
+            blocks[unit] = Partitions.TryGetValue(kind, out Partition[]? parts)
+                ? parts.Select(p => Over(p.Number, p.FirstVerse, p.LastVerse)).OfType<Block>().ToArray()
+                : [];
+        }
+        return blocks;
     }
 
     /// <summary>A verse split for display, following the edition's Bismillah convention.</summary>

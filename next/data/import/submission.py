@@ -16,6 +16,8 @@ next/data/sources/submission/ and is imported as it is.
 
 Only the `arabic` column is used. `arabic_clean` is a different text (it
 prefixes the Bismillah to verse 1 and writes 68:1 as ن), so it is ignored.
+The arabic column has no pause marks; the importer places the classic text's
+marks on its words (build_content.import_pause_marks).
 """
 
 from __future__ import annotations

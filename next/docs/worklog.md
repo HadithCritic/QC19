@@ -282,3 +282,61 @@ differently. Findings that shaped this phase:
   Submission edition has none (see Phase 1).
 - Timing through the sidecar: similar verses for 2:282 (the longest) at 30%
   takes 16 to 83 ms by method; related verses 23 ms; root search 7 ms.
+
+### 4.2 Numbers, sentences and letter frequency
+
+- Find by numbers: words, verses, sentences, chapters and the seven
+  partitions (pages, stations, parts, groups, halves, quarters, bowings),
+  singly, in runs of neighbors, or in sets. Each constraint (number, verses,
+  words, letters, distinct letters, value, and for single words and verses
+  how often their text occurs and which occurrence they are) takes =, not =,
+  <, at most, >, at least, divisible with a remainder (-1 for any), not
+  divisible, Σ (sum of positions), # (the unit's own number) or one of 18
+  number kinds, as the original's `NumberQuery` does. A negative number counts
+  from the end. Tested against direct counts over the segmentation.
+- Runs without a size try every size from 1 to 29 (one less than the number
+  of blocks for chapters and partitions), sorted by size then start, as in
+  the original.
+- **Decision:** sets need a size, and a set search that would test more than
+  5,000,000 combinations is refused with a message to narrow the scope. The
+  original has no limit and would run for hours. Results stop at 100,000
+  units, and the result says so.
+- **Decision:** a run of size 1 lists each unit on its own. The original
+  returns one "run" holding every match at size 1, which reads as a bug.
+- **Decision:** a chapter's number is its number, not its place in the
+  current chapter sort (the original reads the sorted position).
+- Sentences follow `DoFindSentences` step for step: each word takes the
+  pause mark after it, a closing mark ends a sentence, ۙ also yields the clause
+  after it, the ۛ pair yields the sentence to each mark and the tails after
+  them, and ۜ continues after من and بل. **Fixes:** the original can restart
+  the same sentence forever when two ۙ fall in one sentence (guarded to one
+  restart), it lists some sentences twice (listed once here), and it throws on
+  a ۜ after an unknown word (it stops there instead).
+- **Decision (data):** the Submission export's text has no pause marks. Its
+  `arabic_clean` column has them but spells words differently, so they cannot
+  be placed reliably. The marks are taken from the classic Tanzil text,
+  aligned word by word like the roots, into a `pause_marks` table; the
+  displayed text is unchanged. Where the export's own marks can be placed by
+  position (5,982 verses), all 3,926 agree with the classic ones.
+- **Decision:** in the Original and SimplifiedMarks modes the original's
+  sentence counts include diacritics and pause-mark glyphs as letters and
+  words; here a sentence counts its words and letters like everything else.
+  The simplified modes, the default, give the same numbers either way.
+- Letter frequency: for each unit, the sum over the phrase's letters of how
+  often the unit has each (repeated phrase letters count once each unless
+  "count each phrase letter once" is chosen), with every comparison and number
+  kind, or the original's all/any/only/none letter matches. Words, verses,
+  sentences and chapters, singly or in runs.
+- F9 finds sentences and whole verses with the value of the selection.
+- Timing through the sidecar: word runs of any size over the whole book
+  183 ms; verse runs 57 ms; letter frequency word runs 116 ms; chapter sets of
+  three 50 ms.
+
+### Phase 4 checks
+
+All passing: engine 252, protocol 64, interface 37, Rust 7, rustfmt, clippy,
+svelte-check 0 errors, oracle reproduces. Checked in the browser: Ctrl+click,
+root search with `-`, F3, chapter shading, F6 on 55:13, number search for
+chapters of 7 verses, F9 on 1:1. **Phase 4 complete.**
+
+---

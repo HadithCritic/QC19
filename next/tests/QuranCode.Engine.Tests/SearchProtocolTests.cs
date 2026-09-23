@@ -108,6 +108,69 @@ public sealed class SearchProtocolTests : IDisposable
         Assert.Equal("invalid_params", ErrorCode("search.similar", new { verse = Abs(2, 0), counting = new { includeBasmalas = false } }));
 
     [Fact]
+    public void NumberSearchFindsUnitsWithReferences()
+    {
+        JsonElement seven = Result("search.numbers", new { unit = "chapters", verses = new { value = "7" } });
+        JsonElement first = seven.GetProperty("units")[0];
+        Assert.Equal("Chapter 1", first.GetProperty("reference").GetString());
+        Assert.Equal(1, first.GetProperty("firstVerse").GetInt32());
+        Assert.Equal(7, first.GetProperty("lastVerse").GetInt32());
+        Assert.Equal(3, first.GetProperty("preview").GetArrayLength());
+        Assert.True(first.GetProperty("morePreview").GetBoolean());
+
+        // Two neighboring words with 19 letters between them; 3:17 has one such pair.
+        JsonElement ranges = Result("search.numbers", new { unit = "words", shape = "range", size = 2, letters = new { value = "19" }, limit = 3 });
+        Assert.Equal("3:17 words 5-6", ranges.GetProperty("units")[0].GetProperty("reference").GetString());
+        Assert.Equal(ranges.GetProperty("unitCount").GetInt32(), ranges.GetProperty("chapterCounts").EnumerateArray().Sum(c => c.GetInt32()));
+    }
+
+    [Fact]
+    public void NumberKindsAndTheLastVerse()
+    {
+        JsonElement last = Result("search.numbers", new { unit = "verses", number = new { value = "-1" }, limit = 500 });
+        Assert.Equal(114, last.GetProperty("unitCount").GetInt32());
+
+        JsonElement prime = Result("search.numbers", new { unit = "chapters", verses = new { type = "prime" } });
+        Assert.All(prime.GetProperty("units").EnumerateArray(),
+            u => Assert.True(Core.Numbers.NumberTheory.IsPrime(u.GetProperty("verses").GetInt32())));
+    }
+
+    [Fact]
+    public void SentencesInTheSubmissionTextUseItsPauseMarks()
+    {
+        JsonElement result = Result("search.numbers", new { unit = "sentences", words = new { value = "4" }, scope = new { first = Abs(2, 2), last = Abs(2, 2) } });
+        string[] references = result.GetProperty("units").EnumerateArray().Select(u => u.GetProperty("reference").GetString()!).ToArray();
+        Assert.Contains("2:2 words 1-4", references); // ذَٰلِكَ ٱلْكِتَٰبُ لَا رَيْبَ, up to the first ۛ
+    }
+
+    [Fact]
+    public void FrequencySearchReportsTheSum()
+    {
+        JsonElement result = Result("search.frequency", new { unit = "verses", phrase = "الله", sum = new { value = "20" } });
+        Assert.True(result.GetProperty("unitCount").GetInt32() > 0);
+        Assert.Equal("20", result.GetProperty("units")[0].GetProperty("letterFrequencySum").GetString());
+
+        JsonElement none = Result("search.frequency", new { unit = "words", phrase = "ا", match = "none", limit = 1 });
+        Assert.True(none.GetProperty("unitCount").GetInt32() > 0);
+    }
+
+    [Theory]
+    [InlineData("search.numbers", """{"unit":"verses"}""")]
+    [InlineData("search.numbers", """{"unit":"lines","words":{"value":"3"}}""")]
+    [InlineData("search.numbers", """{"unit":"verses","words":{"value":"three"}}""")]
+    [InlineData("search.numbers", """{"unit":"verses","words":{"type":"perfect"}}""")]
+    [InlineData("search.numbers", """{"unit":"verses","words":{"comparison":"about","value":"3"}}""")]
+    [InlineData("search.numbers", """{"unit":"words","shape":"set","size":3,"letters":{"value":"3"}}""")]
+    [InlineData("search.frequency", """{"unit":"verses","phrase":"  "}""")]
+    [InlineData("search.frequency", """{"unit":"verses","phrase":"الله"}""")]
+    [InlineData("search.frequency", """{"unit":"pages","phrase":"الله","sum":{"value":"3"}}""")]
+    public void RejectsBadNumberSearches(string method, string parameters)
+    {
+        JsonElement root = JsonDocument.Parse(_dispatcher.Handle($$"""{"id":1,"method":"{{method}}","params":{{parameters}}}""")).RootElement;
+        Assert.Equal("invalid_params", root.GetProperty("error").GetProperty("code").GetString());
+    }
+
+    [Fact]
     public void HarakatSearchComparesMarks()
     {
         // With its marks, ٱلرَّحْمَٰنِ (genitive) is not ٱلرَّحْمَٰنُ (nominative).
