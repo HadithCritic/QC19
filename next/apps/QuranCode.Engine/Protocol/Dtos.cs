@@ -180,6 +180,11 @@ internal sealed record WordInfoDto(
     IReadOnlyList<WordPartDto> Parts);
 
 /// <param name="Pack">Whether it comes from an optional translation pack rather than the edition itself.</param>
+/// <summary>One total of a selection, for the 19 sweep.</summary>
+/// <param name="Group">"counts", "value", "numbers" or "letters".</param>
+/// <param name="Value">A decimal string, since a value can exceed what JavaScript holds exactly.</param>
+internal sealed record SweepTotalDto(string Group, string Label, string Value);
+
 /// <summary>One initialed chapter and how often each of its own initials occurs in it.</summary>
 /// <param name="Letters">Its initials in order, one char each.</param>
 /// <param name="Verses">Opening verses carrying them: 1 everywhere except chapter 42.</param>

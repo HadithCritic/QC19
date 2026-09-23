@@ -92,11 +92,15 @@ each. 63 of the 78 reproduce; the 15 that do not are the 13 alifs and the two
   A core set shows by default; the rest of the 407 appear when **Research** is
   switched on. The 20 Base systems read a word's letters as digits in that
   base, as the original does.
-- **Stats.** Word frequencies, letter statistics, the Maths sums (C, V, C±V,
+- **Stats.** A Multiples tab that lists every total of the selection and
+  sets apart the ones divisible by 19 (or any divisor): counts, value, the
+  sums of chapter and verse numbers, and each letter. Then word frequencies, letter statistics, the Maths sums (C, V, C±V,
   C×V, C÷V split by odd, even, prime and composite), front-back symmetry, and
   the research lists (Allah words, look-alikes, doubles, repeats).
-- **Numbers.** Any whole number: its class (U, AP, XP, AC, XC), digit sum,
-  digital root, position among primes or composites (619 is P114), factors,
+- **Numbers.** A calculator: type 19*142, 2^19-1, 114C2 or Arabic text, and
+  the result is looked up. Whole numbers stay exact. Any whole number: its
+  class (U, AP, XP, AC, XC), digit sum, digital root, position among primes or
+  composites (619 is P114), factors,
   divisors, sums and differences of two squares and two cubes, and Waleed's
   CP index chain. Numbers are shown and read in any base from 2 to 36, and
   numbers divisible by a chosen divisor (default 19) are marked.
@@ -117,7 +121,7 @@ each. 63 of the 78 reproduce; the 15 that do not are the 13 alifs and the two
 Code 19. Audio, drawing, the standalone tools except InitialLetters, multiple
 Arabic fonts, DNA symbols and the geometry calculators are **out of scope**.
 
-Of the original's 79 features, 62 are built and 13 are out of scope. The
+Of the original's 79 features, 63 are built and 13 are out of scope. The
 [feature matrix](next/docs/compatibility/feature-matrix.md) keeps a row for
 every one of them, including those now out of scope, as an inventory of what
 the original did, not as a list of work remaining. What is planned is in the
@@ -236,9 +240,9 @@ Run the tests:
 
 ```bash
 dotnet test next/tests/QuranCode.Core.Tests      # engine: 383 tests
-dotnet test next/tests/QuranCode.Engine.Tests    # protocol: 82 tests
-cd next/apps/desktop && pnpm test                # interface logic: 59 tests
-cd next/apps/desktop && pnpm check               # types: 336 files, 0 errors
+dotnet test next/tests/QuranCode.Engine.Tests    # protocol: 83 tests
+cd next/apps/desktop && pnpm test                # interface logic: 69 tests
+cd next/apps/desktop && pnpm check               # types: 339 files, 0 errors
 cd next/apps/desktop/src-tauri && cargo test     # Rust bridge: 7 tests
 ```
 

@@ -1,3 +1,4 @@
+using QuranCode.Core.Content;
 using QuranCode.Core.Code19;
 using QuranCode.Engine.Protocol;
 
@@ -47,6 +48,30 @@ internal sealed partial class Handlers
                     new InitialCountDto(c.Letter.ToString(), c.Count, c.Count % 19 == 0, c.Published)),
             ])),
     ];
+
+    /// <summary>
+    /// Every total of a selection a Code 19 argument is built from. Which of
+    /// them divide is left to the interface, which marks them by the reader's
+    /// divisor.
+    /// </summary>
+    public IReadOnlyList<SweepTotalDto> Sweep(RangeParams p)
+    {
+        VerseRange range = RequireRange(p.First, p.Last);
+        string system = RequireSystem(p.ValueSystem).Name;
+        return
+        [
+            .. Core.Code19.Sweep.Of(_engine, range, system, Counting(p.Counting)).Select(t => new SweepTotalDto(
+                t.Group switch
+                {
+                    SweepGroup.Counts => "counts",
+                    SweepGroup.Value => "value",
+                    SweepGroup.Numbers => "numbers",
+                    _ => "letters",
+                },
+                t.Label,
+                t.Value.ToString(System.Globalization.CultureInfo.InvariantCulture))),
+        ];
+    }
 
     private static string Name(FindingMeasure measure) => measure switch
     {

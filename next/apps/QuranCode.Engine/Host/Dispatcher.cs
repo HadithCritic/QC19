@@ -36,6 +36,7 @@ internal sealed class Dispatcher
             ["chapter.verses"] = With(json.ChapterParams, handlers.ChapterVerses, json.IReadOnlyListVerseDto),
             ["chapter.values"] = With(json.ChapterValuesParams, handlers.ChapterValues, json.IReadOnlyListVerseValueDto),
             ["selection.stats"] = With(json.RangeParams, handlers.Stats, json.StatsDto),
+            ["selection.sweep"] = With(json.RangeParams, handlers.Sweep, json.IReadOnlyListSweepTotalDto),
             ["reference.parse"] = With(json.ReferenceParams, handlers.ParseReference, json.RangeDto),
             ["number.analyze"] = With(json.NumberParams, handlers.AnalyzeNumber, json.NumberDto),
             ["number.details"] = With(json.NumberParams, handlers.NumberDetails, json.NumberDetailsDto),

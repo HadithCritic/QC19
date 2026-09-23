@@ -2,6 +2,7 @@
   import DisplaySettings from "../lib/components/DisplaySettings.svelte";
   import LettersPanel from "../lib/components/stats/LettersPanel.svelte";
   import MathsPanel from "../lib/components/stats/MathsPanel.svelte";
+  import MultiplesPanel from "../lib/components/stats/MultiplesPanel.svelte";
   import ResearchPanel from "../lib/components/stats/ResearchPanel.svelte";
   import SymmetryPanel from "../lib/components/stats/SymmetryPanel.svelte";
   import WordsPanel from "../lib/components/stats/WordsPanel.svelte";
@@ -11,8 +12,9 @@
   // Lists and sums over the selection, or the open chapter when nothing is
   // selected: the panels the original keeps beside its text.
 
-  type Tab = "words" | "letters" | "maths" | "symmetry" | "research";
+  type Tab = "multiples" | "words" | "letters" | "maths" | "symmetry" | "research";
   const TABS: { value: Tab; label: string }[] = [
+    { value: "multiples", label: "Multiples" },
     { value: "words", label: "Words" },
     { value: "letters", label: "Letters" },
     { value: "maths", label: "Maths" },
@@ -20,7 +22,7 @@
     { value: "research", label: "Research lists" },
   ];
 
-  let tab = $state<Tab>("words");
+  let tab = $state<Tab>("multiples");
 
   const chapter = $derived(app.chapters[app.chapter - 1]);
   const range = $derived<VerseRange | null>(
@@ -57,7 +59,8 @@
 
   <div class="body" role="tabpanel">
     {#if range}
-      {#if tab === "words"}<WordsPanel {range} />
+      {#if tab === "multiples"}<MultiplesPanel {range} />
+      {:else if tab === "words"}<WordsPanel {range} />
       {:else if tab === "letters"}<LettersPanel {range} />
       {:else if tab === "maths"}<MathsPanel {range} />
       {:else if tab === "symmetry"}<SymmetryPanel {range} />

@@ -209,6 +209,13 @@ export interface Translation {
   rightToLeft: boolean;
 }
 
+/** One total of a selection, for the sweep. `value` is decimal text. */
+export interface SweepTotal {
+  group: "counts" | "value" | "numbers" | "letters";
+  label: string;
+  value: string;
+}
+
 /** One published Code 19 result and what the engine computes for it. */
 export interface Finding {
   id: string;

@@ -159,6 +159,24 @@ public sealed class StatisticsProtocolTests : IDisposable
     }
 
     [Fact]
+    public void SweepListsTheTotalsOfASelection()
+    {
+        // Chapter 50, whatever its absolute verse numbers in this edition.
+        JsonElement range = Result("reference.parse", new { text = "50" });
+        JsonElement totals = Result("selection.sweep", new
+        {
+            first = range.GetProperty("first").GetInt32(),
+            last = range.GetProperty("last").GetInt32(),
+            valueSystem = "Simplified29_Alphabet_Primes1",
+        });
+        string Value(string label) => totals.EnumerateArray().Single(t => t.GetProperty("label").GetString() == label)
+            .GetProperty("value").GetString()!;
+        Assert.Equal("57", Value("ق"));
+        Assert.Equal("50", Value("Sum of chapter numbers"));
+        Assert.Contains(totals.EnumerateArray(), t => t.GetProperty("group").GetString() == "numbers");
+    }
+
+    [Fact]
     public void WordInfoGivesMeaningAndGrammar()
     {
         JsonElement word = Result("word.info", new { verse = 1, word = 2 });

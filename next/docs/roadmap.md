@@ -163,7 +163,7 @@ verse, not by word, so no rule reproduces them all. The alif findings stay
 open; the rule belongs in stage E as a text mode. The whole account is in
 [`research/alif-counting.md`](research/alif-counting.md).
 
-## Stage D: 19-hunting
+## Stage D: 19-hunting (done)
 
 General tools for the work, as opposed to checking a published claim.
 
@@ -176,6 +176,21 @@ General tools for the work, as opposed to checking a published claim.
 
 **Done when** a chapter can be swept for multiples of 19 without leaving the
 app.
+
+The Stats view opens on a Multiples tab: every total of the selection (the
+counts, the value, the sums of chapter and verse numbers, chapter numbers plus
+verses, and each letter's frequency), with the ones that divide by the
+reader's divisor set apart. It follows the Basmalah toggle and the value
+system. Chapter 50 shows its 57 ق as 19 × 3 at once.
+
+The Numbers view calculates what is typed, with a parser in place of the
+original's run-time C# compilation (feature 30). Whole numbers stay exact:
+19^20 is 37589973457545958193355601. Numbers are read in the chosen base;
+`\` is whole division, `%` remainder, `^` and `!` work anywhere in an
+expression (the original handled them only as the whole input), and nPk,
+nCk, pi, e, phi and functions such as sqrt are there. Arabic text is valued
+in the current system, as in the original. A result that is not whole is
+reported as such instead of rounded.
 
 ## Stage E: User-defined text modes
 

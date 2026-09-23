@@ -41,7 +41,10 @@
       const system = app.valueSystem;
       const [row] = await engine.textValues(input, [system]);
       if (!row) throw new Error(`The text could not be valued in ${system}.`);
-      return { decimal: row.value.value, how: `The value of the text in ${humanize(system)}, ${row.letterCount} letters.` };
+      const named = app.currentSystem
+        ? [app.currentSystem.textMode, app.currentSystem.letterOrder, app.currentSystem.letterValue].map(humanize).join(", ")
+        : system;
+      return { decimal: row.value.value, how: `The value of the text in ${named}: ${row.letterCount} letters.` };
     }
     if (isExpression(input, app.radix)) {
       const result = evaluate(input, app.radix);

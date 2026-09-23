@@ -60,7 +60,7 @@ were imported in Phase 6.
 | 71 | Base 2–36 number systems | port | **done** | Numbers shown and typed in any base 2 to 36, digit sums in that base; the 20 Base letter-value systems value words by their digits (golden: base-systems.tsv) |
 | 72 | User-defined SimplifiedXX books | port | engine | `text_modes` + `text_mode_rules` are data |
 | 23 | DNA symbols (A T C G) in prime proportions | port | out | ADR 0004 |
-| 30 | Expression calculator, bases 2–36 | **rewrite** | todo | Brief §26: legacy uses runtime code compilation for ordinary arithmetic; replace with a parser |
+| 30 | Expression calculator, bases 2–36 | **rewrite** | **done** | A parser in the Numbers view in place of the original's run-time C# compilation; exact whole numbers, any base, Arabic text valued in the current system |
 | 78 | Circle/sphere/triangle calculators | port | out | ADR 0004 |
 
 ## Search
@@ -170,9 +170,9 @@ capability.
 
 | Status | Count |
 | --- | ---: |
-| done | 62 |
+| done | 63 |
 | engine (no UI yet) | 1 (#72) |
-| todo | 1 (#30) |
+| todo | 0 |
 | out (ADR 0004) | 13 |
 | drop | 1 (#36) |
 | part of another row | 1 (#37, see #70) |
@@ -182,11 +182,7 @@ Counted per numbered feature, 79 in all; a row such as 32–35 counts as four.
 Arabic text search, which `Features.txt` does not number, is also done. The
 11 other standalone tools listed above are all todo and are not part of the 79.
 
-One numbered feature remains in scope, kept deliberately by ADR 0004:
-
-| # | Feature | Where |
-| ---: | --- | --- |
-| 30 | Expression calculator | Roadmap stage D |
+Every numbered feature that ADR 0004 kept in scope is now built.
 
 The 13 marked **out** are audio (45, 56, 65, 66), drawing (57, 58), the other
 standalone tools (74, 75, 77, 79), the IndoPak fonts (17), DNA symbols (23)
