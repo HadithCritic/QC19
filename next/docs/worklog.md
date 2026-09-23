@@ -5,6 +5,8 @@
 > scoped to Code 19, and the remaining phases in that plan are not being
 > carried out. This log stays as the record of how phases 0 to 6 were built
 > and what was decided along the way; several of those decisions still bind.
+> The plan that replaces them is [`roadmap.md`](roadmap.md), which also
+> records that the **No publishing** decision below has been lifted.
 
 Running record of the autonomous build: what was completed, each judgment
 call and why, each gated item and how it was handled, and any unresolved

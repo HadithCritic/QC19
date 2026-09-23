@@ -89,7 +89,8 @@ Arabic fonts, DNA symbols and the geometry calculators are **out of scope**.
 Of the original's 79 features, 60 are built. The
 [feature matrix](next/docs/compatibility/feature-matrix.md) keeps a row for
 every one of them, including those now out of scope, as an inventory of what
-the original did — not as a list of work remaining.
+the original did — not as a list of work remaining. What is planned is in the
+[roadmap](next/docs/roadmap.md).
 
 Four of Khalifa's published results already reproduce exactly from the
 Submission text: the word God occurs **2,698** times (19×142), the verse
@@ -253,6 +254,7 @@ boundaries from the original's data in `C#/`.
 | [Text normalization](next/docs/specs/text-normalization.md) | The two-stage pipeline, verified |
 | [Audit findings](next/docs/audit/findings.md) | What was measured in the original |
 | [Performance](next/docs/audit/performance-comparison.md) | Before and after |
+| [Roadmap](next/docs/roadmap.md) | What is planned, in stages |
 | [Work log](next/docs/worklog.md) | What was built in each phase, and every judgment call |
 
 ## License
