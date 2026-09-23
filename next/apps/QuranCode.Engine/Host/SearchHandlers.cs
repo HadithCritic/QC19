@@ -16,10 +16,18 @@ internal sealed partial class Handlers
     /// <summary>The original's default for similar verses (F6).</summary>
     public const double DefaultSimilarity = 0.7;
 
+    /// <remarks>
+    /// Text that is not all Arabic letters, marks, digits and symbols searches
+    /// the translations instead (Features.txt #51, #67, #73). An Arabic
+    /// search that finds nothing tries the standard-spelling text (#52), and
+    /// the result says where it was found.
+    /// </remarks>
     public SearchResultDto Search(SearchParams p)
     {
         RequireText(p.Term, "term");
         (string textMode, CountingOptions counting) = SearchContext(p.ValueSystem, p.Counting);
+        if (!TranslationSearch.IsArabic(p.Term)) return SearchTranslations(p, textMode, counting);
+
         var query = new TextQuery(p.Term, ParseWordness(p.Wordness), ParseGrouping(p.Grouping), Scope(p.Scope));
 
         SearchResult result = _engine.Search(textMode, counting).Find(query);
@@ -35,7 +43,51 @@ internal sealed partial class Handlers
             .ToArray();
         VerseHit[] hits = Merge(result.Verses, withWords);
 
+        if (hits.Length == 0)
+        {
+            IReadOnlyList<int> spelled = _engine.EmlaaeiSearch(p.Term, query.Wordness, textMode, counting, query.Scope);
+            if (spelled.Count > 0)
+            {
+                VerseHit[] whole = spelled.Select(v => new VerseHit(v, [], HitWords.None)).ToArray();
+                return Page(result.Term, whole, p.Offset, p.Limit, textMode, counting) with { FoundIn = "emlaaei" };
+            }
+        }
+
         return Page(result.Term, hits, p.Offset, p.Limit, textMode, counting);
+    }
+
+    /// <summary>
+    /// Search in translations: those asked for, or the edition's own
+    /// translations and transliteration. A pack's translations are searched
+    /// when asked for by name, so a search does not read all of them at once.
+    /// </summary>
+    private SearchResultDto SearchTranslations(SearchParams p, string textMode, CountingOptions counting)
+    {
+        IReadOnlyList<TranslationInfo> chosen = p.Translations is { Count: > 0 } keys
+            ? keys.Select(k => _engine.Translation(k) ?? throw RpcException.NotFound($"There is no translation named \"{Truncate(k)}\".")).ToArray()
+            : _engine.Translations.Where(t => t.Source == 0 && t.Kind is "translation" or "transliteration").ToArray();
+        if (chosen.Count == 0) throw RpcException.NotFound("This edition has no translations to search.");
+
+        CorpusView view = _engine.View(counting);
+        HashSet<int>? scope = Scope(p.Scope);
+        IReadOnlyList<TranslationHit> found = TranslationSearch.Find(
+            p.Term, ParseWordness(p.Wordness),
+            chosen.Select(t => (t.Key, _engine.AllTranslationText(t))).ToArray(), scope);
+        TranslationHit[] counted = found.Where(h => view.IndexOf(h.VerseNumber) >= 0).ToArray();
+
+        Dictionary<int, TranslationHit> byVerse = counted.ToDictionary(h => h.VerseNumber);
+        VerseHit[] hits = counted.Select(h => new VerseHit(h.VerseNumber, [], HitWords.None)).ToArray();
+        SearchResultDto page = Page(p.Term.Trim(), hits, p.Offset, p.Limit, textMode, counting);
+
+        // Each verse carries the lines that matched, with where.
+        SearchVerseDto[] verses = page.Verses.Select(v => v with
+        {
+            MatchCount = byVerse[v.Number].Matches.Sum(m => m.Ranges.Count),
+            Translations = byVerse[v.Number].Matches
+                .Select(m => new TranslationMatchDto(m.Key, m.Text, m.Ranges.Select(r => (IReadOnlyList<int>)[r.Start, r.Length]).ToArray()))
+                .ToArray(),
+        }).ToArray();
+        return page with { Verses = verses, WordCount = counted.Sum(h => h.Matches.Sum(m => m.Ranges.Count)), FoundIn = "translations" };
     }
 
     public SearchResultDto SearchRoots(SearchParams p)

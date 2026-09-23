@@ -59,17 +59,17 @@ without a row here saying so and why.
 | n/a | Arabic text search, 3 wordness modes | port | **done** | 10 queries, 9,582 verse entries verified |
 | 1 | Ctrl+Click for same-root verses | port | **done** | Every display word linked to its roots (`verse_word_roots`); Ctrl+click and F4 search the longest root |
 | 53 | Root search, multi-root, +/- include/exclude | port | **done** | Terms resolve to their best root as in the original; any/all; `+`/`-` added (the original never parsed them) |
-| 52 | Search across all text modes | port | deferred | In the original this is a fallback to the Emlaaei text, which arrives with translations (Phase 6) |
-| 51 | Search in one or all translations | port | data | Needs translation packs |
-| 73 | Any-language search | port | data | Needs translation packs |
-| 67 | Auto-detect search language | port | todo | |
+| 52 | Search across all text modes | port | **done** | As in the original, an Arabic search that finds nothing tries the standard-spelling (Emlaaei) text: Tanzil's for the classic edition, the export's arabic_clean for Submission |
+| 51 | Search in one or all translations | port | **done** | The edition's translations and transliteration, or only those shown; matches marked in the translation line |
+| 73 | Any-language search | port | **done** | Follows from the language rule, as in the original |
+| 67 | Auto-detect search language | port | **done** | The original's rule: all Quran letters, marks, Indian digits and symbols is Arabic, anything else searches translations (آ added) |
 | 55 | `+`/`-` include/exclude in WORDS search | port | **done** | Not implemented in the original (labels hidden); implemented here for text and root search |
 | 54 | Find by Frequency, all comparison operators | port | **done** | Letter frequency sums with every operator and number kind; all/any/only/no letter matches |
 | 14 | LetterFrequencySum for a phrase per verse | port | **done** | Each found unit shows its sum; a sum of 1 or more lists every verse with its sum |
 | 26 | Find sentences by letter frequency sum | port | **done** | Sentences split by pause marks as the original does |
 | 25 | Find sentences by numbers | port | **done** | Whole verses first, then pause-mark sentences; Submission marks placed from the classic text |
 | 32–35 | FindByNumbers (words/verses/chapters, ranges, sets, operators) | port | **done** | Words, verses, sentences, chapters and the 7 partitions; singly, in runs, in sets; every operator, Σ, #, and 18 number kinds |
-| 31 | Emlaaei hamza+elf search improvement | port | data | Needs an emlaaei (standard spelling) text of the Submission edition; none exists (worklog, Phase 1) |
+| 31 | Emlaaei hamza+elf search improvement | port | **done** | The standard-spelling fallback (#52) covers it; the export's arabic_clean column is that text for the Submission edition |
 | 15 | Match density shading per chapter | port | **done** | Chapter list shaded by matches on the original's 44-step ramp |
 | 38 | F3 navigation through results | port | **done** | F3 and Shift+F3 through marks; through bookmarks in the reader |
 | 39–44 | F4–F9 related/similar/same lookups | port | **done** | F4 related words, F5 related verses, F6 similar verses (4 methods, threshold), F7 same text, F8 same with marks, F9 same value. The all-pairs similar mode is not reproduced (worklog, Phase 4) |
@@ -98,8 +98,8 @@ without a row here saying so and why.
 | 19 | Shadda as a double letter | port | **done** | Counting menu, as above; so are hamza, alif, yaa and noon above a line, which `Features.txt` does not number |
 | 20 | BismAllah chapter prefixes | port | **done** | Submission edition: verse 0, counted or not (ADR 0003) |
 | 4 | Updated root database | port | done | 2,053 roots imported with provenance |
-| 62 | Word grammar, Arabic and English | port | data | `word_grammar` table exists; corpus.quran.com data not imported |
-| 64 | Word meaning and transliteration on hover | port | data | Same |
+| 62 | Word grammar, Arabic and English | port | **done** | Quranic Arabic Corpus parts per display word, tags named in English and Arabic from the original's language files, shown in the inspector |
+| 64 | Word meaning and transliteration on hover | port | **done** | Word-by-word English and transliteration on click (the original shows them in its title bar on hover) |
 
 ## Audio
 
@@ -109,7 +109,7 @@ without a row here saying so and why.
 | 56 | Inter-verse silence, 0.0–2.0× | port | todo | |
 | 65 | Auto-download recitations from everyayah.com | port | todo | Optional pack, brief §27 |
 | 66 | Auto-download translations from tanzil.net | port | todo | Optional pack |
-| 27 | Show all selected translations at once | port | data | |
+| 27 | Show all selected translations at once | port | **done** | Any number under each verse: the edition's 13 and transliteration, plus 108 Tanzil translations from an optional pack |
 
 ## Standalone tools
 

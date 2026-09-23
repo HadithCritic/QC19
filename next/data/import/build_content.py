@@ -35,8 +35,10 @@ import sys
 from datetime import datetime, timezone
 
 import submission
+import word_data
+from alignment import PAUSE_MARKS, align_roots, display_words, letters_of, mark_after  # noqa: F401
 
-SCHEMA_VERSION = 5
+SCHEMA_VERSION = 6
 
 # Text modes the legacy hides in the Standard edition. Hardcoded there too:
 # Server.LoadSimplificationSystems skips "SimplifiedMarks" when EDITION is Standard.
@@ -67,68 +69,6 @@ PARTITION_SECTIONS = {
     "station": "station", "part": "part", "group": "group", "half": "half",
     "quarter": "quarter", "bowing": "bowing", "page": "page",
 }
-
-
-def display_words(text: str) -> list[str]:
-    """Split a verse as DisplayWords.Split does: marks join the neighboring word."""
-    words: list[str] = []
-    leading: str | None = None
-    for token in text.split(" "):
-        if not token:
-            continue
-        if not any(ch.isalpha() for ch in token):
-            if words:
-                words[-1] = f"{words[-1]} {token}"
-            else:
-                leading = token if leading is None else f"{leading} {token}"
-        else:
-            words.append(token if leading is None else f"{leading} {token}")
-            leading = None
-    if leading is not None:
-        words.append(leading)
-    return words
-
-
-def letters_of(word: str) -> str:
-    # Tatweel is category Lm but only stretches a word; the editions differ in it.
-    return "".join(ch for ch in word if ch.isalpha() and ch != "\u0640")
-
-
-def align_roots(display: list[str], source: list[tuple[str, list[int]]]
-                ) -> list[tuple[int, list[int]]] | None:
-    """Pair display words with legacy words, allowing two-word joins either way.
-
-    Equal counts pair by position (the Submission spellings of 7:69 and 68:1
-    differ in letters, not in words). Otherwise one legacy word may cover two
-    display words ("بعدما") or two legacy words one display word ("لوما").
-    """
-    if len(display) == len(source):
-        return [(i, ids) for i, (_, ids) in enumerate(source)]
-    links: list[tuple[int, list[int]]] = []
-    d = s = 0
-    while d < len(display) and s < len(source):
-        here, there = letters_of(display[d]), letters_of(source[s][0])
-        if here == there:
-            links.append((d, source[s][1]))
-            d, s = d + 1, s + 1
-        elif d + 1 < len(display) and here + letters_of(display[d + 1]) == there:
-            links += [(d, source[s][1]), (d + 1, source[s][1])]
-            d, s = d + 2, s + 1
-        elif s + 1 < len(source) and here == there + letters_of(source[s + 1][0]):
-            links.append((d, source[s][1] + source[s + 1][1]))
-            d, s = d + 1, s + 2
-        else:
-            return None
-    return links if d == len(display) and s == len(source) else None
-
-
-PAUSE_MARKS = "ۖۗۘۙۚۛۜ"
-
-
-def mark_after(display_word: str) -> str | None:
-    """The last pause mark attached to a display word (36:52 has two)."""
-    found = [t for t in display_word.split(" ")[1:] if t in PAUSE_MARKS and len(t) == 1]
-    return found[-1] if found else None
 
 
 def utcnow() -> str:
@@ -320,6 +260,7 @@ class Importer:
         texts = {r["number"]: r["text"] for r in rows}
         verse_ids = {(r["chapter"], r["verse"]): r["number"] for r in rows}
         self.import_pause_marks(rows)
+        self.import_submission_translations(rows, directory)
 
         rules = submission.read_verse_rules()
         for ordinal, (verse_id, find, replace_with, note) in enumerate(rules):
@@ -332,6 +273,71 @@ class Importer:
                 "INSERT INTO verse_rules (verse_number, ordinal, find, replace_with, note)"
                 " VALUES (?,?,?,?,?)", (number, ordinal, find, replace_with, note))
         print(f"  verse rules        {len(rules)}")
+
+    def import_word_data(self) -> None:
+        """Glosses, transliteration and grammar per display word (word_data.py)."""
+        data = os.path.join("DataAccess", "Data", "77878")
+        offline = os.path.join("DataAccess", "Translations", "Offline", "77878")
+        self.register_source("words/glosses", "word by word English", "translation",
+                             os.path.join(offline, "en.wordbyword.txt"), origin="qurandev.appspot.com, edited by Ali Adams")
+        self.register_source("words/transliteration", "word transliteration", "translation",
+                             os.path.join(offline, "en.transliteration.txt"), origin="tanzil.net")
+        self.register_source("words/grammar", "Quranic Arabic Corpus morphology 0.4", "metadata",
+                             os.path.join(data, "word-parts.txt"), origin="corpus.quran.com",
+                             license_="GNU GPL; verbatim copies only; cite corpus.quran.com")
+        counts = [int(r[1]) for r in self.read_metadata_sections().get("chapter", [])]
+        word_data.import_word_data(self.db, self.root, counts, verse_zero=self.edition == "submission")
+
+    def import_classic_texts(self) -> None:
+        """The classic edition's standard-spelling text and verse transliteration, from Tanzil."""
+        offline = os.path.join("DataAccess", "Translations", "Offline", "77878")
+        counts = [int(r[1]) for r in self.read_metadata_sections().get("chapter", [])]
+        texts = [
+            ("ar.emlaaei.txt", "tanzil.emlaaei", "ar", "Standard spelling", "Tanzil", "emlaaei", "rtl", "CC BY 3.0 (Tanzil)"),
+            ("en.transliteration.txt", "tanzil.translit", "en-Latn", "Transliteration", "Tanzil", "transliteration", "ltr", ""),
+        ]
+        for file, key, language, name, translator, kind, direction, license_ in texts:
+            source = self.register_source(f"texts/{key}", name, "translation", os.path.join(offline, file),
+                                          origin="tanzil.net", license_=license_)
+            lines = word_data.verse_lines(self.path(offline, file), "utf-8-sig")
+            if len(lines) != sum(counts):
+                self.errors.append(f"{file}: {len(lines)} lines, expected {sum(counts)}")
+                continue
+            tid = self.db.execute(
+                "INSERT INTO translations (key, language, name, translator, kind, direction, source_id, installed)"
+                " VALUES (?,?,?,?,?,?,?,1)", (key, language, name, translator, kind, direction, source)).lastrowid
+            self.db.executemany("INSERT INTO translation_text (translation_id, verse_number, text) VALUES (?,?,?)",
+                                [(tid, i + 1, " ".join(line.split())) for i, line in enumerate(lines)])
+        print(f"  verse texts        {len(texts)} from Tanzil")
+
+    def import_submission_translations(self, rows: list[dict], directory: str) -> None:
+        """The export's translations, its transliteration, and arabic_clean as the Emlaaei text.
+
+        arabic_clean prefixes the Bismillah to verse 1 of chapters 2 to 114
+        (not 9), which this edition holds as verse 0, so it is taken off there.
+        """
+        source = self.register_source("submission/translations", "WikiSubmission translations", "translation",
+                                      os.path.join(directory, submission.TEXT_FILE), origin=submission.ORIGIN)
+        specs = [spec for spec in submission.TRANSLATIONS]
+        specs.append(("arabic_clean", "submission.emlaaei", "ar", "Standard spelling", "WikiSubmission", "emlaaei", "rtl"))
+        for column, key, language, name, translator, kind, direction in specs:
+            cur = self.db.execute(
+                "INSERT INTO translations (key, language, name, translator, kind, direction, source_id, installed)"
+                " VALUES (?,?,?,?,?,?,?,1)", (key, language, name, translator, kind, direction, source))
+            tid = cur.lastrowid
+            texts = []
+            for row in rows:
+                text = row["clean"] if column == "arabic_clean" else row["translations"][column]
+                if column == "arabic_clean" and row["verse"] == 1 and row["chapter"] not in (1, 9):
+                    words = text.split(" ")
+                    if " ".join(words[:4]) == "بسم الله الرحمن الرحيم":
+                        text = " ".join(words[4:])
+                if text:
+                    texts.append((tid, row["number"], text))
+            self.db.executemany(
+                "INSERT INTO translation_text (translation_id, verse_number, text) VALUES (?,?,?)", texts)
+        count = self.db.execute("SELECT COUNT(*) FROM translation_text").fetchone()[0]
+        print(f"  translations       {len(specs)} texts, {count} verse rows")
 
     def import_pause_marks(self, rows: list[dict]) -> None:
         """Pause marks (ۚ ۖ ۗ ...) for the Submission text, from the classic text.
@@ -783,6 +789,9 @@ class Importer:
             self.import_value_systems()
             self.import_waw_words()
             self.import_roots()
+            self.import_word_data()
+            if self.edition == "classic":
+                self.import_classic_texts()
             self.build_fts()
 
             self.db.commit()

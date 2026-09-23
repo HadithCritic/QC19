@@ -160,6 +160,33 @@ internal sealed record RatioUnitDto(
     int SecondLetters,
     string SecondValue);
 
+/// <param name="Word">Index among the verse's display words, Bismillah header included.</param>
+internal sealed record WordParams(int Verse, int Word);
+
+/// <summary>A grammar feature: the corpus's text, its English and Arabic names, and Arabic for a lemma or root.</summary>
+internal sealed record FeatureDto(string Text, string? English, string? Arabic, string? Script);
+
+internal sealed record WordPartDto(int Part, string Arabic, string Form, string Tag, string? TagEnglish, string? TagArabic, IReadOnlyList<FeatureDto> Features);
+
+internal sealed record WordInfoDto(
+    int Verse,
+    int Word,
+    string Text,
+    string? Meaning,
+    string? Transliteration,
+    IReadOnlyList<string> Roots,
+    IReadOnlyList<WordPartDto> Parts);
+
+/// <param name="Pack">Whether it comes from an optional translation pack rather than the edition itself.</param>
+internal sealed record TranslationDto(string Key, string Language, string Name, string Translator, string Kind, bool RightToLeft, bool Pack);
+
+/// <param name="Keys">Translation keys, as translations.list gives them.</param>
+internal sealed record TranslationTextParams(IReadOnlyList<string> Keys, int First, int Last);
+
+internal sealed record VerseTextDto(int Verse, string Text);
+
+internal sealed record TranslationTextDto(string Key, IReadOnlyList<VerseTextDto> Verses);
+
 /// <summary>A pair (a, b) of a split such as a² + b²; numbers stay under a million, so plain integers.</summary>
 internal sealed record PairDto(long A, long B);
 
@@ -261,7 +288,11 @@ internal sealed record SearchVerseDto(
     bool Aligned,
     IReadOnlyList<int> BismillahHighlights,
     int MatchCount,
-    double? Score = null);
+    double? Score = null,
+    IReadOnlyList<TranslationMatchDto>? Translations = null);
+
+/// <summary>A translation line a search matched: its key, text, and each match as [start, length].</summary>
+internal sealed record TranslationMatchDto(string Key, string Text, IReadOnlyList<IReadOnlyList<int>> Ranges);
 
 /// <param name="ChapterCounts">Matches per chapter (words, or verses when no words are marked), for shading the chapter list.</param>
 /// <param name="Roots">For a root search, the root each term resolved to (null when none).</param>
@@ -274,7 +305,8 @@ internal sealed record SearchResultDto(
     IReadOnlyList<SearchVerseDto> Verses,
     IReadOnlyList<int> ChapterCounts,
     IReadOnlyList<int> VerseNumbers,
-    IReadOnlyList<RootTermDto>? Roots = null);
+    IReadOnlyList<RootTermDto>? Roots = null,
+    string? FoundIn = null);
 
 internal sealed record RootTermDto(string Term, string Kind, string? Root);
 
@@ -328,7 +360,8 @@ internal sealed record SearchParams(
     int? Limit = null,
     CountingDto? Counting = null,
     string? Grouping = null,
-    ScopeDto? Scope = null);
+    ScopeDto? Scope = null,
+    IReadOnlyList<string>? Translations = null);
 
 /// <summary>
 /// One constraint of a number search. <c>Value</c> is a decimal string (it may

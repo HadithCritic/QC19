@@ -17,7 +17,9 @@ next/data/sources/submission/ and is imported as it is.
 Only the `arabic` column is used. `arabic_clean` is a different text (it
 prefixes the Bismillah to verse 1 and writes 68:1 as ن), so it is ignored.
 The arabic column has no pause marks; the importer places the classic text's
-marks on its words (build_content.import_pause_marks).
+marks on its words (build_content.import_pause_marks). The translation and
+transliteration columns, and arabic_clean as the standard-spelling text that
+search falls back to, are imported as translations.
 """
 
 from __future__ import annotations
@@ -61,6 +63,26 @@ def is_word_join(find: str, replace_with: str) -> bool:
     return bool(_LETTER.search(left)) and bool(_LETTER.search(right))
 
 
+#: The export's other text columns: (column, key, language, name, translator, kind, direction).
+#: The English is Rashad Khalifa's; the export does not name the other translators.
+TRANSLATIONS = [
+    ("english", "submission.en", "en", "English", "Rashad Khalifa", "translation", "ltr"),
+    ("turkish", "submission.tr", "tr", "Türkçe", "WikiSubmission", "translation", "ltr"),
+    ("french", "submission.fr", "fr", "Français", "WikiSubmission", "translation", "ltr"),
+    ("german", "submission.de", "de", "Deutsch", "WikiSubmission", "translation", "ltr"),
+    ("bahasa", "submission.id", "id", "Bahasa Indonesia", "WikiSubmission", "translation", "ltr"),
+    ("persian", "submission.fa", "fa", "فارسی", "WikiSubmission", "translation", "rtl"),
+    ("persian_new", "submission.fa-new", "fa", "فارسی (جدید)", "WikiSubmission", "translation", "rtl"),
+    ("tamil", "submission.ta", "ta", "தமிழ்", "WikiSubmission", "translation", "ltr"),
+    ("swedish", "submission.sv", "sv", "Svenska", "WikiSubmission", "translation", "ltr"),
+    ("russian", "submission.ru", "ru", "Русский", "WikiSubmission", "translation", "ltr"),
+    ("bengali", "submission.bn", "bn", "বাংলা", "WikiSubmission", "translation", "ltr"),
+    ("urdu", "submission.ur", "ur", "اردو", "WikiSubmission", "translation", "rtl"),
+    ("spanish", "submission.es", "es", "Español", "WikiSubmission", "translation", "ltr"),
+    ("transliterated", "submission.translit", "en-Latn", "Transliteration", "WikiSubmission", "transliteration", "ltr"),
+]
+
+
 def load_rows(directory: str) -> list[dict[str, str]]:
     """Index and text rows joined by verse_index, in canonical order."""
     index = {int(r["verse_index"]): r for r in read_csv(directory, INDEX_FILE)}
@@ -85,6 +107,8 @@ def load_rows(directory: str) -> list[dict[str, str]]:
             "chapter": int(i["chapter_number"]),
             "verse": int(i["verse_number"]),
             "text": arabic,
+            "translations": {column: t.get(column, "").strip() for column, *_ in TRANSLATIONS},
+            "clean": t.get("arabic_clean", "").strip(),
         })
 
     keys = [(r["chapter"], r["verse"]) for r in rows]

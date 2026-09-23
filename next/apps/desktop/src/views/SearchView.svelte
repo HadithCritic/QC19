@@ -47,6 +47,8 @@
   let term = $state("");
   let wordness = $state<Wordness>("any");
   let grouping = $state<Grouping>("any");
+  /** For text in other letters: search only the translations shown in the reader. */
+  let onlyShown = $state(false);
   let recent = $state<HistoryEntry[]>([]);
 
   async function loadRecent(): Promise<void> {
@@ -88,7 +90,7 @@
     const kindGrouping = kind === "roots" && grouping === "phrase" ? "any" : grouping;
     await search.start(
       kind === "text"
-        ? { kind: "text", term, wordness, grouping: kindGrouping }
+        ? { kind: "text", term, wordness, grouping: kindGrouping, ...(onlyShown ? { translations: [...app.shownTranslations] } : {}) }
         : { kind: "roots", term, grouping: kindGrouping },
     );
     if (kind === "text") void loadRecent();
@@ -128,6 +130,7 @@
         Type roots, or words whose roots you want; each word is matched to its closest root.
       {/if}
       {#if kind === "text" || kind === "roots"}Put + before a word a verse must have, and - before one it must not.{/if}
+      {#if kind === "text"}Text in other letters searches the translations.{/if}
     </p>
 
     {#if kind === "numbers"}
@@ -141,7 +144,7 @@
         id="search-term"
         class="field term arabic"
         lang="ar"
-        dir="rtl"
+        dir="auto"
         bind:value={term}
         placeholder={kind === "text" ? "اكتب كلمة" : "جذر"}
         autocomplete="off"
@@ -170,6 +173,9 @@
             {#each GROUPINGS.filter((g) => kind === "text" || g.roots) as option (option.value)}<option value={option.value}>{option.label}</option>{/each}
           </select>
         </label>
+      {/if}
+      {#if kind === "text" && app.shownTranslations.length > 0}
+        <label><input type="checkbox" bind:checked={onlyShown} /> only the translations shown in the reader</label>
       {/if}
       <label>
         in

@@ -351,6 +351,36 @@ CREATE TABLE verse_word_roots (
 );
 CREATE INDEX idx_verse_word_roots_root ON verse_word_roots(root_id);
 
+-- Word by word: an English gloss and a transliteration for each display word
+-- (legacy en.wordbyword and en.transliteration), and the Quranic Arabic
+-- Corpus morphology of its parts. word_index counts display words from 0.
+CREATE TABLE word_glosses (
+    verse_number    INTEGER NOT NULL REFERENCES verses(number),
+    word_index      INTEGER NOT NULL,
+    meaning         TEXT    NOT NULL,
+    transliteration TEXT    NOT NULL,
+    PRIMARY KEY (verse_number, word_index)
+);
+
+CREATE TABLE word_parts (
+    verse_number INTEGER NOT NULL REFERENCES verses(number),
+    word_index   INTEGER NOT NULL,
+    part         INTEGER NOT NULL,     -- 1-based within the word
+    form         TEXT    NOT NULL,     -- Buckwalter transliteration, as the corpus gives it
+    tag          TEXT    NOT NULL,     -- part of speech: N, V, P, DET ...
+    features     TEXT    NOT NULL,     -- the corpus's features, verbatim: STEM|POS:N|LEM:...|ROOT:...|M|GEN
+    PRIMARY KEY (verse_number, word_index, part)
+);
+
+-- Names of the corpus's tags and features in English and Arabic (legacy
+-- Languages/*.txt, Dictionary Grammar_* rows).
+CREATE TABLE grammar_labels (
+    tag      TEXT NOT NULL,
+    language TEXT NOT NULL,
+    label    TEXT NOT NULL,
+    PRIMARY KEY (tag, language)
+);
+
 -- Pause marks after display words, for editions whose text does not carry
 -- them (the Submission export keeps them only in its arabic_clean column).
 -- word_index counts display words from 0, as in verse_word_roots.
@@ -380,9 +410,13 @@ CREATE TABLE word_grammar (
 
 CREATE TABLE translations (
     id           INTEGER PRIMARY KEY,
-    key          TEXT    NOT NULL UNIQUE,   -- en.asad
-    language     TEXT    NOT NULL,
+    key          TEXT    NOT NULL UNIQUE,   -- en.asad, submission.en
+    language     TEXT    NOT NULL,          -- BCP 47: en, fa, ar, en-Latn
+    name         TEXT    NOT NULL,          -- shown to the reader
     translator   TEXT    NOT NULL,
+    -- translation | transliteration | emlaaei (the Arabic in standard spelling)
+    kind         TEXT    NOT NULL DEFAULT 'translation',
+    direction    TEXT    NOT NULL DEFAULT 'ltr',  -- ltr | rtl
     source_id    INTEGER NOT NULL REFERENCES sources(id),
     installed    INTEGER NOT NULL DEFAULT 0
 );
@@ -408,6 +442,9 @@ CREATE VIRTUAL TABLE verses_fts USING fts5(
     tokenize = 'unicode61 remove_diacritics 0'
 );
 
+-- Not filled: translation search matches substrings in memory, as the
+-- original does, which a token index cannot answer. Kept for a later
+-- word search over large packs.
 CREATE VIRTUAL TABLE translation_fts USING fts5(
     text,
     content = 'translation_text',

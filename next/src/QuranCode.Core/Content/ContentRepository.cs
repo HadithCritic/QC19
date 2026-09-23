@@ -45,7 +45,7 @@ public sealed class ContentRepository : IDisposable
     private readonly SqliteConnection _connection;
 
     /// <summary>Oldest schema this code reads: v3 added editions and verse 0, v4 the waw words.</summary>
-    public const int MinimumSchemaVersion = 5;
+    public const int MinimumSchemaVersion = 6;
 
     private Chapter[]? _chapters;
     private Verse[]? _verses;
@@ -163,6 +163,96 @@ public sealed class ContentRepository : IDisposable
         }
         return marks;
     }
+
+    private Dictionary<(int, int), WordData>? _wordData;
+    private Dictionary<(string, string), string>? _grammarLabels;
+
+    /// <summary>A display word's gloss, transliteration and grammar parts, or null when there are none.</summary>
+    public WordData? WordDataOf(int verseNumber, int wordIndex) =>
+        (_wordData ??= LoadWordData()).GetValueOrDefault((verseNumber, wordIndex));
+
+    /// <summary>The name of a corpus tag or feature in a language (en or ar), or null.</summary>
+    public string? GrammarLabel(string tag, string language) =>
+        (_grammarLabels ??= LoadGrammarLabels()).GetValueOrDefault((tag, language));
+
+    private Dictionary<(int, int), WordData> LoadWordData()
+    {
+        var parts = new Dictionary<(int, int), List<WordPart>>();
+        using (SqliteCommand command = _connection.CreateCommand())
+        {
+            command.CommandText = "SELECT verse_number, word_index, part, form, tag, features FROM word_parts ORDER BY verse_number, word_index, part";
+            using SqliteDataReader reader = command.ExecuteReader();
+            while (reader.Read())
+            {
+                var key = (reader.GetInt32(0), reader.GetInt32(1));
+                if (!parts.TryGetValue(key, out List<WordPart>? list)) parts[key] = list = [];
+                list.Add(new WordPart(reader.GetInt32(2), reader.GetString(3), reader.GetString(4), reader.GetString(5).Split('|')));
+            }
+        }
+
+        var data = new Dictionary<(int, int), WordData>();
+        using (SqliteCommand command = _connection.CreateCommand())
+        {
+            command.CommandText = "SELECT verse_number, word_index, meaning, transliteration FROM word_glosses";
+            using SqliteDataReader reader = command.ExecuteReader();
+            while (reader.Read())
+            {
+                var key = (reader.GetInt32(0), reader.GetInt32(1));
+                data[key] = new WordData(reader.GetString(2), reader.GetString(3), parts.GetValueOrDefault(key) ?? []);
+            }
+        }
+        return data;
+    }
+
+    private Dictionary<(string, string), string> LoadGrammarLabels()
+    {
+        var labels = new Dictionary<(string, string), string>();
+        using SqliteCommand command = _connection.CreateCommand();
+        command.CommandText = "SELECT tag, language, label FROM grammar_labels";
+        using SqliteDataReader reader = command.ExecuteReader();
+        while (reader.Read()) labels[(reader.GetString(0), reader.GetString(1))] = reader.GetString(2);
+        return labels;
+    }
+
+    private TranslationInfo[]? _translations;
+
+    /// <summary>The translations and other verse texts the database holds.</summary>
+    public IReadOnlyList<TranslationInfo> Translations => _translations ??= LoadTranslations();
+
+    private TranslationInfo[] LoadTranslations()
+    {
+        using SqliteCommand command = _connection.CreateCommand();
+        command.CommandText =
+            "SELECT id, key, language, name, translator, kind, direction FROM translations WHERE installed = 1 ORDER BY id";
+        var result = new List<TranslationInfo>();
+        using SqliteDataReader reader = command.ExecuteReader();
+        while (reader.Read())
+        {
+            result.Add(new TranslationInfo(
+                reader.GetInt32(0), reader.GetString(1), reader.GetString(2), reader.GetString(3),
+                reader.GetString(4), reader.GetString(5), reader.GetString(6) == "rtl"));
+        }
+        return [.. result];
+    }
+
+    /// <summary>One translation's text for a run of verses, by absolute verse number.</summary>
+    public IReadOnlyDictionary<int, string> TranslationText(int translationId, int firstVerse, int lastVerse)
+    {
+        using SqliteCommand command = _connection.CreateCommand();
+        command.CommandText =
+            "SELECT verse_number, text FROM translation_text WHERE translation_id = $id AND verse_number BETWEEN $first AND $last";
+        command.Parameters.AddWithValue("$id", translationId);
+        command.Parameters.AddWithValue("$first", firstVerse);
+        command.Parameters.AddWithValue("$last", lastVerse);
+        var result = new Dictionary<int, string>();
+        using SqliteDataReader reader = command.ExecuteReader();
+        while (reader.Read()) result[reader.GetInt32(0)] = reader.GetString(1);
+        return result;
+    }
+
+    /// <summary>Every verse of one translation, for searching it.</summary>
+    public IReadOnlyDictionary<int, string> AllTranslationText(int translationId) =>
+        TranslationText(translationId, 1, Verses.Count);
 
     private WordRoots? _wordRoots;
 

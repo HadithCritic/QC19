@@ -5,6 +5,7 @@
   import { app } from "../state/app.svelte";
   import { SEARCH_PAGE, search } from "../state/search.svelte";
   import Notice from "./Notice.svelte";
+  import TranslationMatch from "./TranslationMatch.svelte";
   import UnitResults from "./UnitResults.svelte";
 
   // One page of results with the matched words marked. F3 and Shift+F3 step
@@ -66,6 +67,11 @@
         verses: {describe(search.request)}
         {#if search.scopeFellBack}<span class="fell-back">(nothing to search within, so the whole book)</span>{/if}
       </p>
+      {#if result.foundIn === "translations"}
+        <p>Searched in the translations, since the text is not in Arabic letters.</p>
+      {:else if result.foundIn === "emlaaei"}
+        <p>Not in the Uthmani text as typed; found in the standard spelling, so whole verses are listed.</p>
+      {/if}
       {#if roots.length > 0}
         <p class="roots">
           Roots
@@ -99,6 +105,7 @@
                 {#if verse.highlights.includes(index)}<mark>{word}</mark>{:else}{word}{/if}{" "}
               {/each}
             </p>
+            {#each verse.translations ?? [] as line (line.key)}<TranslationMatch {line} />{/each}
           </div>
           {#if verse.score !== null}
             <span class="count num" title="Similarity to the starting verse">{Math.round(verse.score * 100)}%</span>

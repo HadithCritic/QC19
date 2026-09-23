@@ -403,3 +403,66 @@ the browser: ratio colors on chapter 1, each Stats tab, the number facts of
 **Phase 5 complete.**
 
 ---
+
+## Phase 6: Grammar, meanings and translations
+
+An agent read the original's code and data for these features first.
+
+- **Translations (#27).** The Submission export's 13 translations and its
+  transliteration are imported into the Submission content database, with
+  the `arabic_clean` column as the standard-spelling text. The export marks
+  footnotes with ± (the footnotes themselves are not in it); the text is
+  stored as given and ± is shown as *. The reader shows any number of chosen
+  translations under each verse, the English by default, remembered with the
+  other preferences.
+- **Translation pack.** The original's 110 Tanzil translations (about 160 MB)
+  would multiply the installer, so `build_translations.py` makes an optional
+  pack per edition, keyed by its verse numbers (108 translations, 187 MB; the
+  other three are the per-word-list files imported below). The engine opens
+  packs given with `--translations`; the app passes `translations.db` from
+  its data folder when present, and the development bridge the pack in
+  `next/data`. A pack for another edition is refused. As in the original, a
+  chapter's Bismillah takes 1:1's translation (prefixed to verse 1 in the
+  classic edition, verse 0 in Submission), and a catalog-less file (en.asad)
+  is not offered. **Fix:** lines are split at LF only, as .NET reads them;
+  Python's `splitlines` also broke at U+0085, which two files contain.
+- **Word meanings, transliteration and grammar (#62, #64).** Imported per
+  display word from `en.wordbyword`, `en.transliteration` and the Quranic
+  Arabic Corpus `word-parts.txt`, aligned to both editions as the roots are
+  (all verses aligned). The grammar file has no Bismillah on verse 1; like
+  the original, 1:1's parts are used. Tag names in English and Arabic come
+  from the original's language files. Clicking a word shows it all in the
+  inspector. **Decision:** the original shows this in its title bar on hover
+  and the grammar only on its Grammar tab; one card on click serves both.
+- **Translation search and the language rule (#51, #67, #73).** Typed text
+  that is all Quran letters, marks, Indian digits and symbols is searched in
+  the Arabic; anything else searches the translations, as the original's
+  `IsArabic` decides. **Decision:** آ is added to the Arabic letters; the
+  original's list leaves it out, so a word typed with it went to the
+  translations. Matching ignores case and folds no accents, as the original
+  does; **decision:** the typed text is matched literally rather than as a
+  regular expression. By default the edition's own translations are
+  searched, or only those shown; the original searches all loaded ones.
+  **Decision:** a pack's translations are searched when shown, so a search
+  does not load all 108 into memory. Matches are marked in the translation
+  line (the original lists whole verses).
+- **Standard-spelling fallback (#52, #31).** An Arabic search that finds
+  nothing tries the standard spelling, both simplified in the text mode, and
+  lists whole verses, saying so. الكتاب finds nothing in the Uthmani text and
+  151 verses this way.
+- The unused translations full-text index is left empty (8.7 MB): translation
+  search matches substrings in memory, which a token index cannot answer. The
+  Submission database is now 41 MB with translations and word data.
+- Licenses are recorded in `data/sources/submission/SOURCE.md` for the owner's
+  review; nothing is published.
+- **Not done:** the original's interface translations (`Languages/*.txt`,
+  five languages) belong with the help and accessibility work in Phase 11.
+
+### Phase 6 checks
+
+All passing: engine 280, protocol 80, interface 51, Rust 7, rustfmt, clippy,
+svelte-check 0 errors, oracle reproduces. Checked in the browser with the
+pack: 122 translations in two groups, Pickthall under the verses, the word
+card for لِلَّهِ. **Phase 6 complete.**
+
+---

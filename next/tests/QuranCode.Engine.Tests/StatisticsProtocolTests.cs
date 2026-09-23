@@ -85,7 +85,44 @@ public sealed class StatisticsProtocolTests : IDisposable
         Assert.Equal(5, first.GetProperty("splitLetters").GetInt32());
     }
 
+    [Fact]
+    public void TranslationsListReadAndSearch()
+    {
+        JsonElement list = Result("translations.list", new { });
+        Assert.Equal(15, list.GetArrayLength());
+        Assert.False(list[0].GetProperty("pack").GetBoolean());
+
+        JsonElement text = Result("translations.text", new { keys = new[] { "submission.en", "submission.fa" }, first = 1, last = 7 });
+        Assert.Equal(2, text.GetArrayLength());
+        Assert.Equal(7, text[0].GetProperty("verses").GetArrayLength());
+
+        JsonElement found = Result("search.text", new { term = "Most Merciful", limit = 3 });
+        Assert.Equal("translations", found.GetProperty("foundIn").GetString());
+        JsonElement line = found.GetProperty("verses")[0].GetProperty("translations")[0];
+        Assert.Equal("submission.en", line.GetProperty("key").GetString());
+        Assert.Equal(13, line.GetProperty("ranges")[0][1].GetInt32());
+
+        JsonElement spelled = Result("search.text", new { term = "الكتاب", wordness = "whole" });
+        Assert.Equal("emlaaei", spelled.GetProperty("foundIn").GetString());
+        Assert.True(spelled.GetProperty("verseCount").GetInt32() > 100);
+
+        JsonElement unknown = Call("search.text", new { term = "God", translations = new[] { "nobody.here" } });
+        Assert.Equal("not_found", unknown.GetProperty("error").GetProperty("code").GetString());
+    }
+
+    [Fact]
+    public void WordInfoGivesMeaningAndGrammar()
+    {
+        JsonElement word = Result("word.info", new { verse = 1, word = 2 });
+        Assert.Equal("the Fountain of Mercy,", word.GetProperty("meaning").GetString());
+        Assert.Contains("رحم", word.GetProperty("roots").EnumerateArray().Select(r => r.GetString()));
+        Assert.True(word.GetProperty("parts").GetArrayLength() >= 2);
+    }
+
     [Theory]
+    [InlineData("translations.text", """{"keys":[],"first":1,"last":7}""")]
+    [InlineData("translations.text", """{"keys":["submission.en"],"first":1,"last":2000}""")]
+    [InlineData("word.info", """{"verse":1,"word":9}""")]
     [InlineData("selection.letters", """{"first":1,"last":7,"scope":"page"}""")]
     [InlineData("selection.symmetry", """{"first":1,"last":7,"kind":"sideways"}""")]
     [InlineData("research.words", """{"method":"allah","first":3}""")]

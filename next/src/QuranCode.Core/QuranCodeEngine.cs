@@ -72,6 +72,69 @@ public sealed partial class QuranCodeEngine : IDisposable
     /// <summary>Roots of every display word.</summary>
     public WordRoots Roots => _content.WordRoots;
 
+    /// <summary>A display word's gloss, transliteration and grammar (index counts the Bismillah header).</summary>
+    public WordData? WordDataOf(int verseNumber, int wordIndex) => _content.WordDataOf(verseNumber, wordIndex);
+
+    /// <summary>The English (en) or Arabic (ar) name of a corpus tag or feature, or null.</summary>
+    public string? GrammarLabel(string tag, string language) => _content.GrammarLabel(tag, language);
+
+    private readonly List<TranslationPack> _packs = [];
+
+    /// <summary>The translations and other verse texts of this edition, then those of any packs.</summary>
+    public IReadOnlyList<TranslationInfo> Translations => [.. _content.Translations, .. _packs.SelectMany(p => p.Translations)];
+
+    /// <summary>Opens a translation pack for this edition (Features.txt #27); its translations join the list.</summary>
+    /// <exception cref="InvalidDataException">The file is not a pack for this edition.</exception>
+    public void AddTranslationPack(string path) => _packs.Add(new TranslationPack(path, Corpus.Edition, _packs.Count + 1));
+
+    /// <summary>A translation by key, or null.</summary>
+    public TranslationInfo? Translation(string key) => Translations.FirstOrDefault(t => t.Key == key);
+
+    private readonly Dictionary<int, IReadOnlyDictionary<int, string>> _translationTexts = [];
+
+    /// <summary>Every verse of one translation, loaded once.</summary>
+    public IReadOnlyDictionary<int, string> AllTranslationText(TranslationInfo translation)
+    {
+        int key = CacheKey(translation);
+        if (_translationTexts.TryGetValue(key, out IReadOnlyDictionary<int, string>? cached)) return cached;
+        return _translationTexts[key] = TranslationText(translation, 1, Verses.Count);
+    }
+
+    /// <summary>
+    /// The Emlaaei fallback (Features.txt #52): verses whose standard-spelling
+    /// text holds the term, both simplified in the text mode, as the legacy
+    /// searches when the Uthmani text finds nothing. Empty when the edition
+    /// has no such text.
+    /// </summary>
+    public IReadOnlyList<int> EmlaaeiSearch(
+        string term, Wordness wordness, string textMode = DefaultTextMode,
+        CountingOptions? counting = null, IReadOnlySet<int>? scope = null)
+    {
+        TranslationInfo? emlaaei = Translations.FirstOrDefault(t => t.Kind == "emlaaei");
+        if (emlaaei is null) return [];
+        TextPipeline pipeline = Pipeline(textMode);
+        string needle = string.Join(' ', pipeline.Normalize(term).Split(' ', StringSplitOptions.RemoveEmptyEntries));
+        if (needle.Length == 0) return [];
+
+        CorpusView view = View(counting);
+        var found = new List<int>();
+        foreach ((int verse, string text) in AllTranslationText(emlaaei).OrderBy(t => t.Key))
+        {
+            if (view.IndexOf(verse) < 0 || (scope is not null && !scope.Contains(verse))) continue;
+            string line = string.Join(' ', pipeline.Normalize(text).Split(' ', StringSplitOptions.RemoveEmptyEntries));
+            if (TranslationSearch.Matches(line, needle, wordness).Count > 0) found.Add(verse);
+        }
+        return found;
+    }
+
+    /// <summary>One translation's text for a run of verses.</summary>
+    public IReadOnlyDictionary<int, string> TranslationText(TranslationInfo translation, int firstVerse, int lastVerse) =>
+        translation.Source == 0
+            ? _content.TranslationText(translation.Id, firstVerse, lastVerse)
+            : _packs[translation.Source - 1].TranslationText(translation.Id, firstVerse, lastVerse);
+
+    private static int CacheKey(TranslationInfo translation) => translation.Source * 1_000_000 + translation.Id;
+
     /// <summary>Names of every installed value system.</summary>
     public IReadOnlyList<string> ValueSystems() => _content.ValueSystemNames();
 
@@ -386,5 +449,9 @@ public sealed partial class QuranCodeEngine : IDisposable
         return View(counting).Verses[segmentation.WordVerse[word]].Number;
     }
 
-    public void Dispose() => _content.Dispose();
+    public void Dispose()
+    {
+        foreach (TranslationPack pack in _packs) pack.Dispose();
+        _content.Dispose();
+    }
 }

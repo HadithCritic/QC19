@@ -2,6 +2,7 @@
   import { tick } from "svelte";
   import Notice from "../lib/components/Notice.svelte";
   import RatioControl from "../lib/components/RatioControl.svelte";
+  import TranslationMenu from "../lib/components/TranslationMenu.svelte";
   import Rosette from "../lib/components/Rosette.svelte";
   import { describeError, engine, latest } from "../lib/engine/client";
   import type { ClassCode, RatioUnit, Verse } from "../lib/engine/types";
@@ -20,6 +21,33 @@
   let error = $state<string | null>(null);
   let loading = $state(true);
   let scroller: HTMLElement | undefined = $state();
+
+  // The chosen translations of the chapter, by key and then verse.
+  let translated = $state<Map<string, Map<number, string>>>(new Map());
+  const loadTranslations = latest(engine.translationText);
+
+  $effect(() => {
+    const keys = [...app.shownTranslations];
+    const chapter = app.chapters[app.chapter - 1];
+    if (keys.length === 0 || !chapter) {
+      translated = new Map();
+      return;
+    }
+    const last = chapter.firstVerse + chapter.verseCount - (chapter.hasVerseZero ? 0 : 1);
+    loadTranslations(keys, { first: chapter.firstVerse, last })
+      .then(({ current, value }) => {
+        if (current) translated = new Map(value.map((t) => [t.key, new Map(t.verses.map((v) => [v.verse, v.text]))]));
+      })
+      // The Arabic reads on its own; a missing translation is just not shown.
+      .catch(() => (translated = new Map()));
+  });
+
+  const shown = $derived(app.shownTranslations.map((key) => app.allTranslations.find((t) => t.key === key)).filter((t) => t !== undefined));
+
+  // The export marks footnotes with ±; the footnotes themselves are not in it.
+  function readable(text: string): string {
+    return text.replaceAll("±", "*");
+  }
 
   let ratioUnits = $state<RatioUnit[]>([]);
   const loadRatio = latest(engine.ratioSplit);
@@ -223,7 +251,10 @@
         {chapter.revelationPlace} · <span class="num">{chapter.verseCount}</span> verses{chapter.hasVerseZero ? " and the Bismillah as verse 0" : ""} · revelation order <span class="num">{chapter.revelationOrder}</span>
         <button type="button" class="link" onclick={() => app.openChapter(chapter.number)}>Select chapter</button>
       </p>
-      <RatioControl units={ratioUnits} />
+      <div class="tools">
+        <TranslationMenu />
+        <RatioControl units={ratioUnits} />
+      </div>
     </header>
 
     {#if verses[0]?.bismillah}
@@ -250,7 +281,11 @@
               class:measure-to={isMeasured(verse.number, index, "to")}
               class:current-word={isCurrentWord(verse, index)}
               data-ratio={ratioPart(verse.number, index)?.part}
-              data-word={index}>{#if ratioPart(verse.number, index)?.part === "split"}{@const [a, b] = cutWord(word, splitLetters(verse.number, index))}<span class="ratio-first">{a}</span><span class="ratio-second">{b}</span>{:else}{word}{/if}</span>{" "}{/each}<Rosette number={verse.numberInChapter} code={codes.get(verse.number)?.code ?? null} />{#if uncounted(verse)}<span class="note" lang="en" dir="ltr">not counted</span>{/if}</div></li>
+              data-word={index}>{#if ratioPart(verse.number, index)?.part === "split"}{@const [a, b] = cutWord(word, splitLetters(verse.number, index))}<span class="ratio-first">{a}</span><span class="ratio-second">{b}</span>{:else}{word}{/if}</span>{" "}{/each}<Rosette number={verse.numberInChapter} code={codes.get(verse.number)?.code ?? null} />{#if uncounted(verse)}<span class="note" lang="en" dir="ltr">not counted</span>{/if}</div>
+          {#each shown as t (t.key)}
+            {@const line = translated.get(t.key)?.get(verse.number)}
+            {#if line}<p class="translation" class:transliteration={t.kind === "transliteration"} lang={t.language} dir={t.rightToLeft ? "rtl" : "ltr"}>{readable(line)}</p>{/if}
+          {/each}</li>
       {/each}
     </ol>
 
@@ -360,6 +395,31 @@
 
   .word {
     border-radius: 3px;
+  }
+
+  .tools {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: flex-start;
+    gap: var(--space-4);
+    margin-top: var(--space-2);
+  }
+
+  .translation {
+    margin: var(--space-1) 0 var(--space-3);
+    font-family: var(--font-ui);
+    font-size: var(--text-md);
+    line-height: 1.55;
+    color: var(--ink-muted);
+  }
+
+  .translation[dir="ltr"] {
+    text-align: left;
+  }
+
+  .translation.transliteration {
+    font-style: italic;
   }
 
   .word[data-ratio="first"],

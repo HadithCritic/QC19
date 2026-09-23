@@ -178,6 +178,42 @@ export interface SearchVerse extends Verse {
   matchCount: number;
   /** Similarity to the starting verse (0 to 1), for a similar-verse search by text. */
   score: number | null;
+  /** For a search in translations: the lines that matched, each match as [start, length]. */
+  translations: { key: string; text: string; ranges: [number, number][] }[] | null;
+}
+
+export interface WordInfo {
+  verse: number;
+  word: number;
+  text: string;
+  meaning: string | null;
+  transliteration: string | null;
+  roots: string[];
+  parts: {
+    part: number;
+    arabic: string;
+    form: string;
+    tag: string;
+    tagEnglish: string | null;
+    tagArabic: string | null;
+    features: { text: string; english: string | null; arabic: string | null; script: string | null }[];
+  }[];
+}
+
+export interface Translation {
+  key: string;
+  language: string;
+  name: string;
+  translator: string;
+  kind: "translation" | "transliteration" | "emlaaei";
+  rightToLeft: boolean;
+  /** From an optional translation pack rather than the edition itself. */
+  pack: boolean;
+}
+
+export interface TranslationText {
+  key: string;
+  verses: { verse: number; text: string }[];
 }
 
 export interface WordFrequencies {
@@ -419,4 +455,6 @@ export interface SearchResult {
   /** Every found verse, for searching within the results. */
   verseNumbers: number[];
   roots: RootTerm[] | null;
+  /** Where the verses were found when not in the Arabic text: in translations, or in the standard spelling. */
+  foundIn: "translations" | "emlaaei" | null;
 }

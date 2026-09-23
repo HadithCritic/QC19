@@ -12,7 +12,7 @@ import type {
 
 /** What the reader asked to find. Verse and word numbers are absolute verse numbers and display word indexes. */
 export type SearchRequest =
-  | { kind: "text"; term: string; wordness: Wordness; grouping: Grouping }
+  | { kind: "text"; term: string; wordness: Wordness; grouping: Grouping; translations?: string[] }
   | { kind: "roots"; term: string; grouping: Grouping }
   | { kind: "harakat"; term: string }
   | { kind: "related"; verse: number; word: number; label: string }
@@ -85,7 +85,15 @@ export function toCall(request: SearchRequest): { method: SearchMethod | UnitSea
   const method = METHODS[request.kind];
   switch (request.kind) {
     case "text":
-      return { method, params: { term: request.term, wordness: request.wordness, grouping: request.grouping } };
+      return {
+        method,
+        params: {
+          term: request.term,
+          wordness: request.wordness,
+          grouping: request.grouping,
+          ...(request.translations?.length ? { translations: request.translations } : {}),
+        },
+      };
     case "roots":
       return { method, params: { term: request.term, grouping: request.grouping } };
     case "harakat":

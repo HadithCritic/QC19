@@ -44,7 +44,10 @@ class DevEngine {
     const env = { ...process.env, PATH: `${nativeDir}${delimiter}${process.env.PATH ?? ""}` };
     // Development user data sits in the ignored target folder, never in the source tree.
     const user = join(dirname(dirname(this.content)), "target", "dev-user.db");
-    const child = spawn(this.binary, ["--content", this.content, "--user", user], { stdio: "pipe", env });
+    // The translation pack built in next/data, when there is one (build_translations.py).
+    const pack = process.env.QURANCODE_TRANSLATIONS ?? join(dirname(dirname(dirname(dirname(this.content)))), "..", "data", "submission-translations.db");
+    const packs = existsSync(pack) ? ["--translations", pack] : [];
+    const child = spawn(this.binary, ["--content", this.content, "--user", user, ...packs], { stdio: "pipe", env });
     createInterface({ input: child.stdout }).on("line", (line) => this.receive(line));
     createInterface({ input: child.stderr }).on("line", (line) => console.error(`[engine] ${line}`));
     child.on("exit", () => {

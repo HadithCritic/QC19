@@ -18,8 +18,11 @@ import type {
   ResearchMethod,
   ResearchTable,
   Symmetry,
+  Translation,
+  TranslationText,
   SymmetryKind,
   WordFrequencies,
+  WordInfo,
   NumberInfo,
   SearchMethod,
   SearchResult,
@@ -124,6 +127,9 @@ export const engine = {
   clearHistory: (kind: HistoryKind) => call<boolean>("history.clear", { kind }),
   analyzeNumber: (value: string) => call<NumberInfo>("number.analyze", { value }),
   numberDetails: (value: string) => call<NumberDetails>("number.details", { value }),
+  translations: () => call<Translation[]>("translations.list"),
+  wordInfo: (verse: number, word: number) => call<WordInfo>("word.info", { verse, word }),
+  translationText: (keys: string[], range: VerseRange) => call<TranslationText[]>("translations.text", { keys, ...range }),
   selectionWords: (range: VerseRange, valueSystem: string, counting: CountingOptions, withMarks: boolean) =>
     call<WordFrequencies>("selection.words", { ...range, valueSystem, counting, withMarks }),
   selectionLetters: (range: VerseRange, valueSystem: string, counting: CountingOptions, scope: LetterScope) =>

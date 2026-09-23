@@ -25,7 +25,25 @@ as they are; the importer reads only the `arabic` column of the text table.
   WikiSubmission states otherwise. They say nothing specific about the Quran
   text or the translations.
 - No statement covers the **translations** in the text table (Rashad Khalifa's
-  English translation and the others). The app does not use them yet.
+  English translation and the others). Since Phase 6 the app imports them,
+  with the transliteration and the `arabic_clean` standard spelling, into the
+  Submission content database.
+
+## Other sources the content databases use (Phase 6)
+
+- **Quranic Arabic Corpus 0.4** morphology (`word-parts.txt`, Kais Dukes,
+  corpus.quran.com): GNU GPL, verbatim copies only, cite and link the corpus.
+  The data is stored field for field as the file has it; the app credits the
+  corpus where it shows grammar.
+- **Word-by-word English** (`en.wordbyword.txt`): from qurandev.appspot.com,
+  edited by Ali Adams. No license text in the file.
+- **Tanzil** transliteration, Emlaaei text (CC BY 3.0, verbatim, link
+  tanzil.net) and the 108 translations of the optional translation pack. The
+  translation files carry only a "Source: Tanzil.net" note, no terms. Tanzil's
+  site states its translations may be used for non-commercial purposes with
+  attribution; confirm before a public release, and keep the pack optional.
+- **Grammar tag names** from the original's `Languages/*.txt` (part of this
+  GPL-3.0 project).
 
 ## Before a public release
 

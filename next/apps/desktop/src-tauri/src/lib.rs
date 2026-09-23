@@ -34,8 +34,16 @@ pub fn run() {
             let content = app.path().resource_dir()?.join("content.db");
             // Bookmarks and history live in the per-user app data folder,
             // apart from the read-only content that ships with the app.
-            let user = app.path().app_data_dir()?.join("user.db");
-            app.manage(Engine::new(sidecar_path()?, content, Some(user)));
+            let data = app.path().app_data_dir()?;
+            let user = data.join("user.db");
+            // An optional translation pack the reader has placed beside their data.
+            let pack = data.join("translations.db");
+            let packs = if pack.is_file() {
+                vec![pack]
+            } else {
+                Vec::new()
+            };
+            app.manage(Engine::new(sidecar_path()?, content, Some(user), packs));
 
             // Start the engine now, so it warms up while the window loads
             // instead of when the first screen asks for data.

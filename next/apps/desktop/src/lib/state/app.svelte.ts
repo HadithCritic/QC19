@@ -1,5 +1,16 @@
 import { describeError, engine } from "../engine/client";
-import type { Bookmark, Chapter, CountingOptions, Distance, EngineInfo, RatioOptions, ValueSystem, VerseRange, WordLocation } from "../engine/types";
+import type {
+  Bookmark,
+  Chapter,
+  CountingOptions,
+  Distance,
+  EngineInfo,
+  RatioOptions,
+  Translation,
+  ValueSystem,
+  VerseRange,
+  WordLocation,
+} from "../engine/types";
 import { DEFAULT_COUNTING, parseCounting, type CountingKey } from "../counting";
 import { back, canGoBack, canGoForward, current, EMPTY_NAVIGATION, forward, visit, type Navigation } from "../navigation";
 import { DEFAULT_DIVISOR, DEFAULT_RADIX, wrapDivisor, wrapRadix } from "../numberDisplay";
@@ -22,6 +33,8 @@ interface Settings {
   divisor: number;
   /** The base numbers are shown in (Features.txt #71). */
   radix: number;
+  /** Translations shown under each verse, by key; null until the reader first chooses. */
+  translations: string[] | null;
 }
 
 const SETTINGS_KEY = "qurancode.settings.v1";
@@ -32,6 +45,7 @@ const DEFAULT_SETTINGS: Settings = {
   counting: DEFAULT_COUNTING,
   divisor: DEFAULT_DIVISOR,
   radix: DEFAULT_RADIX,
+  translations: null,
 };
 
 function wholeNumber(value: unknown, fallback: number, wrap: (n: number) => number): number {
@@ -55,6 +69,7 @@ function loadSettings(): Settings {
       counting,
       divisor: wholeNumber(parsed.divisor, DEFAULT_DIVISOR, wrapDivisor),
       radix: wholeNumber(parsed.radix, DEFAULT_RADIX, wrapRadix),
+      translations: Array.isArray(parsed.translations) ? parsed.translations.filter((k): k is string => typeof k === "string") : null,
     };
   } catch {
     return DEFAULT_SETTINGS;
@@ -76,6 +91,11 @@ class AppState {
   info = $state<EngineInfo | null>(null);
   chapters = $state<Chapter[]>([]);
   allSystems = $state<ValueSystem[]>([]);
+  /** Translations and other verse texts the edition has. */
+  allTranslations = $state<Translation[]>([]);
+  /** Keys of the translations shown under each verse. */
+  shownTranslations = $state<string[]>([]);
+  private remembered: string[] | null = null;
 
   view = $state<View>("read");
   chapter = $state(1);
@@ -128,13 +148,28 @@ class AppState {
     this.counting = settings.counting;
     this.divisor = settings.divisor;
     this.radix = settings.radix;
+    this.remembered = settings.translations;
   }
 
   async start(): Promise<void> {
     this.status = "starting";
     this.startupError = null;
     try {
-      const [info, chapters, systems] = await Promise.all([engine.info(), engine.chapters(), engine.systems()]);
+      const [info, chapters, systems, translations] = await Promise.all([
+        engine.info(),
+        engine.chapters(),
+        engine.systems(),
+        engine.translations(),
+      ]);
+      this.allTranslations = translations;
+      // Until the reader chooses, the first translation is shown (the edition's own English).
+      const known = new Set(translations.map((t) => t.key));
+      const firstTranslation = translations.find((t) => t.kind === "translation");
+      this.shownTranslations = this.remembered
+        ? this.remembered.filter((k) => known.has(k))
+        : firstTranslation
+          ? [firstTranslation.key]
+          : [];
       this.info = info;
       this.chapters = chapters;
       this.allSystems = systems;
@@ -158,7 +193,15 @@ class AppState {
       counting: { ...this.counting },
       divisor: this.divisor,
       radix: this.radix,
+      // Before the edition's list arrives, keep what was remembered.
+      translations: this.status === "ready" ? [...this.shownTranslations] : this.remembered,
     });
+  }
+
+  toggleTranslation(key: string, on: boolean): void {
+    const rest = this.shownTranslations.filter((k) => k !== key);
+    this.shownTranslations = on ? [...rest, key] : rest;
+    this.persist();
   }
 
   /** Looks a number up in the Numbers view. */

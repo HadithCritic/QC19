@@ -1,5 +1,6 @@
 <script lang="ts">
   import BookmarkControl from "../lib/components/BookmarkControl.svelte";
+  import WordCard from "../lib/components/WordCard.svelte";
   import NumberChip from "../lib/components/NumberChip.svelte";
   import NumberDetail from "../lib/components/NumberDetail.svelte";
   import Notice from "../lib/components/Notice.svelte";
@@ -108,6 +109,8 @@
         {/each}
       </dl>
     </section>
+
+    <WordCard />
 
     {#if app.measurement || app.measureFrom || app.measureError}
       <section class="measure" aria-label="Distance between words" aria-live="polite">
