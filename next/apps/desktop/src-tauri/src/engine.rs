@@ -71,26 +71,18 @@ pub struct Engine {
     binary: PathBuf,
     content: PathBuf,
     user: Option<PathBuf>,
-    translations: Vec<PathBuf>,
     next_id: AtomicU64,
     running: Mutex<Option<Running>>,
 }
 
 impl Engine {
     /// `user` is the reader's writable data file; without it, bookmarks and
-    /// history report that they are unavailable. `translations` are optional
-    /// translation packs for the edition.
-    pub fn new(
-        binary: PathBuf,
-        content: PathBuf,
-        user: Option<PathBuf>,
-        translations: Vec<PathBuf>,
-    ) -> Self {
+    /// history report that they are unavailable.
+    pub fn new(binary: PathBuf, content: PathBuf, user: Option<PathBuf>) -> Self {
         Self {
             binary,
             content,
             user,
-            translations,
             next_id: AtomicU64::new(1),
             running: Mutex::new(None),
         }
@@ -160,11 +152,6 @@ impl Engine {
                 self.user
                     .iter()
                     .flat_map(|user| [std::ffi::OsStr::new("--user"), user.as_os_str()]),
-            )
-            .args(
-                self.translations
-                    .iter()
-                    .flat_map(|pack| [std::ffi::OsStr::new("--translations"), pack.as_os_str()]),
             )
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
@@ -355,7 +342,7 @@ mod tests {
         ));
         let content = root.join("resources/content.db");
         (binary.exists() && content.exists())
-            .then(|| Engine::new(binary, content, None, Vec::new()))
+            .then(|| Engine::new(binary, content, None))
     }
 
     #[tokio::test]
@@ -400,7 +387,6 @@ mod tests {
             PathBuf::from("definitely-not-here.exe"),
             PathBuf::from("content.db"),
             None,
-            Vec::new(),
         );
         let error = engine.call("engine.info", None).await.unwrap_err();
         assert_eq!(error.code, "engine_unavailable");

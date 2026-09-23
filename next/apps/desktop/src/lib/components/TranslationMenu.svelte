@@ -2,9 +2,9 @@
   import type { Translation } from "../engine/types";
   import { app } from "../state/app.svelte";
 
-  // Which translations show under each verse (Features.txt #27): the
-  // edition's own, then any from a translation pack. The standard-spelling
-  // Arabic is for search, not for reading, so it is not offered.
+  // Which translations show under each verse (Features.txt #27). The
+  // standard-spelling Arabic is for search, not for reading, so it is not
+  // offered.
 
   let filter = $state("");
 
@@ -13,12 +13,7 @@
     const q = filter.trim().toLowerCase();
     return q ? offered.filter((t) => `${t.name} ${t.translator} ${t.language}`.toLowerCase().includes(q)) : offered;
   });
-  const groups = $derived(
-    [
-      { title: "This edition", list: matching.filter((t) => !t.pack) },
-      { title: "Translation pack (Tanzil)", list: matching.filter((t) => t.pack) },
-    ].filter((g) => g.list.length > 0),
-  );
+  const groups = $derived([{ title: "This edition", list: matching }].filter((g) => g.list.length > 0));
 </script>
 
 {#snippet item(t: Translation)}

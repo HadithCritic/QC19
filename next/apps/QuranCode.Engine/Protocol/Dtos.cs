@@ -1,4 +1,4 @@
-namespace QuranCode.Engine.Protocol;
+﻿namespace QuranCode.Engine.Protocol;
 
 // Wire types. Kept separate from the engine's own records so the protocol is
 // an explicit contract: renaming an engine field cannot silently change what
@@ -47,7 +47,6 @@ internal sealed record VerseDto(
     IReadOnlyList<string> Words,
     string? Prostration = null);
 
-internal sealed record ReciterDto(string Folder, string Language, string Name, string Quality);
 
 /// <summary>
 /// Analysis of one number. <c>Value</c> is a decimal string because a 64-bit
@@ -181,7 +180,7 @@ internal sealed record WordInfoDto(
     IReadOnlyList<WordPartDto> Parts);
 
 /// <param name="Pack">Whether it comes from an optional translation pack rather than the edition itself.</param>
-internal sealed record TranslationDto(string Key, string Language, string Name, string Translator, string Kind, bool RightToLeft, bool Pack);
+internal sealed record TranslationDto(string Key, string Language, string Name, string Translator, string Kind, bool RightToLeft);
 
 /// <param name="Keys">Translation keys, as translations.list gives them.</param>
 internal sealed record TranslationTextParams(IReadOnlyList<string> Keys, int First, int Last);

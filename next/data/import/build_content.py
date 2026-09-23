@@ -235,23 +235,6 @@ class Importer:
         self.db.executemany("INSERT INTO prostrations (verse_number, type) VALUES (?, ?)", rows)
         print(f"  prostrations       {len(rows)}")
 
-    def import_reciters(self) -> None:
-        """The reciter catalog; like the original, a row with fewer than four fields is left out."""
-        rel = os.path.join("DataAccess", "Audio", "metadata.txt")
-        self.register_source("audio/reciters", "reciter catalog", "metadata", rel, origin="everyayah.com")
-        rows = []
-        with io.open(self.path(rel), encoding="utf-8-sig") as handle:
-            for index, line in enumerate(handle):
-                fields = [f.strip() for f in line.rstrip("\r\n").split("\t")]
-                if index == 0 or len(fields) < 4 or not fields[0]:
-                    continue
-                if fields[0].lower().startswith("http") or fields[0].startswith("#"):
-                    continue
-                rows.append((fields[0], fields[1], fields[2], fields[3], len(rows) + 1))
-        self.db.executemany(
-            "INSERT OR IGNORE INTO reciters (folder, language, name, quality, ordinal) VALUES (?,?,?,?,?)", rows)
-        print(f"  reciters           {len(rows)}")
-
     def import_submission(self) -> None:
         """Replaces the classic text with the Submission edition's.
 
@@ -819,7 +802,6 @@ class Importer:
                                 [("edition", self.edition), ("basmala", basmala)])
             self.import_initialization(sections)
             self.import_prostrations(sections)
-            self.import_reciters()
             self.import_partitions(sections)
             self.import_text_modes()
             self.import_value_systems()

@@ -20,6 +20,7 @@ without a row here saying so and why.
 | **engine** | Implemented in the engine; no screen yet |
 | **todo** | Not started |
 | **drop** | Deliberately not carried over, with a reason |
+| **out** | Removed from scope by [ADR 0004](../decisions/0004-code-19-scope.md) |
 
 There is no longer a **data** status: the items that waited on content packs
 were imported in Phase 6.
@@ -42,8 +43,8 @@ were imported in Phase 6.
 | 68 | Back/forward through browse and find history | port | **done** | Back/forward buttons and Alt+Left/Right; searches rerun from history |
 | 69 | Find and browse history | port | **done** | `user.db`, 500 per kind, repeats skipped; Saved view and recent searches |
 | 70 | Bookmarks with notes, auto-save | port | **done** | Inspector bookmark with an auto-saved note; Saved view lists, opens, deletes |
-| 17 | IndoPak font family support | port | todo | UI font selection |
-| 46 | Dynamic keyboard per text mode | rewrite | todo | UI |
+| 17 | IndoPak font family support | port | out | ADR 0004: one Arabic font |
+| 46 | Dynamic keyboard per text mode | rewrite | todo | Kept by ADR 0004, reduced to the seven extra characters of the active text mode |
 
 ## Numerology and values
 
@@ -58,9 +59,9 @@ were imported in Phase 6.
 | 24 | Ratio-based colorization, golden ratio default | port | **done** | Reader colors the parts of each verse, chapter, partition or the book at 1/π, 1/e, 1/φ, 1/♥ or any ratio, by letters or value, at a letter, word, pause mark, verse or chapter end, with totals |
 | 71 | Base 2–36 number systems | port | **done** | Numbers shown and typed in any base 2 to 36, digit sums in that base; the 20 Base letter-value systems value words by their digits (golden: base-systems.tsv) |
 | 72 | User-defined SimplifiedXX books | port | engine | `text_modes` + `text_mode_rules` are data |
-| 23 | DNA symbols (A T C G) in prime proportions | port | todo | Legacy `DNASequenceSystem` |
+| 23 | DNA symbols (A T C G) in prime proportions | port | out | ADR 0004 |
 | 30 | Expression calculator, bases 2–36 | **rewrite** | todo | Brief §26: legacy uses runtime code compilation for ordinary arithmetic; replace with a parser |
-| 78 | Circle/sphere/triangle calculators | port | todo | Standalone `Maths` |
+| 78 | Circle/sphere/triangle calculators | port | out | ADR 0004 |
 
 ## Search
 
@@ -97,8 +98,8 @@ were imported in Phase 6.
 | 8 | Front-back symmetry | port | **done** | Letters per word, words or letters per verse, with or without the boundaries |
 | 9 | Waleed's CPIndexChain | port | **done** | Chain, both bit readings each way, sum and length |
 | 5 | Initialized vs non-initialized chapter selection | port | **done** | Imported per chapter (42 doubly, as the original forces); marked in the chapter list and selectable |
-| 57 | Draw locations of "Allah" | port | todo | UI |
-| 58 | Draw values as squares, golden ratios, spirals | port | todo | UI |
+| 57 | Draw locations of "Allah" | port | out | ADR 0004: no drawing |
+| 58 | Draw values as squares, golden ratios, spirals | port | out | ADR 0004: no drawing |
 
 ## Text-mode options
 
@@ -115,11 +116,11 @@ were imported in Phase 6.
 
 | # | Feature | Class | Status | Notes |
 | ---: | --- | --- | --- | --- |
-| 45 | Previous/next verse in the player | port | todo | |
-| 56 | Inter-verse silence, 0.0–2.0× | port | todo | |
-| 65 | Auto-download recitations from everyayah.com | port | todo | Optional pack, brief §27 |
-| 66 | Auto-download translations from tanzil.net | port | todo | Optional pack |
-| 27 | Show all selected translations at once | port | **done** | Any number under each verse: the edition's 13 and transliteration, plus 108 Tanzil translations from an optional pack |
+| 45 | Previous/next verse in the player | port | out | ADR 0004: no audio |
+| 56 | Inter-verse silence, 0.0–2.0× | port | out | ADR 0004: no audio |
+| 65 | Auto-download recitations from everyayah.com | port | out | ADR 0004: no audio. The reciter catalog and the Rust downloader are removed |
+| 66 | Auto-download translations from tanzil.net | port | out | ADR 0004: the translation pack is removed |
+| 27 | Show all selected translations at once | port | **done** | Under each verse. ADR 0004 narrows the choice to Khalifa's English, the transliteration and the Emlaaei text; the other 12 and the 108-translation Tanzil pack are removed |
 
 ## Standalone tools
 
@@ -127,11 +128,11 @@ Brief §17: these become modules in one shell rather than separate executables.
 
 | # | Feature | Class | Status | Notes |
 | ---: | --- | --- | --- | --- |
-| 74 | QuranNet 3D word graph | port | todo | Merge as a module |
-| 75 | QuranLab (114 verse-count properties) | port | todo | Merge as a module |
-| 76 | InitialLetters sentence builder | port | todo | Merge as a module |
-| 77 | Prime Calculator with Yafu | **rewrite** | todo | Keep factoring; the bundled YAFU binaries were removed (no license terms) |
-| 79 | Composites analysis | port | todo | Merge as a module |
+| 74 | QuranNet 3D word graph | port | out | ADR 0004 |
+| 75 | QuranLab (114 verse-count properties) | port | out | ADR 0004 |
+| 76 | InitialLetters sentence builder | port | todo | **Kept by ADR 0004** and central to Code 19; roadmap stage C |
+| 77 | Prime Calculator with Yafu | **rewrite** | out | ADR 0004. Number factoring is already in the Numbers view |
+| 79 | Composites analysis | port | out | ADR 0004 |
 
 ## Other standalone tools
 
@@ -171,7 +172,8 @@ capability.
 | --- | ---: |
 | done | 60 |
 | engine (no UI yet) | 1 (#72) |
-| todo | 16 |
+| todo | 3 (#30, #46, #76) |
+| out (ADR 0004) | 13 |
 | drop | 1 (#36) |
 | part of another row | 1 (#37, see #70) |
 | **total** | **79** |
@@ -180,14 +182,19 @@ Counted per numbered feature, 79 in all; a row such as 32–35 counts as four.
 Arabic text search, which `Features.txt` does not number, is also done. The
 11 other standalone tools listed above are all todo and are not part of the 79.
 
-The 16 remaining numbered features fall into four groups:
+Three numbered features remain in scope, all of them kept deliberately by
+ADR 0004:
 
-| Group | Features |
-| --- | --- |
-| Audio | 45, 56, 65, 66 |
-| Standalone tools to fold in | 74, 75, 76, 77, 79 |
-| Drawing | 57, 58 |
-| Other | 17 (IndoPak fonts), 46 (dynamic keyboard), 23 (DNA symbols), 30 (expression calculator), 78 (geometry calculators) |
+| # | Feature | Where |
+| ---: | --- | --- |
+| 76 | InitialLetters | Roadmap stage C; central to Code 19 |
+| 30 | Expression calculator | Roadmap stage D |
+| 46 | Character palette | Roadmap stage A, reduced |
+
+The 13 marked **out** are audio (45, 56, 65, 66), drawing (57, 58), the other
+standalone tools (74, 75, 77, 79), the IndoPak fonts (17), DNA symbols (23)
+and the geometry calculators (78), together with the 11 unnumbered legacy
+programs.
 
 Nothing is blocked on missing data any more. The three items that were
 (#27 translations, #62 grammar, #64 word meanings) were imported in Phase 6,

@@ -1,4 +1,4 @@
-using Microsoft.Data.Sqlite;
+﻿using Microsoft.Data.Sqlite;
 using QuranCode.Core.Numerology;
 using QuranCode.Core.Text;
 
@@ -214,24 +214,10 @@ public sealed class ContentRepository : IDisposable
         return labels;
     }
 
-    private Reciter[]? _reciters;
     private Dictionary<int, string>? _prostrations;
-
-    /// <summary>The reciter catalog, in the original's order.</summary>
-    public IReadOnlyList<Reciter> Reciters => _reciters ??= LoadReciters();
 
     /// <summary>Prostration verses by absolute number: recommended or obligatory.</summary>
     public IReadOnlyDictionary<int, string> Prostrations => _prostrations ??= LoadProstrations();
-
-    private Reciter[] LoadReciters()
-    {
-        using SqliteCommand command = _connection.CreateCommand();
-        command.CommandText = "SELECT folder, language, name, quality FROM reciters ORDER BY ordinal";
-        var list = new List<Reciter>();
-        using SqliteDataReader reader = command.ExecuteReader();
-        while (reader.Read()) list.Add(new Reciter(reader.GetString(0), reader.GetString(1), reader.GetString(2), reader.GetString(3)));
-        return [.. list];
-    }
 
     private Dictionary<int, string> LoadProstrations()
     {

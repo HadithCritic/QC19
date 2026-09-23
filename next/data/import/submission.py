@@ -64,21 +64,11 @@ def is_word_join(find: str, replace_with: str) -> bool:
 
 
 #: The export's other text columns: (column, key, language, name, translator, kind, direction).
-#: The English is Rashad Khalifa's; the export does not name the other translators.
+#: ADR 0004 narrows these to Rashad Khalifa's English and the transliteration;
+#: the export's 11 other languages are left in the source file and not imported.
+#: The Emlaaei text comes from arabic_clean, which build_content.py adds.
 TRANSLATIONS = [
     ("english", "submission.en", "en", "English", "Rashad Khalifa", "translation", "ltr"),
-    ("turkish", "submission.tr", "tr", "Türkçe", "WikiSubmission", "translation", "ltr"),
-    ("french", "submission.fr", "fr", "Français", "WikiSubmission", "translation", "ltr"),
-    ("german", "submission.de", "de", "Deutsch", "WikiSubmission", "translation", "ltr"),
-    ("bahasa", "submission.id", "id", "Bahasa Indonesia", "WikiSubmission", "translation", "ltr"),
-    ("persian", "submission.fa", "fa", "فارسی", "WikiSubmission", "translation", "rtl"),
-    ("persian_new", "submission.fa-new", "fa", "فارسی (جدید)", "WikiSubmission", "translation", "rtl"),
-    ("tamil", "submission.ta", "ta", "தமிழ்", "WikiSubmission", "translation", "ltr"),
-    ("swedish", "submission.sv", "sv", "Svenska", "WikiSubmission", "translation", "ltr"),
-    ("russian", "submission.ru", "ru", "Русский", "WikiSubmission", "translation", "ltr"),
-    ("bengali", "submission.bn", "bn", "বাংলা", "WikiSubmission", "translation", "ltr"),
-    ("urdu", "submission.ur", "ur", "اردو", "WikiSubmission", "translation", "rtl"),
-    ("spanish", "submission.es", "es", "Español", "WikiSubmission", "translation", "ltr"),
     ("transliterated", "submission.translit", "en-Latn", "Transliteration", "WikiSubmission", "transliteration", "ltr"),
 ]
 

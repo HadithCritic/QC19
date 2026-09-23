@@ -1,4 +1,4 @@
-using Microsoft.Data.Sqlite;
+﻿using Microsoft.Data.Sqlite;
 using QuranCode.Core.Content;
 using QuranCode.Core.Search;
 using QuranCode.Core.Text;
@@ -24,11 +24,13 @@ public sealed class TranslationsTests : IDisposable
     [Fact]
     public void TheSubmissionEditionCarriesItsTranslations()
     {
-        Assert.Equal(15, _engine.Translations.Count);
+        // ADR 0004 narrows the edition to three texts: Khalifa's English, the
+        // transliteration and the Emlaaei standard spelling.
+        Assert.Equal(3, _engine.Translations.Count);
         TranslationInfo english = _engine.Translation("submission.en")!;
         Assert.Equal("Rashad Khalifa", english.Translator);
         Assert.StartsWith("In the name of GOD", _engine.TranslationText(english, 1, 1)[1]);
-        Assert.True(_engine.Translation("submission.fa")!.RightToLeft);
+        Assert.Equal("transliteration", _engine.Translation("submission.translit")!.Kind);
         Assert.Equal("emlaaei", _engine.Translation("submission.emlaaei")!.Kind);
 
         // The standard spelling of verse 1 loses the Bismillah this edition keeps as verse 0.
@@ -85,38 +87,5 @@ public sealed class TranslationsTests : IDisposable
     {
         Assert.Equal("بِ", Buckwalter.ToArabic("bi"));
         Assert.Equal("الٓمٓ", Buckwalter.ToArabic("Al^m^"));
-    }
-
-    [Fact]
-    public void APackAddsTranslationsForItsEditionOnly()
-    {
-        string path = Pack("submission");
-        _engine.AddTranslationPack(path);
-        TranslationInfo added = _engine.Translation("tanzil.test")!;
-        Assert.Equal(1, added.Source);
-        Assert.Equal("one", _engine.TranslationText(added, 1, 2)[1]);
-        Assert.Equal("two", _engine.AllTranslationText(added)[2]);
-
-        Assert.Throws<InvalidDataException>(() => _classic.AddTranslationPack(Pack("submission")));
-    }
-
-    private string Pack(string edition)
-    {
-        string path = Path.Combine(Path.GetTempPath(), $"qc-pack-{Guid.NewGuid():N}.db");
-        _files.Add(path);
-        using var db = new SqliteConnection($"Data Source={path}");
-        db.Open();
-        using SqliteCommand command = db.CreateCommand();
-        command.CommandText = $"""
-            CREATE TABLE pack (key TEXT PRIMARY KEY, value TEXT NOT NULL);
-            INSERT INTO pack VALUES ('schema_version', '1'), ('edition', '{edition}');
-            CREATE TABLE translations (id INTEGER PRIMARY KEY, key TEXT, language TEXT, name TEXT, translator TEXT,
-                kind TEXT, direction TEXT, source_id INTEGER, installed INTEGER);
-            INSERT INTO translations VALUES (1, 'tanzil.test', 'en', 'Test', 'Nobody', 'translation', 'ltr', 1, 1);
-            CREATE TABLE translation_text (translation_id INTEGER, verse_number INTEGER, text TEXT);
-            INSERT INTO translation_text VALUES (1, 1, 'one'), (1, 2, 'two');
-            """;
-        command.ExecuteNonQuery();
-        return path;
     }
 }

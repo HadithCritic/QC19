@@ -1,4 +1,4 @@
-using System.Buffers;
+﻿using System.Buffers;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
@@ -40,7 +40,6 @@ internal sealed class Dispatcher
             ["number.analyze"] = With(json.NumberParams, handlers.AnalyzeNumber, json.NumberDto),
             ["number.details"] = With(json.NumberParams, handlers.NumberDetails, json.NumberDetailsDto),
             ["translations.list"] = NoParams(handlers.TranslationList, json.IReadOnlyListTranslationDto),
-            ["audio.reciters"] = NoParams(handlers.Reciters, json.IReadOnlyListReciterDto),
             ["word.info"] = With(json.WordParams, handlers.WordInfo, json.WordInfoDto),
             ["translations.text"] = With(json.TranslationTextParams, handlers.TranslationText, json.IReadOnlyListTranslationTextDto),
             ["selection.words"] = With(json.SelectionParams, handlers.SelectionWords, json.WordFrequenciesDto),

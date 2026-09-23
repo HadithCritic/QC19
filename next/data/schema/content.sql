@@ -358,16 +358,6 @@ CREATE TABLE prostrations (
     type         TEXT NOT NULL    -- recommended | obligatory
 );
 
--- Reciters whose verse-by-verse recordings everyayah.com serves (legacy
--- Audio/metadata.txt). folder is the path under https://everyayah.com/data/.
-CREATE TABLE reciters (
-    folder   TEXT PRIMARY KEY,
-    language TEXT NOT NULL,
-    name     TEXT NOT NULL,
-    quality  TEXT NOT NULL,
-    ordinal  INTEGER NOT NULL
-);
-
 -- Word by word: an English gloss and a transliteration for each display word
 -- (legacy en.wordbyword and en.transliteration), and the Quranic Arabic
 -- Corpus morphology of its parts. word_index counts display words from 0.

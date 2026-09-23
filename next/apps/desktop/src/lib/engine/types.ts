@@ -207,8 +207,6 @@ export interface Translation {
   translator: string;
   kind: "translation" | "transliteration" | "emlaaei";
   rightToLeft: boolean;
-  /** From an optional translation pack rather than the edition itself. */
-  pack: boolean;
 }
 
 export interface TranslationText {

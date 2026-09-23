@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using QuranCode.Core;
 using QuranCode.Core.Tests;
 using QuranCode.Engine.Host;
@@ -89,10 +89,10 @@ public sealed class StatisticsProtocolTests : IDisposable
     public void TranslationsListReadAndSearch()
     {
         JsonElement list = Result("translations.list", new { });
-        Assert.Equal(15, list.GetArrayLength());
-        Assert.False(list[0].GetProperty("pack").GetBoolean());
+        // ADR 0004: Khalifa's English, the transliteration and the Emlaaei text.
+        Assert.Equal(3, list.GetArrayLength());
 
-        JsonElement text = Result("translations.text", new { keys = new[] { "submission.en", "submission.fa" }, first = 1, last = 7 });
+        JsonElement text = Result("translations.text", new { keys = new[] { "submission.en", "submission.translit" }, first = 1, last = 7 });
         Assert.Equal(2, text.GetArrayLength());
         Assert.Equal(7, text[0].GetProperty("verses").GetArrayLength());
 

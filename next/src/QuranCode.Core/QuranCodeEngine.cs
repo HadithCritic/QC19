@@ -1,4 +1,4 @@
-using QuranCode.Core.Analysis;
+﻿using QuranCode.Core.Analysis;
 using QuranCode.Core.Content;
 using QuranCode.Core.Numerology;
 using QuranCode.Core.Search;
@@ -78,20 +78,11 @@ public sealed partial class QuranCodeEngine : IDisposable
     /// <summary>The English (en) or Arabic (ar) name of a corpus tag or feature, or null.</summary>
     public string? GrammarLabel(string tag, string language) => _content.GrammarLabel(tag, language);
 
-    private readonly List<TranslationPack> _packs = [];
-
-    /// <summary>The reciter catalog (Features.txt #65).</summary>
-    public IReadOnlyList<Reciter> Reciters => _content.Reciters;
-
     /// <summary>A verse's prostration type, recommended or obligatory, or null.</summary>
     public string? ProstrationOf(int verseNumber) => _content.Prostrations.GetValueOrDefault(verseNumber);
 
-    /// <summary>The translations and other verse texts of this edition, then those of any packs.</summary>
-    public IReadOnlyList<TranslationInfo> Translations => [.. _content.Translations, .. _packs.SelectMany(p => p.Translations)];
-
-    /// <summary>Opens a translation pack for this edition (Features.txt #27); its translations join the list.</summary>
-    /// <exception cref="InvalidDataException">The file is not a pack for this edition.</exception>
-    public void AddTranslationPack(string path) => _packs.Add(new TranslationPack(path, Corpus.Edition, _packs.Count + 1));
+    /// <summary>The translations and other verse texts of this edition.</summary>
+    public IReadOnlyList<TranslationInfo> Translations => _content.Translations;
 
     /// <summary>A translation by key, or null.</summary>
     public TranslationInfo? Translation(string key) => Translations.FirstOrDefault(t => t.Key == key);
@@ -135,11 +126,9 @@ public sealed partial class QuranCodeEngine : IDisposable
 
     /// <summary>One translation's text for a run of verses.</summary>
     public IReadOnlyDictionary<int, string> TranslationText(TranslationInfo translation, int firstVerse, int lastVerse) =>
-        translation.Source == 0
-            ? _content.TranslationText(translation.Id, firstVerse, lastVerse)
-            : _packs[translation.Source - 1].TranslationText(translation.Id, firstVerse, lastVerse);
+        _content.TranslationText(translation.Id, firstVerse, lastVerse);
 
-    private static int CacheKey(TranslationInfo translation) => translation.Source * 1_000_000 + translation.Id;
+    private static int CacheKey(TranslationInfo translation) => translation.Id;
 
     /// <summary>Names of every installed value system.</summary>
     public IReadOnlyList<string> ValueSystems() => _content.ValueSystemNames();
@@ -457,7 +446,6 @@ public sealed partial class QuranCodeEngine : IDisposable
 
     public void Dispose()
     {
-        foreach (TranslationPack pack in _packs) pack.Dispose();
         _content.Dispose();
     }
 }

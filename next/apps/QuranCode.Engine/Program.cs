@@ -1,4 +1,4 @@
-using System.Text;
+﻿using System.Text;
 using QuranCode.Core;
 using QuranCode.Core.Numbers;
 using QuranCode.Core.User;
@@ -15,17 +15,15 @@ TextWriter log = TextWriter.Synchronized(new StreamWriter(Console.OpenStandardEr
 
 string? contentPath = null;
 string? userPath = null;
-var packPaths = new List<string>();
 for (int i = 0; i < args.Length - 1; i++)
 {
     if (args[i] == "--content") contentPath = args[i + 1];
     if (args[i] == "--user") userPath = args[i + 1];
-    if (args[i] == "--translations") packPaths.Add(args[i + 1]);
 }
 
 if (contentPath is null)
 {
-    log.WriteLine("usage: qurancode-engine --content <path-to-content.db> [--user <path-to-user.db>] [--translations <pack.db>]...");
+    log.WriteLine("usage: qurancode-engine --content <path-to-content.db> [--user <path-to-user.db>]");
     return 2;
 }
 
@@ -37,18 +35,6 @@ if (!File.Exists(contentPath))
 
 using var engine = new QuranCodeEngine(contentPath);
 
-// Optional translation packs: one that cannot be opened is left out and said so.
-foreach (string pack in packPaths)
-{
-    try
-    {
-        engine.AddTranslationPack(pack);
-    }
-    catch (Exception ex) when (ex is InvalidDataException or FileNotFoundException or Microsoft.Data.Sqlite.SqliteException)
-    {
-        log.WriteLine($"translation pack not used ({Path.GetFileName(pack)}): {ex.Message}");
-    }
-}
 
 // The reader's own data. Optional: without it the engine still serves the
 // text, and bookmark and history methods say they are unavailable.

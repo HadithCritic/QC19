@@ -1,4 +1,4 @@
-using QuranCode.Core.Content;
+﻿using QuranCode.Core.Content;
 using QuranCode.Core.Text;
 using QuranCode.Engine.Protocol;
 
@@ -50,7 +50,7 @@ internal sealed partial class Handlers
     }
 
     public IReadOnlyList<TranslationDto> TranslationList() => _engine.Translations
-        .Select(t => new TranslationDto(t.Key, t.Language, t.Name, t.Translator, t.Kind, t.RightToLeft, t.Source != 0))
+        .Select(t => new TranslationDto(t.Key, t.Language, t.Name, t.Translator, t.Kind, t.RightToLeft))
         .ToArray();
 
     public IReadOnlyList<TranslationTextDto> TranslationText(TranslationTextParams p)

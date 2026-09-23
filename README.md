@@ -28,10 +28,9 @@ Six screens: **Read**, **Search**, **Values**, **Stats**, **Saved** and
 - Click a word for its root, its English meaning, its transliteration and its
   grammar from the Quranic Arabic Corpus. Alt+click a second word to measure
   the distance between them in chapters, verses, words and letters.
-- Translations under each verse, Rashad Khalifa's English by default, with the
-  transliteration. (ADR 0004 narrows this to Khalifa, Emlaaei and the
-  transliteration; the other languages and the Tanzil pack are still present in
-  the code until that is carried out.)
+- Rashad Khalifa's English translation under each verse, with the
+  transliteration. Per ADR 0004 these are the only translations, together with
+  the Emlaaei standard spelling, which serves search rather than reading.
 - Ratio coloring: split a verse, chapter, partition or the whole book at 1/π,
   1/e, 1/φ or any ratio, by letters or by value.
 - Back and forward through selections; F3 steps through bookmarks.
@@ -86,7 +85,7 @@ Six screens: **Read**, **Search**, **Values**, **Stats**, **Saved** and
 Code 19. Audio, drawing, the standalone tools except InitialLetters, multiple
 Arabic fonts, DNA symbols and the geometry calculators are **out of scope**.
 
-Of the original's 79 features, 60 are built. The
+Of the original's 79 features, 60 are built and 13 are out of scope. The
 [feature matrix](next/docs/compatibility/feature-matrix.md) keeps a row for
 every one of them, including those now out of scope, as an inventory of what
 the original did — not as a list of work remaining. What is planned is in the
@@ -201,10 +200,10 @@ composites up to 506.
 Run the tests:
 
 ```bash
-dotnet test next/tests/QuranCode.Core.Tests      # engine: 280 tests
+dotnet test next/tests/QuranCode.Core.Tests      # engine: 279 tests
 dotnet test next/tests/QuranCode.Engine.Tests    # protocol: 80 tests
-cd next/apps/desktop && pnpm test                # interface logic: 58 tests
-cd next/apps/desktop && pnpm check               # types: 333 files, 0 errors
+cd next/apps/desktop && pnpm test                # interface logic: 51 tests
+cd next/apps/desktop && pnpm check               # types: 331 files, 0 errors
 cd next/apps/desktop/src-tauri && cargo test     # Rust bridge: 7 tests
 ```
 

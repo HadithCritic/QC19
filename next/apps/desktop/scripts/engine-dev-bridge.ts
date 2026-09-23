@@ -41,13 +41,15 @@ class DevEngine {
     // SQLite's native library is staged beside content.db, not beside the
     // binary; put that directory on the DLL search path, as the Rust bridge does.
     const nativeDir = dirname(this.content);
-    const env = { ...process.env, PATH: `${nativeDir}${delimiter}${process.env.PATH ?? ""}` };
+    // Extend the existing key whatever its case: a spread of process.env keeps
+    // the OS spelling, which on Windows is "Path" as often as "PATH", and
+    // assigning to env.PATH would add a second key instead of extending it.
+    const env: NodeJS.ProcessEnv = { ...process.env };
+    const pathKey = Object.keys(env).find((k) => k.toLowerCase() === "path") ?? "PATH";
+    env[pathKey] = `${nativeDir}${delimiter}${env[pathKey] ?? ""}`;
     // Development user data sits in the ignored target folder, never in the source tree.
     const user = join(dirname(dirname(this.content)), "target", "dev-user.db");
-    // The translation pack built in next/data, when there is one (build_translations.py).
-    const pack = process.env.QURANCODE_TRANSLATIONS ?? join(dirname(dirname(dirname(dirname(this.content)))), "..", "data", "submission-translations.db");
-    const packs = existsSync(pack) ? ["--translations", pack] : [];
-    const child = spawn(this.binary, ["--content", this.content, "--user", user, ...packs], { stdio: "pipe", env });
+    const child = spawn(this.binary, ["--content", this.content, "--user", user], { stdio: "pipe", env });
     createInterface({ input: child.stdout }).on("line", (line) => this.receive(line));
     createInterface({ input: child.stderr }).on("line", (line) => console.error(`[engine] ${line}`));
     child.on("exit", () => {

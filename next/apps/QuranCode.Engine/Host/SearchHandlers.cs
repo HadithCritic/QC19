@@ -1,4 +1,4 @@
-using QuranCode.Core;
+﻿using QuranCode.Core;
 using QuranCode.Core.Content;
 using QuranCode.Core.Search;
 using QuranCode.Core.Text;
@@ -65,7 +65,7 @@ internal sealed partial class Handlers
     {
         IReadOnlyList<TranslationInfo> chosen = p.Translations is { Count: > 0 } keys
             ? keys.Select(k => _engine.Translation(k) ?? throw RpcException.NotFound($"There is no translation named \"{Truncate(k)}\".")).ToArray()
-            : _engine.Translations.Where(t => t.Source == 0 && t.Kind is "translation" or "transliteration").ToArray();
+            : _engine.Translations.Where(t => t.Kind is "translation" or "transliteration").ToArray();
         if (chosen.Count == 0) throw RpcException.NotFound("This edition has no translations to search.");
 
         CorpusView view = _engine.View(counting);

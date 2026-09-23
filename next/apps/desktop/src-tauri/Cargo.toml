@@ -17,9 +17,7 @@ tauri-build = { version = "2", features = [] }
 tauri = { version = "2", features = [] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-tokio = { version = "1", features = ["process", "io-util", "sync", "time", "macros", "rt", "fs"] }
-# Recitation downloads only; rustls, so no system TLS library is needed.
-reqwest = { version = "0.12", default-features = false, features = ["rustls-tls"] }
+tokio = { version = "1", features = ["process", "io-util", "sync", "time", "macros", "rt"] }
 
 [profile.release]
 codegen-units = 1

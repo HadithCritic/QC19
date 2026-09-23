@@ -1,4 +1,3 @@
-mod audio;
 mod engine;
 
 use std::path::PathBuf;
@@ -16,25 +15,6 @@ async fn engine(
     params: Option<Value>,
 ) -> Result<Value, EngineError> {
     state.call(&method, params).await
-}
-
-/// A verse recording (Features.txt #65), from the cache in the app's data
-/// folder or downloaded from everyayah.com, as raw bytes for the player.
-#[tauri::command]
-async fn verse_audio(
-    app: tauri::AppHandle,
-    folder: String,
-    name: String,
-) -> Result<tauri::ipc::Response, EngineError> {
-    let root = app
-        .path()
-        .app_data_dir()
-        .map_err(|e| EngineError::new("cache_failed", e.to_string()))?
-        .join("Audio");
-    audio::verse_audio(&root, &folder, &name)
-        .await
-        .map(tauri::ipc::Response::new)
-        .map_err(|e| EngineError::new(e.code, e.message))
 }
 
 /// The sidecar sits next to the app executable, both in development (Tauri
@@ -56,14 +36,7 @@ pub fn run() {
             // apart from the read-only content that ships with the app.
             let data = app.path().app_data_dir()?;
             let user = data.join("user.db");
-            // An optional translation pack the reader has placed beside their data.
-            let pack = data.join("translations.db");
-            let packs = if pack.is_file() {
-                vec![pack]
-            } else {
-                Vec::new()
-            };
-            app.manage(Engine::new(sidecar_path()?, content, Some(user), packs));
+            app.manage(Engine::new(sidecar_path()?, content, Some(user)));
 
             // Start the engine now, so it warms up while the window loads
             // instead of when the first screen asks for data.
@@ -75,7 +48,7 @@ pub fn run() {
             });
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![engine, verse_audio])
+        .invoke_handler(tauri::generate_handler![engine])
         .run(tauri::generate_context!())
         .expect("error while running QuranCode");
 }

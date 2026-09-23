@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using QuranCode.Core;
 using QuranCode.Core.Analysis;
 using QuranCode.Core.Content;
@@ -46,9 +46,6 @@ internal sealed partial class Handlers
             c.Number, c.Name, c.TransliteratedName, c.EnglishName,
             c.RevelationOrder, c.RevelationPlace, c.VerseCount, c.FirstVerse, c.HasVerseZero, c.Initialization))
         .ToArray();
-
-    public IReadOnlyList<ReciterDto> Reciters() =>
-        _engine.Reciters.Select(r => new ReciterDto(r.Folder, r.Language, r.Name, r.Quality)).ToArray();
 
     public IReadOnlyList<ValueSystemDto> ValueSystems() => _systems.Values
         .Select(s => new ValueSystemDto(s.Name, s.TextMode, s.LetterOrder, s.LetterValue, s.ResearchOnly))
