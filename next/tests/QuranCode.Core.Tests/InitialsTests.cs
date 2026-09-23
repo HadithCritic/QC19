@@ -151,6 +151,30 @@ public sealed class InitialsTests : IDisposable
         Assert.True(known.SetEquals(disagree), $"disagreeing: {string.Join(" ", disagree.Order())}");
     }
 
+    /// <summary>
+    /// Khalifa's verse-by-verse alif counts, transcribed from Quran: Visual
+    /// Presentation of the Miracle, cover every verse of the 13 alif chapters,
+    /// verse 0 included, and add up to his published figure for each.
+    /// </summary>
+    [Fact]
+    public void TheQvpAlifTableAddsUpToEachPublishedTotal()
+    {
+        string path = Path.Combine(TestPaths.GoldenDirectory, "..", "..", "data", "sources", "qvp", "alif.tsv");
+        var rows = File.ReadLines(path)
+            .Where(l => l.Length > 0 && char.IsDigit(l[0]))
+            .Select(l => l.Split('\t').Select(int.Parse).ToArray())
+            .ToArray();
+
+        foreach (InitialedChapter chapter in QuranicInitials.Chapters.Where(c => c.Letters.Contains('ا')))
+        {
+            int[][] verses = [.. rows.Where(r => r[0] == chapter.Chapter)];
+            Core.Content.Chapter c = _engine.Chapters[chapter.Chapter - 1];
+            Assert.Equal(c.RowCount, verses.Length);
+            Assert.Equal(Enumerable.Range(0, c.RowCount), verses.Select(r => r[1]));
+            Assert.Equal(QuranicInitials.Published[(chapter.Chapter, 'ا')], verses.Sum(r => r[2]));
+        }
+    }
+
     [Fact]
     public void CountsCoverEveryInitialOfEveryChapter()
     {

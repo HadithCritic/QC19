@@ -71,10 +71,13 @@ of 53 findings, from Appendix 1 and from Khalifa's tables in *The Computer
 Speaks* as tabulated by [Quran Initial Count](https://qurantalk.gitbook.io/quran-initial-count).
 Every row runs as a test: a gated finding that stops reproducing fails the
 build. Nineteen are marked **open** and shown with their gap rather than hidden
-or edited to agree. Seventeen of them involve alif, which the text gives short
-of Khalifa's figures because he counted some hamzas as alif word by word; the
-other two are ل in chapters 11 and 30, where his printout has one ل fewer
-than the text.
+or edited to agree. Seventeen of them involve alif. Khalifa's verse-by-verse
+printout, transcribed from *Quran: Visual Presentation of the Miracle*, shows
+he also counted the hamza that stands on no seat as alif, which reproduces 93%
+of his verses and his alif total to within 2, with the rest decided verse by
+verse ([how he counted alif](next/docs/research/alif-counting.md)). The other
+two are ل in chapters 11 and 30, where his printout has one ل fewer than the
+text.
 
 ### Initials
 
@@ -232,7 +235,7 @@ composites up to 506.
 Run the tests:
 
 ```bash
-dotnet test next/tests/QuranCode.Core.Tests      # engine: 377 tests
+dotnet test next/tests/QuranCode.Core.Tests      # engine: 383 tests
 dotnet test next/tests/QuranCode.Engine.Tests    # protocol: 82 tests
 cd next/apps/desktop && pnpm test                # interface logic: 59 tests
 cd next/apps/desktop && pnpm check               # types: 336 files, 0 errors
@@ -286,6 +289,7 @@ boundaries from the original's data in `C#/`.
 | [Audit findings](next/docs/audit/findings.md) | What was measured in the original |
 | [Performance](next/docs/audit/performance-comparison.md) | Before and after |
 | [Roadmap](next/docs/roadmap.md) | What is planned, in stages |
+| [How Khalifa counted alif](next/docs/research/alif-counting.md) | His verse-by-verse printout, transcribed and analyzed |
 | [Work log](next/docs/worklog.md) | What was built in each phase, and every judgment call |
 
 ## License

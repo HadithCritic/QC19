@@ -29,6 +29,8 @@ COMMANDS
   systems                  List installed value systems.
   chapters                 List chapters.
   stats                    Corpus totals.
+  letters <chars>          How often each of the letters occurs in every verse,
+                           counting the Basmalahs, in --mode (default Original).
 
 OPTIONS
   --db <path>              content.db (default: ./content.db or ../data/content.db)
@@ -223,6 +225,22 @@ try
             Console.WriteLine($"words\t{N(segmentation.WordCount)}");
             Console.WriteLine($"letters\t{N(segmentation.LetterCount)}");
             Console.WriteLine($"book_value\t{N(engine.ValueOfBook(valueSystem, textMode))}");
+            break;
+        }
+
+        case "letters":
+        {
+            if (positional.Count == 0) { Console.Error.WriteLine("letters needs the letters to count, e.g. letters اء"); return 2; }
+            char[] letters = [.. positional[0].Distinct()];
+            var segmentation = engine.Segmentation(textMode);
+            Console.WriteLine("chapter\tverse\t" + string.Join('\t', letters));
+            for (int v = 0; v < segmentation.VerseCount; v++)
+            {
+                string text = string.Concat(segmentation.VerseWords(v));
+                Console.WriteLine(
+                    $"{segmentation.VerseChapter[v]}\t{segmentation.VerseNumberInChapter[v]}\t" +
+                    string.Join('\t', letters.Select(l => N(text.Count(c => c == l)))));
+            }
             break;
         }
 

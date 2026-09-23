@@ -151,8 +151,17 @@ hamzas as alif, chosen word by word and applied to every occurrence of that
 word and its derivatives, with a few alternate spellings from early
 manuscripts. The engine counts every alif-seated form (ا أ إ آ ٱ) and no
 standalone hamza, which gives 4,217 in chapter 2 against 4,502. The site
-publishes its word list only as images, so the alif findings stay open until
-that list is transcribed into data.
+publishes its word list only as images.
+
+Khalifa's letter of 27 November 1984 then named *Quran: Visual Presentation of
+the Miracle* as his final counting system, and its verse-by-verse printout for
+all 13 alif chapters was transcribed: 1,435 verses, every chapter adding up to
+his total. It shows his alif is the plain alif plus the hamza on no seat (the
+standalone ء and the hamza on a tatweel), which matches 93% of his verses
+exactly and his 17,152 alifs to within 2. The rest are choices made verse by
+verse, not by word, so no rule reproduces them all. The alif findings stay
+open; the rule belongs in stage E as a text mode. The whole account is in
+[`research/alif-counting.md`](research/alif-counting.md).
 
 ## Stage D: 19-hunting
 
