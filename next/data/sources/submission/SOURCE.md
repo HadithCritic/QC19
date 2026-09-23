@@ -40,8 +40,8 @@ as they are; the importer reads only the `arabic` column of the text table.
 - **Tanzil** transliteration, Emlaaei text (CC BY 3.0, verbatim, link
   tanzil.net) and the 108 translations of the optional translation pack. The
   translation files carry only a "Source: Tanzil.net" note, no terms. Tanzil's
-  site states its translations may be used for non-commercial purposes with
-  attribution; confirm before a public release, and keep the pack optional.
+  own terms for its translations were not checked here; confirm them before a
+  public release, and keep the pack optional.
 - **Grammar tag names** from the original's `Languages/*.txt` (part of this
   GPL-3.0 project).
 
