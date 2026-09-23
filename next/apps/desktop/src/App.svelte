@@ -130,6 +130,7 @@
     padding: var(--space-2) 0;
     background: var(--rail);
     color: var(--rail-ink);
+    border-inline-end: 1px solid color-mix(in srgb, var(--rail-ink) 12%, transparent);
   }
 
   .mark {
@@ -152,7 +153,7 @@
     width: 3.75rem;
     padding: var(--space-2) 0;
     border: 0;
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-sm);
     background: none;
     color: color-mix(in srgb, var(--rail-ink) 62%, transparent);
     font-size: 0.6875rem;

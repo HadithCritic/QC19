@@ -204,6 +204,11 @@ class AppState {
     this.persist();
   }
 
+  setShownTranslations(keys: string[]): void {
+    this.shownTranslations = [...keys];
+    this.persist();
+  }
+
   /** Looks a number up in the Numbers view. */
   openNumber(value: string): void {
     this.numberToOpen = value;

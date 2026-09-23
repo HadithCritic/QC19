@@ -241,16 +241,25 @@
     <Notice tone="error" title="This chapter could not be opened" detail={error} action={{ label: "Try again", run: () => app.openChapter(app.chapter) }} />
   {:else if chapter}
     <header class="chapter">
+      <div class="chapter-badge">
+        <span class="badge-num num">SURAH {chapter.number}</span>
+        <span class="badge-dot" aria-hidden="true">·</span>
+        <span class="badge-place">{chapter.revelationPlace.toUpperCase()}</span>
+        <span class="badge-dot" aria-hidden="true">·</span>
+        <span><span class="num">{chapter.verseCount}</span> VERSES{chapter.hasVerseZero ? " (+ V0)" : ""}</span>
+        <span class="badge-dot" aria-hidden="true">·</span>
+        <span>ORDER <span class="num">{chapter.revelationOrder}</span></span>
+      </div>
+
       <p class="arabic title" lang="ar" dir="rtl">{chapter.name}</p>
-      <h1>
-        <span class="num">{chapter.number}</span>
-        {chapter.transliteratedName}
-        <span class="english">{chapter.englishName}</span>
-      </h1>
-      <p class="meta">
-        {chapter.revelationPlace} · <span class="num">{chapter.verseCount}</span> verses{chapter.hasVerseZero ? " and the Bismillah as verse 0" : ""} · revelation order <span class="num">{chapter.revelationOrder}</span>
-        <button type="button" class="link" onclick={() => app.openChapter(chapter.number)}>Select chapter</button>
-      </p>
+
+      <div class="chapter-titles">
+        <h1 class="transliteration">{chapter.transliteratedName}</h1>
+        {#if chapter.englishName}
+          <p class="english-sub">“{chapter.englishName}”</p>
+        {/if}
+      </div>
+
       <div class="tools">
         <TranslationMenu />
         <RatioControl units={ratioUnits} />
@@ -305,54 +314,70 @@
   }
 
   .chapter {
-    max-width: 46rem;
-    margin: 0 auto var(--space-5);
+    max-width: 48rem;
+    margin: 0 auto var(--space-6);
     text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  .chapter-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: 0.25rem 0.85rem;
+    border: 1px solid var(--rule);
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--ink-muted);
+    font-size: var(--text-xs);
+    font-weight: 550;
+    letter-spacing: 0.08em;
+    box-shadow: 0 1px 2px rgb(0 0 0 / 0.03);
+  }
+
+  .badge-num {
+    color: var(--gilt);
+    font-weight: 700;
+  }
+
+  .badge-dot {
+    color: var(--rule-strong);
   }
 
   .title {
-    margin: 0;
-    font-size: 2.75rem;
-    line-height: 1.4;
+    margin: var(--space-2) 0 0;
+    font-size: 3.25rem;
+    line-height: 1.35;
     font-weight: 700;
     color: var(--ink);
   }
 
-  h1 {
+  .chapter-titles {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    margin-bottom: var(--space-2);
+  }
+
+  .transliteration {
     margin: 0;
-    font-size: var(--text-lg);
+    font-family: var(--font-display);
+    font-size: 2.15rem;
     font-weight: 600;
-    letter-spacing: -0.01em;
+    letter-spacing: -0.015em;
+    color: var(--ink);
   }
 
-  h1 .num {
-    color: var(--gilt);
-    margin-inline-end: 0.35em;
-  }
-
-  .english {
-    font-weight: 400;
+  .english-sub {
+    margin: 0;
+    font-family: var(--font-body);
+    font-size: 1.15rem;
+    font-style: italic;
     color: var(--ink-muted);
-    margin-inline-start: 0.35em;
-  }
-
-  .meta {
-    margin: var(--space-1) 0 0;
-    font-size: var(--text-sm);
-    color: var(--ink-muted);
-  }
-
-  .link {
-    margin-inline-start: var(--space-3);
-    padding: 0;
-    border: 0;
-    background: none;
-    color: var(--lapis);
-    font-weight: 550;
-  }
-
-  .link:hover {
-    text-decoration: underline;
   }
 
   .bismillah {
@@ -408,9 +433,9 @@
 
   .translation {
     margin: var(--space-1) 0 var(--space-3);
-    font-family: var(--font-ui);
-    font-size: var(--text-md);
-    line-height: 1.55;
+    font-family: var(--font-body);
+    font-size: 1.0625rem;
+    line-height: 1.65;
     color: var(--ink-muted);
   }
 

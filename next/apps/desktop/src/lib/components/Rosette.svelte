@@ -16,18 +16,25 @@
 </script>
 
 <span class="rosette" data-class={code ?? ""} class:pending={code === null} aria-hidden="true">
-  <svg viewBox="0 0 40 40">
+  <svg viewBox="0 0 40 40" width="100%" height="100%">
     <circle class="ring" cx="20" cy="20" r="16.5" />
     <circle class="petals" cx="20" cy="20" r="19" />
+    <text
+      x="20"
+      y="20"
+      class="digits"
+      class:two-digits={digits.length === 2}
+      class:three-digits={digits.length >= 3}
+      text-anchor="middle"
+      dominant-baseline="central"
+    >{digits}</text>
   </svg>
-  <span class="digits">{digits}</span>
 </span>
 
 <style>
   .rosette {
     position: relative;
-    display: inline-grid;
-    place-items: center;
+    display: inline-block;
     width: 1.55em;
     height: 1.55em;
     margin-inline: 0.18em;
@@ -36,8 +43,9 @@
   }
 
   svg {
-    position: absolute;
-    inset: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
     overflow: visible;
   }
 
@@ -62,11 +70,20 @@
   }
 
   .digits {
-    position: relative;
     font-family: var(--font-arabic);
-    font-size: 0.78em;
-    line-height: 1;
-    color: var(--ink);
-    padding-top: 0.12em;
+    font-size: 16px;
+    font-weight: 600;
+    fill: var(--ink);
+    direction: ltr;
+    unicode-bidi: isolate;
+  }
+
+  .digits.two-digits {
+    font-size: 13.5px;
+  }
+
+  .digits.three-digits {
+    font-size: 11px;
+    letter-spacing: -0.5px;
   }
 </style>
