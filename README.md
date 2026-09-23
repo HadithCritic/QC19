@@ -14,8 +14,8 @@ reference for what the software computes; the new application is in
 
 ## What the app does today
 
-Six screens: **Read**, **Search**, **Values**, **Stats**, **Saved** and
-**Numbers**.
+Seven screens: **Read**, **Search**, **Values**, **Stats**, **Findings**,
+**Saved** and **Numbers**.
 
 ### Read
 
@@ -54,6 +54,18 @@ Six screens: **Read**, **Search**, **Values**, **Stats**, **Saved** and
   the Arabic, anything else searches the translations.
 - The chapter list shades by how many matches each chapter holds.
 
+### Findings
+
+Khalifa's published results, each recomputed from the text and marked as
+holding or not. A finding shows the counting rule it was computed under, the
+convention (whether the 112 unnumbered Basmalahs count), the text mode and the
+appendix it comes from — and says explicitly when the rule was **inferred**
+rather than stated by the source, so a reader can see what rests on an
+assumption. Multiples of 19 are shown with their multiplier.
+
+The catalog is [one data file](next/src/QuranCode.Core/Code19/findings.tsv).
+Every row runs as a test, so a finding that stops reproducing fails the build.
+
 ### Values, Stats and Numbers
 
 - **Values.** Any Arabic text valued across the letter-value systems at once.
@@ -91,10 +103,10 @@ every one of them, including those now out of scope, as an inventory of what
 the original did — not as a list of work remaining. What is planned is in the
 [roadmap](next/docs/roadmap.md).
 
-Four of Khalifa's published results already reproduce exactly from the
-Submission text: the word God occurs **2,698** times (19×142), the verse
-numbers of those verses sum to **118,123** (19×6,217), ق occurs **57** times
-in chapter 50 (19×3), and the Basmalah is **19** letters.
+Five findings reproduce exactly from the Submission text: the word God
+occurs **2,698** times (19×142), the verse numbers of those verses sum to
+**118,123** (19×6,217), ق occurs **57** times in chapter 50 (19×3), and the
+Basmalah is **4** words and **19** letters. Each is checked on every build.
 
 ## The text
 
@@ -200,10 +212,10 @@ composites up to 506.
 Run the tests:
 
 ```bash
-dotnet test next/tests/QuranCode.Core.Tests      # engine: 279 tests
-dotnet test next/tests/QuranCode.Engine.Tests    # protocol: 80 tests
+dotnet test next/tests/QuranCode.Core.Tests      # engine: 291 tests
+dotnet test next/tests/QuranCode.Engine.Tests    # protocol: 81 tests
 cd next/apps/desktop && pnpm test                # interface logic: 51 tests
-cd next/apps/desktop && pnpm check               # types: 331 files, 0 errors
+cd next/apps/desktop && pnpm check               # types: 332 files, 0 errors
 cd next/apps/desktop/src-tauri && cargo test     # Rust bridge: 7 tests
 ```
 

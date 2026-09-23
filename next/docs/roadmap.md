@@ -10,7 +10,7 @@ one sitting.
 
 ---
 
-## Stage A: Make the code match the scope
+## Stage A: Make the code match the scope — audio and translations done
 
 ADR 0004 is a decision; the code still carries what it cut. This stage is
 deletion, and it comes first because everything after it is smaller once it
@@ -29,7 +29,16 @@ is done.
 **Done when** the app builds and every test passes with those paths gone, and
 the Submission database is measurably smaller. Record the new size.
 
-## Stage B: Findings
+Audio and the translations are done. Removing `audio.rs` also dropped the
+app's only use of `reqwest`, so the desktop shell no longer links an HTTP and
+TLS stack or reaches the network at all. The Submission database went from
+41.2 MB to 21.2 MB.
+
+**Still open:** the character palette (feature 46) is not yet reduced to the
+seven extra characters of the active text mode, and the Arabic fonts have not
+been narrowed. Both are presentation and neither blocks a later stage.
+
+## Stage B: Findings — **done**
 
 The core of the project, and the piece with no equivalent in the original.
 
@@ -62,6 +71,14 @@ through the twelve mathematical appendices.
 
 **Done when** the four seed findings reproduce as tests rather than as
 one-off checks, and adding a new finding needs no engine change.
+
+Built as `QuranCode.Core/Code19`: a `findings.tsv` catalog embedded in the
+engine assembly, five measures (`words`, `letters`, `letterOccurrences`,
+`wordFormOccurrences`, `verseNumberSum`), a `findings.list` protocol method
+and a Findings view. Five findings seeded and all five reproduce; each runs as
+its own test. Measuring the substring rule while building this corrected
+ADR 0004 §7, which had said it over-counts by 12 — it is 28, across 16 word
+types.
 
 ## Stage C: Quranic Initials
 

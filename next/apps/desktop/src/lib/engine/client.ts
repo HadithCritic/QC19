@@ -9,6 +9,7 @@ import type {
   WordLocation,
   EngineInfo,
   AllahSummary,
+  Finding,
   LetterScope,
   LetterStatistic,
   Maths,

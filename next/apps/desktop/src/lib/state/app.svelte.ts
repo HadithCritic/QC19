@@ -18,7 +18,7 @@ import { DEFAULT_RATIO } from "../ratioColors";
 import { chapterOfVerse, lastVerse } from "../numbers";
 import { visibleSystems } from "../systems";
 
-export type View = "read" | "search" | "values" | "numbers" | "statistics" | "saved";
+export type View = "read" | "search" | "values" | "numbers" | "statistics" | "findings" | "saved";
 
 /** How long a selection must stay before it is written to browse history. */
 const BROWSE_RECORD_DELAY_MS = 1000;
