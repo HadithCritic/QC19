@@ -6,14 +6,18 @@
   import Notice from "../lib/components/Notice.svelte";
   import { describeError, engine } from "../lib/engine/client";
   import type { NumberDetails, NumberInfo } from "../lib/engine/types";
+  import { ExpressionError, evaluate, isExpression } from "../lib/expression";
   import { fromRadix } from "../lib/numberDisplay";
   import { CLASS_NAMES, CLASS_RULES } from "../lib/numbers";
   import { app } from "../lib/state/app.svelte";
+  import { humanize } from "../lib/systems";
 
   // Look up any whole number: its class, position among primes or composites,
-  // digit sum and root, and factors.
+  // digit sum and root, and factors. The box also calculates (Features.txt
+  // #30): an expression such as 19^2 or 114C2, or Arabic text, which is
+  // valued in the current letter-value system.
 
-  const EXAMPLES = ["8317", "19", "114", "6236", "729139"];
+  const EXAMPLES = ["8317", "19", "114", "6236", "729139", "19*142", "2^19-1", "بسم الله الرحمن الرحيم"];
   const CODES = ["U", "AP", "XP", "AC", "XC"] as const;
 
   let text = $state("");
@@ -22,20 +26,58 @@
   let error = $state<string | null>(null);
   let loading = $state(false);
 
+  const LONG_MAX = 9223372036854775807n;
+
+  // What was calculated, when the input was more than a plain number.
+  let worked = $state<string | null>(null);
+
+  // Arabic letters and marks: text to value, as the original's value box does.
+  const ARABIC = /[؀-ۿ]/;
+
+  /** The input as a decimal whole number, and how it was arrived at. */
+  async function resolve(value: string): Promise<{ decimal: string; how: string | null }> {
+    const input = value.trim();
+    if (ARABIC.test(input)) {
+      const system = app.valueSystem;
+      const [row] = await engine.textValues(input, [system]);
+      if (!row) throw new Error(`The text could not be valued in ${system}.`);
+      return { decimal: row.value.value, how: `The value of the text in ${humanize(system)}, ${row.letterCount} letters.` };
+    }
+    if (isExpression(input, app.radix)) {
+      const result = evaluate(input, app.radix);
+      if (result.kind === "real") {
+        throw new ExpressionError(`${input} = ${result.value.toLocaleString("en-US", { maximumFractionDigits: 12 })}, which is not a whole number.`);
+      }
+      const shown = `${input} = ${result.value.toLocaleString("en-US")}`;
+      // The engine classifies numbers that fit in 64 bits; a larger exact
+      // result is still worth seeing, with its divisibility by the divisor.
+      if (result.value > LONG_MAX || result.value < -LONG_MAX) {
+        const divides = result.value % BigInt(app.divisor) === 0n;
+        throw new ExpressionError(
+          `${shown}. That is too large to classify (the limit is ${LONG_MAX.toLocaleString("en-US")}); it is ${divides ? "" : "not "}divisible by ${app.divisor}.`,
+        );
+      }
+      return { decimal: result.value.toString(), how: shown };
+    }
+    // A number typed while another base is chosen is read in that base.
+    const decimal = app.radix === 10 ? input.replace(/,/g, "") : fromRadix(input.replace(/,/g, ""), app.radix);
+    if (decimal === null) throw new Error(`"${value}" is not a number in base ${app.radix}.`);
+    return { decimal, how: null };
+  }
+
   async function analyze(value: string): Promise<void> {
     text = value;
     if (!value.trim()) return;
     loading = true;
     error = null;
     try {
-      // A number typed while another base is chosen is read in that base.
-      const decimal = app.radix === 10 ? value : fromRadix(value.replace(/,/g, ""), app.radix);
-      if (decimal === null) throw new Error(`"${value}" is not a number in base ${app.radix}.`);
+      const { decimal, how } = await resolve(value);
+      worked = how;
       [info, details] = await Promise.all([engine.analyzeNumber(decimal), engine.numberDetails(decimal)]);
     } catch (e) {
       info = null;
       details = null;
-      error = describeError(e);
+      error = e instanceof ExpressionError ? e.message : describeError(e);
     } finally {
       loading = false;
     }
@@ -53,6 +95,7 @@
     loading = true;
     error = null;
     text = value;
+    worked = null;
     try {
       [info, details] = await Promise.all([engine.analyzeNumber(value), engine.numberDetails(value)]);
     } catch (e) {
@@ -74,10 +117,14 @@
   <header>
     <h1 id="numbers-title">Look up a number</h1>
     <form onsubmit={submit}>
-      <label class="visually-hidden" for="number-input">Whole number</label>
-      <input id="number-input" class="field num" inputmode={app.radix > 10 ? "text" : "numeric"} bind:value={text} placeholder="8317" autocomplete="off" />
+      <label class="visually-hidden" for="number-input">Whole number, expression or Arabic text</label>
+      <input id="number-input" class="field num" dir="auto" bind:value={text} placeholder="8317 or 19*142" autocomplete="off" aria-describedby="number-help" />
       <button type="submit" class="button primary" disabled={loading || !text.trim()}>Look up</button>
     </form>
+    <p id="number-help" class="help">
+      A number, an expression (+ − × ÷, \ for whole division, %, ^, !, nPk, nCk, sqrt(), pi, e, phi) or Arabic text.
+      Numbers are read in base {app.radix}.
+    </p>
     <DisplaySettings />
     <p class="examples">
       Try
@@ -92,6 +139,7 @@
       <Notice tone="error" title="That number could not be analyzed" detail={error} />
     {:else if info}
       <div class="result">
+        {#if worked}<p class="worked">{worked}</p>{/if}
         <NumberChip value={info.value} code={info.code} size="lg" />
         <NumberDetail {info} />
         {#if details}<NumberFacts {details} />{/if}
@@ -133,6 +181,20 @@
     font-size: var(--text-xl);
     font-weight: 600;
     letter-spacing: -0.015em;
+  }
+
+  .help {
+    margin: var(--space-2) 0 0;
+    color: var(--ink-muted);
+    font-size: var(--text-sm);
+  }
+
+  .worked {
+    margin: 0;
+    color: var(--ink-muted);
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    overflow-wrap: anywhere;
   }
 
   form {
