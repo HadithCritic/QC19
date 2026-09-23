@@ -150,6 +150,7 @@ public sealed class StatisticsProtocolTests : IDisposable
         JsonElement count = qaf.GetProperty("counts")[0];
         Assert.Equal("ق", count.GetProperty("letter").GetString());
         Assert.Equal(57, count.GetProperty("count").GetInt64());
+        Assert.Equal(57, count.GetProperty("published").GetInt64());
         Assert.True(count.GetProperty("multipleOf19").GetBoolean());
 
         JsonElement shura = chapters.EnumerateArray().Single(c => c.GetProperty("chapter").GetInt32() == 42);

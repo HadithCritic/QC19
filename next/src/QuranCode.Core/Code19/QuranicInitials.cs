@@ -7,7 +7,12 @@ namespace QuranCode.Core.Code19;
 public sealed record InitialedChapter(int Chapter, string Letters, int Verses = 1);
 
 /// <summary>Counts of one initial letter in one chapter.</summary>
-public sealed record InitialCount(int Chapter, char Letter, long Count);
+/// <param name="Published">Khalifa's figure for it, from The Computer Speaks, or null if none is recorded.</param>
+public sealed record InitialCount(int Chapter, char Letter, long Count, long? Published = null)
+{
+    /// <summary>There is a published figure and the text reproduces it.</summary>
+    public bool Matches => Published == Count;
+}
 
 /// <summary>
 /// The Quranic Initials: the 29 chapters that open with disconnected letters,
@@ -49,6 +54,33 @@ public static class QuranicInitials
         new(68, "ن"),
     ];
 
+    /// <summary>
+    /// Khalifa's count of each initial through its own chapter, from The
+    /// Computer Speaks as tabulated by Quran Initial Count. Every figure except
+    /// alif, and ل in chapters 11 and 30, is reproduced by the text; those
+    /// exceptions are open findings in the catalog, with their reasons.
+    /// </summary>
+    public static IReadOnlyDictionary<(int Chapter, char Letter), long> Published { get; } = Table(
+        (2, "ا4502 ل3202 م2195"), (3, "ا2521 ل1892 م1249"), (7, "ا2529 ل1530 م1164 ص97"),
+        (10, "ا1319 ل913 ر257"), (11, "ا1370 ل794 ر325"), (12, "ا1306 ل812 ر257"),
+        (13, "ا605 ل480 م260 ر137"), (14, "ا585 ل452 ر160"), (15, "ا493 ل323 ر96"),
+        (19, "ك137 ه175 ي343 ع117 ص26"), (20, "ط28 ه251"),
+        (26, "ط33 س94 م484"), (27, "ط27 س94"), (28, "ط19 س102 م460"),
+        (29, "ا774 ل554 م344"), (30, "ا544 ل393 م317"), (31, "ا347 ل297 م173"), (32, "ا257 ل155 م158"),
+        (36, "ي237 س48"), (38, "ص29"),
+        (40, "ح64 م380"), (41, "ح48 م276"), (42, "ح53 م300 ع98 س54 ق57"),
+        (43, "ح44 م324"), (44, "ح16 م150"), (45, "ح31 م200"), (46, "ح36 م225"),
+        (50, "ق57"), (68, "ن133"));
+
+    private static Dictionary<(int, char), long> Table(params (int Chapter, string Counts)[] rows)
+    {
+        var table = new Dictionary<(int, char), long>();
+        foreach ((int chapter, string counts) in rows)
+            foreach (string entry in counts.Split(' '))
+                table[(chapter, entry[0])] = long.Parse(entry.AsSpan(1), System.Globalization.CultureInfo.InvariantCulture);
+        return table;
+    }
+
     /// <summary>The 14 distinct initial letters, in the order they first appear.</summary>
     public static IReadOnlyList<char> Letters { get; } =
         [.. Chapters.SelectMany(c => c.Letters).Distinct()];
@@ -72,7 +104,8 @@ public static class QuranicInitials
             .. chapter.Letters.Distinct().Select(letter => new InitialCount(
                 chapter.Chapter,
                 letter,
-                FindingEvaluator.Evaluate(engine, LetterFinding(chapter.Chapter, letter, textMode, includeBasmalas)).Computed)),
+                FindingEvaluator.Evaluate(engine, LetterFinding(chapter.Chapter, letter, textMode, includeBasmalas)).Computed,
+                Published.TryGetValue((chapter.Chapter, letter), out long published) ? published : null)),
         ];
     }
 

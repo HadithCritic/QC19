@@ -64,15 +64,21 @@ rather than stated by the source, so a reader can see what rests on an
 assumption. Multiples of 19 are shown with their multiplier.
 
 The catalog is [one data file](next/src/QuranCode.Core/Code19/findings.tsv)
-of 24 findings. Every row runs as a test: a gated finding that stops
-reproducing fails the build. Two are marked **open**, the alif counts of
-chapters 2 and 3, which no text mode reproduces; they are shown with their
-gap rather than hidden or edited to agree.
+of 53 findings, from Appendix 1 and from Khalifa's tables in *The Computer
+Speaks* as tabulated by [Quran Initial Count](https://qurantalk.gitbook.io/quran-initial-count).
+Every row runs as a test: a gated finding that stops reproducing fails the
+build. Nineteen are marked **open** and shown with their gap rather than hidden
+or edited to agree. Seventeen of them involve alif, which the text gives short
+of Khalifa's figures because he counted some hamzas as alif word by word; the
+other two are ل in chapters 11 and 30, where his printout has one ل fewer
+than the text.
 
 ### Initials
 
 The 29 chapters that open with Quranic Initials, their 14 letters, and how
-often each chapter's own initials occur in it, with multiples of 19 marked.
+often each chapter's own initials occur in it, beside Khalifa's figure for
+each. 63 of the 78 reproduce; the 15 that do not are the 13 alifs and the two
+ل counts above.
 
 ### Values, Stats and Numbers
 
@@ -111,7 +117,7 @@ every one of them, including those now out of scope, as an inventory of what
 the original did, not as a list of work remaining. What is planned is in the
 [roadmap](next/docs/roadmap.md).
 
-Twenty-two published findings reproduce exactly from the Submission text,
+Thirty-four published findings reproduce exactly from the Submission text,
 among them: the word God occurs **2,698** times (19×142) and the verse numbers
 of those verses sum to **118,123** (19×6,217); ق occurs **57** times in both
 chapter 50 and chapter 42; ن occurs **133** times in chapter 68 (19×7); and
@@ -223,7 +229,7 @@ composites up to 506.
 Run the tests:
 
 ```bash
-dotnet test next/tests/QuranCode.Core.Tests      # engine: 346 tests
+dotnet test next/tests/QuranCode.Core.Tests      # engine: 377 tests
 dotnet test next/tests/QuranCode.Engine.Tests    # protocol: 82 tests
 cd next/apps/desktop && pnpm test                # interface logic: 51 tests
 cd next/apps/desktop && pnpm check               # types: 333 files, 0 errors

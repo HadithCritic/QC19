@@ -13,6 +13,16 @@ namespace QuranCode.Core.Code19;
 /// </remarks>
 public static class FindingEvaluator
 {
+    /// <summary>
+    /// The join rule that counts the negation لا and the verb after it as one
+    /// word, as the classical grammarians treat them. Whether the next word is
+    /// a verb comes from the Quranic Arabic Corpus.
+    /// </summary>
+    public const string LaVerb = "la+verb";
+
+    /// <summary>The counted words of one verse that fall in a scope: [First, End).</summary>
+    private readonly record struct VerseWords(int Verse, int First, int End);
+
     /// <summary>Computes one finding.</summary>
     /// <exception cref="ArgumentException">The rule names a set, letter or scope that does not exist.</exception>
     public static FindingResult Evaluate(QuranCodeEngine engine, Finding finding)
@@ -22,16 +32,19 @@ public static class FindingEvaluator
 
         var counting = new CountingOptions { IncludeBasmalas = finding.IncludeBasmalas };
         Segmentation segmentation = engine.Segmentation(finding.TextMode, counting);
-        int[] verses = VersesOf(finding.Scope, segmentation);
+        VerseWords[] scope = ScopeOf(finding.Scope, segmentation);
 
         long computed = finding.Measure switch
         {
-            FindingMeasure.Verses => verses.Length,
-            FindingMeasure.Words => verses.Sum(v => (long)segmentation.VerseWordCount[v]),
-            FindingMeasure.Letters => verses.Sum(v => LettersIn(segmentation, v, _ => true)),
-            FindingMeasure.LetterOccurrences => CountLetters(segmentation, verses, LettersOf(finding)),
-            FindingMeasure.WordFormOccurrences => verses.Sum(v => FormsIn(segmentation, v, SetOf(finding))),
-            FindingMeasure.VerseNumberSum => SumVerseNumbers(segmentation, verses, SetOf(finding)),
+            FindingMeasure.Verses => scope.Length,
+            FindingMeasure.Words => CountWords(engine, counting, segmentation, scope, finding.Match),
+            FindingMeasure.Letters => scope.Sum(r => CountLetters(segmentation, r, _ => true)),
+            FindingMeasure.LetterOccurrences => scope.Sum(r => CountLetters(segmentation, r, LettersOf(finding).Contains)),
+            FindingMeasure.OwnInitials => CountOwnInitials(segmentation, scope, finding.Match),
+            FindingMeasure.WordFormOccurrences => scope.Sum(r => CountForms(segmentation, r, SetOf(finding))),
+            FindingMeasure.VerseNumberSum => scope
+                .Where(r => CountForms(segmentation, r, SetOf(finding)) > 0)
+                .Sum(r => (long)segmentation.VerseNumberInChapter[r.Verse]),
             _ => throw new ArgumentException($"unknown measure {finding.Measure}", nameof(finding)),
         };
         return new FindingResult(finding, computed);
@@ -53,48 +66,82 @@ public static class FindingEvaluator
             ? [.. match]
             : throw new ArgumentException("a letter count needs at least one letter", nameof(finding));
 
-    /// <summary>The scope as view indexes of the verses it covers, in order.</summary>
-    private static int[] VersesOf(FindingScope scope, Segmentation segmentation)
+    /// <summary>The scope as the counted words of each verse it covers, in order.</summary>
+    private static VerseWords[] ScopeOf(FindingScope scope, Segmentation s)
     {
-        if (scope.Chapters is null) return [.. Enumerable.Range(0, segmentation.VerseCount)];
-
-        var chapters = new HashSet<int>(scope.Chapters);
-        var verses = new List<int>();
-        for (int v = 0; v < segmentation.VerseCount; v++)
+        var chapters = scope.Chapters is null ? null : new HashSet<int>(scope.Chapters);
+        var result = new List<VerseWords>();
+        for (int v = 0; v < s.VerseCount; v++)
         {
-            if (!chapters.Contains(segmentation.VerseChapter[v])) continue;
-            if (!scope.CoversVerse(segmentation.VerseNumberInChapter[v])) continue;
-            verses.Add(v);
+            if (chapters is not null && !chapters.Contains(s.VerseChapter[v])) continue;
+            if (!scope.CoversVerse(s.VerseNumberInChapter[v])) continue;
+            result.Add(new VerseWords(v, s.VerseFirstWord[v], s.VerseFirstWord[v] + s.VerseWordCount[v]));
         }
-        if (verses.Count == 0)
+        if (result.Count == 0)
             throw new ArgumentException($"scope {scope} selects no verse in this edition", nameof(scope));
-        return [.. verses];
+
+        if (scope.StopBefore is { } stop)
+        {
+            VerseWords last = result[^1];
+            int end = last.First;
+            while (end < last.End && !s.WordText(end).StartsWith(stop, StringComparison.Ordinal)) end++;
+            if (end == last.End)
+                throw new ArgumentException($"scope {scope}: no word in its last verse starts with {stop}", nameof(scope));
+            result[^1] = last with { End = end };
+        }
+        return [.. result];
     }
 
-    private static long LettersIn(Segmentation s, int verse, Func<char, bool> counts)
+    private static long CountWords(
+        QuranCodeEngine engine, CountingOptions counting, Segmentation s, VerseWords[] scope, string? join)
     {
-        int firstWord = s.VerseFirstWord[verse];
-        int lastWord = firstWord + s.VerseWordCount[verse] - 1;
-        if (lastWord < firstWord) return 0;
-        int to = s.WordFirstLetter[lastWord] + s.WordLetterCount[lastWord];
+        long total = scope.Sum(r => (long)(r.End - r.First));
+        if (string.IsNullOrWhiteSpace(join)) return total;
+        if (join != LaVerb) throw new ArgumentException($"no join rule named \"{join}\"");
+
+        CorpusView view = engine.View(counting);
+        foreach (VerseWords r in scope)
+        {
+            int number = view.Verses[r.Verse].Number;
+            int first = s.VerseFirstWord[r.Verse];
+            for (int w = r.First; w + 1 < r.End; w++)
+            {
+                if (s.WordText(w) != "لا") continue;
+                WordData? next = engine.WordDataOf(number, w + 1 - first);
+                if (next is not null && next.Parts.Any(p => p.Tag == "V")) total--;
+            }
+        }
+        return total;
+    }
+
+    private static long CountLetters(Segmentation s, VerseWords r, Func<char, bool> counts)
+    {
+        if (r.End <= r.First) return 0;
+        int to = s.WordFirstLetter[r.End - 1] + s.WordLetterCount[r.End - 1];
         long total = 0;
-        for (int i = s.WordFirstLetter[firstWord]; i < to; i++)
+        for (int i = s.WordFirstLetter[r.First]; i < to; i++)
             if (counts(s.LetterChars[i])) total++;
         return total;
     }
 
-    private static long CountLetters(Segmentation s, int[] verses, HashSet<char> letters) =>
-        verses.Sum(v => LettersIn(s, v, letters.Contains));
-
-    private static long FormsIn(Segmentation s, int verse, IReadOnlySet<string> forms)
+    private static long CountOwnInitials(Segmentation s, VerseWords[] scope, string? only)
     {
+        var initials = QuranicInitials.Chapters.ToDictionary(c => c.Chapter, c => new HashSet<char>(c.Letters));
+        if (!string.IsNullOrWhiteSpace(only))
+            foreach (HashSet<char> letters in initials.Values) letters.IntersectWith(only);
+
         long total = 0;
-        int start = s.VerseFirstWord[verse];
-        for (int w = start; w < start + s.VerseWordCount[verse]; w++)
-            if (forms.Contains(s.WordText(w))) total++;
+        foreach (VerseWords r in scope)
+            if (initials.TryGetValue(s.VerseChapter[r.Verse], out HashSet<char>? letters) && letters.Count > 0)
+                total += CountLetters(s, r, letters.Contains);
         return total;
     }
 
-    private static long SumVerseNumbers(Segmentation s, int[] verses, IReadOnlySet<string> forms) =>
-        verses.Where(v => FormsIn(s, v, forms) > 0).Sum(v => (long)s.VerseNumberInChapter[v]);
+    private static long CountForms(Segmentation s, VerseWords r, IReadOnlySet<string> forms)
+    {
+        long total = 0;
+        for (int w = r.First; w < r.End; w++)
+            if (forms.Contains(s.WordText(w))) total++;
+        return total;
+    }
 }

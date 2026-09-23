@@ -192,7 +192,8 @@ internal sealed record InitialedChapterDto(
     IReadOnlyList<InitialCountDto> Counts);
 
 /// <param name="MultipleOf19">The count divides by 19.</param>
-internal sealed record InitialCountDto(string Letter, long Count, bool MultipleOf19);
+/// <param name="Published">Khalifa's figure for this letter in this chapter, or null.</param>
+internal sealed record InitialCountDto(string Letter, long Count, bool MultipleOf19, long? Published);
 
 /// <summary>One published Code 19 result and what the engine computes for it.</summary>
 /// <param name="Basis">"stated" when the source gives the counting rule, "inferred" when it was derived.</param>

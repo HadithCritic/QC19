@@ -127,6 +127,31 @@ public sealed class InitialsTests : IDisposable
     }
 
     [Fact]
+    public void KhalifasTableCoversEveryInitial()
+    {
+        int expected = QuranicInitials.Chapters.Sum(c => c.Letters.Distinct().Count());
+        Assert.Equal(expected, QuranicInitials.Published.Count);
+        Assert.All(QuranicInitials.Chapters, c => Assert.All(c.Letters.Distinct(), l =>
+            Assert.True(QuranicInitials.Published.ContainsKey((c.Chapter, l)), $"no published figure for {l} in {c.Chapter}")));
+    }
+
+    /// <summary>
+    /// The text reproduces every one of Khalifa's per-letter figures except
+    /// alif, and ل in chapters 11 and 30, where his printout has one ل fewer
+    /// than the text. Anything else disagreeing is a regression.
+    /// </summary>
+    [Fact]
+    public void OnlyTheKnownFiguresDisagree()
+    {
+        var disagree = QuranicInitials.AllCounts(_engine)
+            .Where(c => !c.Matches).Select(c => $"{c.Chapter}:{c.Letter}").ToHashSet();
+        var known = QuranicInitials.Chapters
+            .Where(c => c.Letters.Contains('ا')).Select(c => $"{c.Chapter}:ا")
+            .Append("11:ل").Append("30:ل").ToHashSet();
+        Assert.True(known.SetEquals(disagree), $"disagreeing: {string.Join(" ", disagree.Order())}");
+    }
+
+    [Fact]
     public void CountsCoverEveryInitialOfEveryChapter()
     {
         IReadOnlyList<InitialCount> all = QuranicInitials.AllCounts(_engine);

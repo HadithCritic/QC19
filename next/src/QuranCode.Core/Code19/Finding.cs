@@ -18,6 +18,15 @@ public enum FindingMeasure
     /// </summary>
     LetterOccurrences,
 
+    /// <summary>
+    /// For each initialed chapter in the scope, occurrences of that chapter's
+    /// own initials through it, added together. <see cref="Finding.Match"/>,
+    /// when given, keeps only those letters: chapter 19 counted for ط ه س م
+    /// contributes its ه and nothing else. This is how the published group
+    /// totals are formed, such as A.L.M. across its six chapters.
+    /// </summary>
+    OwnInitials,
+
     /// <summary>Words in the scope whose normalized form is in a named set.</summary>
     WordFormOccurrences,
 
@@ -45,7 +54,13 @@ public enum RuleBasis
 /// initialed with ص are 7, 19 and 38.
 /// </summary>
 /// <param name="LastVerse">With <paramref name="Verse"/>, the last verse of a run such as 96:1-5.</param>
-public sealed record FindingScope(IReadOnlyList<int>? Chapters = null, int? Verse = null, int? LastVerse = null)
+/// <param name="StopBefore">
+/// Ends the scope inside its last verse, before the first word that starts
+/// with this text. The words between the two Basmalahs of chapter 27 end
+/// before the بسم of 27:30.
+/// </param>
+public sealed record FindingScope(
+    IReadOnlyList<int>? Chapters = null, int? Verse = null, int? LastVerse = null, string? StopBefore = null)
 {
     public static readonly FindingScope Book = new();
 
@@ -58,8 +73,12 @@ public sealed record FindingScope(IReadOnlyList<int>? Chapters = null, int? Vers
     public bool CoversVerse(int numberInChapter) =>
         Verse is null || (numberInChapter >= Verse && numberInChapter <= (LastVerse ?? Verse));
 
-    public override string ToString() => Chapters switch
+    public override string ToString() =>
+        StopBefore is null ? Describe() : $"{Describe()}, before {StopBefore}";
+
+    private string Describe() => Chapters switch
     {
+        null when Verse is not null => $"verse {Verse} of every chapter",
         null => "book",
         [int one] when Verse is not null && LastVerse is not null => $"{one}:{Verse}-{LastVerse}",
         [int one] when Verse is not null => $"{one}:{Verse}",
@@ -90,7 +109,11 @@ public enum FindingCheck
 /// <param name="Id">Stable key, used by the tests and by the interface.</param>
 /// <param name="Claim">The claim in one line, as published.</param>
 /// <param name="Expected">The published number.</param>
-/// <param name="Match">A letter for <see cref="FindingMeasure.LetterOccurrences"/>, or a form-set name.</param>
+/// <param name="Match">
+/// Letters for <see cref="FindingMeasure.LetterOccurrences"/>, a form-set name
+/// for the word-form measures, or a join rule for <see cref="FindingMeasure.Words"/>
+/// (<c>la+verb</c>).
+/// </param>
 /// <param name="IncludeBasmalas">
 /// The convention this finding was computed under. ADR 0004 §7: it belongs to
 /// the finding, never to a global setting, because the results disagree. The

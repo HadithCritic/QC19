@@ -14,6 +14,11 @@
   let error = $state<string | null>(null);
   let loading = $state(true);
   let openId = $state<string | null>(null);
+  let show = $state<"all" | "holds" | "open">("all");
+
+  const shown = $derived(
+    show === "all" ? findings : show === "holds" ? findings.filter((f) => f.holds) : findings.filter((f) => !f.holds),
+  );
 
   const holding = $derived(findings.filter((f) => f.holds).length);
   const open = $derived(findings.filter((f) => f.check === "open").length);
@@ -44,6 +49,11 @@
       <p class="tally">
         {holding} of {findings.length} reproduce from this text{#if open > 0}; {open} open{/if}{#if broken > 0}; <strong class="broken">{broken} no longer reproduce</strong>{/if}
       </p>
+      <div class="filter" role="group" aria-label="Show">
+        {#each [["all", "All"], ["holds", "Reproduce"], ["open", "Do not reproduce"]] as [id, label] (id)}
+          <button type="button" aria-pressed={show === id} onclick={() => (show = id as typeof show)}>{label}</button>
+        {/each}
+      </div>
     {/if}
   </header>
 
@@ -56,7 +66,7 @@
       <Notice title="No findings yet" detail="The catalog is empty." />
     {:else}
       <ul>
-        {#each findings as f (f.id)}
+        {#each shown as f (f.id)}
           <li class:disagrees={!f.holds && f.check === "gate"} class:open={f.check === "open"}>
             <button
               type="button"
@@ -113,7 +123,8 @@
 
   header {
     display: flex;
-    align-items: baseline;
+    flex-wrap: wrap;
+    align-items: center;
     justify-content: space-between;
     gap: var(--space-4);
     padding: var(--space-4) var(--space-5);
@@ -123,6 +134,30 @@
   h1 {
     margin: 0;
     font-size: var(--text-lg);
+  }
+
+  .filter {
+    display: flex;
+    gap: 2px;
+    padding: 2px;
+    border-radius: var(--radius-md, 0.375rem);
+    background: var(--surface-sunk);
+  }
+
+  .filter button {
+    padding: 0.2rem 0.6rem;
+    border: 0;
+    border-radius: inherit;
+    background: none;
+    color: var(--ink-muted);
+    font: inherit;
+    font-size: var(--text-sm);
+    cursor: pointer;
+  }
+
+  .filter button[aria-pressed="true"] {
+    background: var(--surface);
+    color: var(--ink);
   }
 
   .tally {

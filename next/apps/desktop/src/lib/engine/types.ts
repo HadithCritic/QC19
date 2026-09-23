@@ -241,7 +241,8 @@ export interface InitialedChapter {
   letters: string;
   /** Opening verses carrying them: 1 everywhere except chapter 42. */
   verses: number;
-  counts: { letter: string; count: number; multipleOf19: boolean }[];
+  /** `published` is Khalifa's figure, or null when none is recorded. */
+  counts: { letter: string; count: number; multipleOf19: boolean; published: number | null }[];
 }
 
 export interface TranslationText {

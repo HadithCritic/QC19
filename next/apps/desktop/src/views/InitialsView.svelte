@@ -7,8 +7,10 @@
   // often each chapter's own initials occur in it. Counts that divide by 19 are
   // marked, since that is what the initials are studied for.
   //
-  // These counts are computed, not published. A published figure for one of
-  // them belongs in the findings catalog, where it carries its source.
+  // Each count is computed from the text and set beside Khalifa's figure from
+  // The Computer Speaks. Where they differ, his figure is shown too: every
+  // alif, and ل in chapters 11 and 30. The claims built on these counts, and
+  // the reasons for the differences, are in the findings catalog.
 
   let chapters = $state<InitialedChapter[]>([]);
   let error = $state<string | null>(null);
@@ -17,6 +19,8 @@
 
   const shown = $derived(only19 ? chapters.filter((c) => c.counts.some((n) => n.multipleOf19)) : chapters);
   const letters = $derived([...new Set(chapters.flatMap((c) => [...c.letters]))]);
+  const counts = $derived(chapters.flatMap((c) => c.counts).filter((n) => n.published !== null));
+  const matching = $derived(counts.filter((n) => n.published === n.count).length);
 
   function load(): void {
     loading = true;
@@ -37,6 +41,8 @@
     {#if !loading && !error && chapters.length > 0}
       <p class="summary">
         {chapters.length} chapters, {letters.length} letters
+        <span class="sep" aria-hidden="true">·</span>
+        {matching} of {counts.length} counts match Khalifa
         <span class="sep" aria-hidden="true">·</span>
         <label>
           <input type="checkbox" bind:checked={only19} />
@@ -84,9 +90,19 @@
               <td>
                 <ul class="counts">
                   {#each c.counts as n (n.letter)}
-                    <li class:divisible={n.multipleOf19}>
+                    {@const differs = n.published !== null && n.published !== n.count}
+                    <li
+                      class:divisible={n.multipleOf19}
+                      class:differs
+                      title={n.published === null
+                        ? undefined
+                        : differs
+                          ? `Khalifa: ${n.published.toLocaleString("en-US")}. The text differs by ${Math.abs(n.published - n.count)}.`
+                          : "Matches Khalifa's figure"}
+                    >
                       <span lang="ar" dir="rtl">{n.letter}</span>
                       <b>{n.count.toLocaleString("en-US")}</b>
+                      {#if differs}<s class="published">{n.published?.toLocaleString("en-US")}</s>{/if}
                       {#if n.multipleOf19}<em>19 × {(n.count / 19).toLocaleString("en-US")}</em>{/if}
                     </li>
                   {/each}
@@ -234,6 +250,22 @@
 
   .counts b {
     font-weight: 600;
+  }
+
+  /* Khalifa's figure where the text disagrees with it: shown, not hidden. */
+  .counts li.differs {
+    border-color: var(--gilt);
+  }
+
+  .published {
+    color: var(--gilt);
+    font-size: var(--text-xs);
+    text-decoration: none;
+  }
+
+  .published::before {
+    content: "Khalifa ";
+    font-family: var(--font-ui);
   }
 
   .counts em {

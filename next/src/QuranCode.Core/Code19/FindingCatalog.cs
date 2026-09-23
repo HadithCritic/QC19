@@ -62,6 +62,7 @@ public static class FindingCatalog
         "words" => FindingMeasure.Words,
         "letters" => FindingMeasure.Letters,
         "letterOccurrences" => FindingMeasure.LetterOccurrences,
+        "ownInitials" => FindingMeasure.OwnInitials,
         "wordFormOccurrences" => FindingMeasure.WordFormOccurrences,
         "verseNumberSum" => FindingMeasure.VerseNumberSum,
         _ => throw new InvalidDataException($"findings line {line}: unknown measure \"{text}\""),
@@ -88,9 +89,22 @@ public static class FindingCatalog
         _ => throw new InvalidDataException($"findings line {line}: basmalas is \"yes\" or \"no\", not \"{text}\""),
     };
 
-    /// <summary>"book", "chapter:50", "chapters:7,19,38", "chapters:40-46" or "50:1".</summary>
+    /// <summary>
+    /// "book", "chapter:50", "chapters:7,19,38", "chapters:40-46", "50:1" or
+    /// "96:1-5", optionally followed by " before WORD" to end the scope inside
+    /// its last verse.
+    /// </summary>
     private static FindingScope ParseScope(string text, int line)
     {
+        const string Before = " before ";
+        int at = text.IndexOf(Before, StringComparison.Ordinal);
+        if (at >= 0)
+        {
+            string stop = text[(at + Before.Length)..].Trim();
+            if (stop.Length == 0) throw new InvalidDataException($"findings line {line}: \"before\" needs a word");
+            return ParseScope(text[..at], line) with { StopBefore = stop };
+        }
+
         if (text == "book") return FindingScope.Book;
         if (text.StartsWith("chapter:", StringComparison.Ordinal)
             && int.TryParse(text.AsSpan("chapter:".Length), CultureInfo.InvariantCulture, out int chapter))
@@ -99,6 +113,8 @@ public static class FindingCatalog
             return new FindingScope(ParseChapterList(text["chapters:".Length..], text, line));
 
         string[] parts = text.Split(':');
+        if (parts.Length == 2 && parts[0] == "*" && int.TryParse(parts[1], CultureInfo.InvariantCulture, out int every))
+            return new FindingScope(Chapters: null, Verse: every);
         if (parts.Length == 2 && int.TryParse(parts[0], CultureInfo.InvariantCulture, out int c))
         {
             string[] verses = parts[1].Split('-');

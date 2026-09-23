@@ -44,7 +44,7 @@ internal sealed partial class Handlers
             chapter.Verses,
             [
                 .. QuranicInitials.CountsIn(_engine, chapter).Select(c =>
-                    new InitialCountDto(c.Letter.ToString(), c.Count, c.Count % 19 == 0)),
+                    new InitialCountDto(c.Letter.ToString(), c.Count, c.Count % 19 == 0, c.Published)),
             ])),
     ];
 
@@ -54,6 +54,7 @@ internal sealed partial class Handlers
         FindingMeasure.Words => "words",
         FindingMeasure.Letters => "letters",
         FindingMeasure.LetterOccurrences => "letterOccurrences",
+        FindingMeasure.OwnInitials => "ownInitials",
         FindingMeasure.WordFormOccurrences => "wordFormOccurrences",
         FindingMeasure.VerseNumberSum => "verseNumberSum",
         _ => measure.ToString(),

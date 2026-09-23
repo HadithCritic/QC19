@@ -126,6 +126,25 @@ Basmalah (285 without), while chapter 110's 19 words leave its Basmalah out
 `InitialsTests`. Fact 7, the 342 words between the two Basmalahs of chapter
 27, needs a scope that ends inside a verse and is not yet encoded.
 
+Later the same day the catalog took in Khalifa's complete per-chapter tables
+from *The Computer Speaks*, as tabulated by Quran Initial Count, and grew to
+53 findings. Every non-alif figure for all 29 chapters reproduces except ل in
+chapters 11 and 30, where his printout has one ل fewer than the text (11:70
+and 30:21); Quran Initial Count takes both to be printout errors in verse
+counts whose chapter totals still hold. A new `ownInitials` measure forms the
+group totals, including the two ط sets (1,767 and 2,584). Fact 7 is now
+encoded: `27:1-30 before بسم` ends a scope inside a verse, and a `la+verb`
+join rule counts لا and a following verb as one word, using the corpus's verb
+tags. That turns 349 words into 342.
+
+**Alif.** Quran Initial Count explains the gap: Khalifa's totals count some
+hamzas as alif, chosen word by word and applied to every occurrence of that
+word and its derivatives, with a few alternate spellings from early
+manuscripts. The engine counts every alif-seated form (ا أ إ آ ٱ) and no
+standalone hamza, which gives 4,217 in chapter 2 against 4,502. The site
+publishes its word list only as images, so the alif findings stay open until
+that list is transcribed into data.
+
 ## Stage D: 19-hunting
 
 General tools for the work, as opposed to checking a published claim.
