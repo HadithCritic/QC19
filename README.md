@@ -11,32 +11,80 @@ reference for what the software computes; the new application is in
 
 ## What the app does today
 
-- **Reader.** Chapters with one right-aligned verse per line. Each verse
-  marker is ringed in the color of that verse's value class, so a chapter's
-  numeric pattern is visible at a glance.
-- **Live statistics.** Select a verse, a range or a chapter (click, shift-click,
-  or type `2:255`, `2:255-257`, `1:7-2:2`, `2:0`) to see its value and its
-  chapter, verse, word, letter and distinct-letter counts, each classified.
-  Letter frequencies are listed beside them.
-- **Number classes.** Every number is shown as unit (U), additive prime (AP),
-  non-additive prime (XP), additive composite (AC) or non-additive composite
-  (XC), with its digit sum, digital root, position among primes or composites
-  (for example 619 is P114) and prime factors.
-- **407 letter-value systems**, chosen by text mode, letter order and letter
-  values. 122 research-only systems appear when **Research** is switched on.
-- **Search.** Arabic text search anywhere in a word, as a whole word, or inside
-  a word, with the matching words highlighted.
-- **Values.** The value of any Arabic text in every system at once.
-- **Numbers.** Look up any whole number.
-- **Counting options** from the original's Statistics panel: the Bismillah,
-  waw as a word, shadda as a letter, and hamza, alif, yaa and noon above a
-  line as letters, each checked against the original.
-- Light and dark themes.
+Six screens: **Read**, **Search**, **Values**, **Stats**, **Saved** and
+**Numbers**.
 
-Of the original's 79 listed features, 11 are done, 12 are in the engine without
-a screen yet, 47 are still to do, and 7 wait on data that is not imported yet.
+### Read
+
+- Chapters with one right-aligned verse per line. Each verse marker is ringed
+  in the color of that verse's value class, so a chapter's numeric pattern is
+  visible at a glance.
+- Select a verse, a range or a chapter by clicking, shift-clicking, or typing a
+  reference: `2:255`, `2:255-257`, `1:7-2:2`, `2:0`, a chapter range `3-4`, or
+  a unit such as `page 1`, `part 30`, `word 40`, `letter 139`.
+- Click a word for its root, its English meaning, its transliteration and its
+  grammar from the Quranic Arabic Corpus. Alt+click a second word to measure
+  the distance between them in chapters, verses, words and letters.
+- Any number of translations under each verse: the edition's own 13 and its
+  transliteration, plus 108 Tanzil translations from an optional pack.
+- Ratio coloring: split a verse, chapter, partition or the whole book at 1/π,
+  1/e, 1/φ or any ratio, by letters or by value.
+- Back and forward through selections; F3 steps through bookmarks.
+
+### Search
+
+- Arabic text: several terms, any of them, all of them, or as an exact phrase,
+  with `+must` and `-must-not`; anywhere in a word, as a whole word, or only
+  inside a longer word. Scope is the book, the current selection, or the
+  previous results.
+- Roots, with multiple roots and any/all grouping. Ctrl+click or F4 searches
+  the clicked word's longest root.
+- Related verses (F5), similar verses by text, words, roots or values with an
+  adjustable threshold (F6), the same word (F7), the same text with its marks
+  (F8), and the same value (F9).
+- By numbers: words, verses, sentences, chapters and the seven partitions,
+  singly, in runs of neighbors or in sets, over counts, values and 18 number
+  kinds, with every comparison operator.
+- By letter frequency sum, with all/any/only/none letter matching.
+- Translations, chosen automatically by what you type: all-Arabic text searches
+  the Arabic, anything else searches the translations.
+- The chapter list shades by how many matches each chapter holds.
+
+### Values, Stats and Numbers
+
+- **Values.** Any Arabic text valued in all 407 letter-value systems at once.
+  122 research-only systems appear when **Research** is switched on. The 20
+  Base systems read a word's letters as digits in that base, as the original
+  does.
+- **Stats.** Word frequencies, letter statistics, the Maths sums (C, V, C±V,
+  C×V, C÷V split by odd, even, prime and composite), front-back symmetry, and
+  the research lists (Allah words, look-alikes, doubles, repeats).
+- **Numbers.** Any whole number: its class (U, AP, XP, AC, XC), digit sum,
+  digital root, position among primes or composites (619 is P114), factors,
+  divisors, sums and differences of two squares and two cubes, and Waleed's
+  CP index chain. Numbers are shown and read in any base from 2 to 36, and
+  numbers divisible by a chosen divisor (default 19) are marked.
+
+### Throughout
+
+- **Saved.** Bookmarks with notes, and browse and find history, in a separate
+  `user.db` that is never the content database.
+- **Counting options** from the original's Statistics panel: the Bismillah, waw
+  as a word, shadda as a letter, and hamza, alif, yaa and noon above a line as
+  letters. Each is checked against the original across four text modes
+  (`next/tests/golden/counting-options.tsv`).
+- Light, dark and automatic themes.
+
+Of the original's 79 listed features, **60 are done**, 1 is in the engine
+without a screen yet, 16 are still to do, 1 is deliberately dropped and 1 is
+covered by another row.
 [`next/docs/compatibility/feature-matrix.md`](next/docs/compatibility/feature-matrix.md)
-tracks each one, along with the 16 standalone tools the original shipped.
+tracks each one, along with the 16 standalone tools the original shipped, which
+are all still to do.
+
+What remains is audio (4), folding in the standalone tools (5), two drawing
+features, and five smaller items: IndoPak fonts, the dynamic keyboard, DNA
+symbols, the expression calculator and the geometry calculators.
 
 ## The text
 
@@ -46,8 +94,8 @@ the authoritative text and is imported without edits.
 
 - Chapter 9 has 127 verses. 9:128 and 9:129 are not part of the text.
 - The Bismillah of chapters 2 to 114, except 9, is **verse 0**. It is counted by
-  default and can be left out with **Count Bismillah** in the top bar. Chapter
-  1's Bismillah is its verse 1 and always counts.
+  default and can be left out from the **Counting** menu in the top bar, in
+  every text mode. Chapter 1's Bismillah is its verse 1 and always counts.
 - Word boundaries are the edition's own. One counting rule is layered on top,
   in [`next/data/editions/submission-verse-rules.tsv`](next/data/editions/submission-verse-rules.tsv):
   ما لم in 96:5 counts as one word, so 96:1-5 is 19 words.
@@ -142,11 +190,14 @@ composites up to 506.
 Run the tests:
 
 ```bash
-dotnet test next/tests/QuranCode.Core.Tests      # engine: 150 tests
-dotnet test next/tests/QuranCode.Engine.Tests    # protocol: 33 tests
-cd next/apps/desktop && pnpm test                # interface logic: 11 tests
+dotnet test next/tests/QuranCode.Core.Tests      # engine: 280 tests
+dotnet test next/tests/QuranCode.Engine.Tests    # protocol: 80 tests
+cd next/apps/desktop && pnpm test                # interface logic: 58 tests
+cd next/apps/desktop && pnpm check               # types: 333 files, 0 errors
 cd next/apps/desktop/src-tauri && cargo test     # Rust bridge: 7 tests
 ```
+
+The engine and protocol tests need both content databases built first.
 
 `next/tools/oracle.py` builds the original (with Microsoft's .NET Framework 4.0
 reference assemblies from NuGet and the Visual Studio Build Tools, so no
@@ -191,6 +242,7 @@ boundaries from the original's data in `C#/`.
 | [Text normalization](next/docs/specs/text-normalization.md) | The two-stage pipeline, verified |
 | [Audit findings](next/docs/audit/findings.md) | What was measured in the original |
 | [Performance](next/docs/audit/performance-comparison.md) | Before and after |
+| [Work log](next/docs/worklog.md) | What was built in each phase, and every judgment call |
 
 ## License
 

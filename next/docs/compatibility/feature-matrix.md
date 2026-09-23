@@ -8,11 +8,13 @@ without a row here saying so and why.
 
 | Status | Meaning |
 | --- | --- |
-| **done** | Implemented and covered by a golden test against the legacy engine |
-| **engine** | Implemented in the engine; no UI yet |
+| **done** | Built and reachable from the app. Where the original defines a number or a result, it is checked against golden data captured from it; where the feature is presentation, it is checked by use |
+| **engine** | Implemented in the engine; no screen yet |
 | **todo** | Not started |
-| **data** | Needs a content pack that is not yet imported |
 | **drop** | Deliberately not carried over, with a reason |
+
+There is no longer a **data** status: the items that waited on content packs
+were imported in Phase 6.
 
 **Class** is the port/rewrite/remove decision.
 
@@ -159,21 +161,35 @@ capability.
 
 | Status | Count |
 | --- | ---: |
-| done | 11 |
-| engine (no UI yet) | 12 |
-| todo | 47 |
-| data (needs a pack) | 7 |
+| done | 60 |
+| engine (no UI yet) | 1 (#72) |
+| todo | 16 |
 | drop | 1 (#36) |
 | part of another row | 1 (#37, see #70) |
+| **total** | **79** |
 
 Counted per numbered feature, 79 in all; a row such as 32–35 counts as four.
 Arabic text search, which `Features.txt` does not number, is also done. The
-11 standalone tools above are all todo.
+11 other standalone tools listed above are all todo and are not part of the 79.
 
-The completed items are concentrated where correctness risk is highest: text
-normalization, valuation, the 21 modifiers, and text search. The outstanding
-work is mostly UI and number-theory modules, where the legacy behavior is
-easier to re-derive and less dangerous to get subtly wrong.
+The 16 remaining numbered features fall into four groups:
+
+| Group | Features |
+| --- | --- |
+| Audio | 45, 56, 65, 66 |
+| Standalone tools to fold in | 74, 75, 76, 77, 79 |
+| Drawing | 57, 58 |
+| Other | 17 (IndoPak fonts), 46 (dynamic keyboard), 23 (DNA symbols), 30 (expression calculator), 78 (geometry calculators) |
+
+Nothing is blocked on missing data any more. The three items that were
+(#27 translations, #62 grammar, #64 word meanings) were imported in Phase 6,
+and #31 is covered by the standard-spelling fallback built for #52.
+
+The completed work is concentrated where correctness risk is highest: text
+normalization, valuation, the 21 modifiers, search, and the number classes,
+all checked against golden data captured from the original. What remains is
+mostly presentation and self-contained calculators, where the legacy behavior
+is easier to re-derive and less dangerous to get subtly wrong.
 
 Two items are classed **rewrite** rather than port, both per brief §26:
 
