@@ -40,6 +40,7 @@ internal sealed class Dispatcher
             ["number.analyze"] = With(json.NumberParams, handlers.AnalyzeNumber, json.NumberDto),
             ["number.details"] = With(json.NumberParams, handlers.NumberDetails, json.NumberDetailsDto),
             ["translations.list"] = NoParams(handlers.TranslationList, json.IReadOnlyListTranslationDto),
+            ["findings.list"] = NoParams(handlers.Findings, json.IReadOnlyListFindingDto),
             ["word.info"] = With(json.WordParams, handlers.WordInfo, json.WordInfoDto),
             ["translations.text"] = With(json.TranslationTextParams, handlers.TranslationText, json.IReadOnlyListTranslationTextDto),
             ["selection.words"] = With(json.SelectionParams, handlers.SelectionWords, json.WordFrequenciesDto),

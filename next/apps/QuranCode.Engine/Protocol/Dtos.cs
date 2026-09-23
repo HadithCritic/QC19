@@ -180,6 +180,26 @@ internal sealed record WordInfoDto(
     IReadOnlyList<WordPartDto> Parts);
 
 /// <param name="Pack">Whether it comes from an optional translation pack rather than the edition itself.</param>
+/// <summary>One published Code 19 result and what the engine computes for it.</summary>
+/// <param name="Basis">"stated" when the source gives the counting rule, "inferred" when it was derived.</param>
+/// <param name="Convention">The counting convention this finding holds under, in words.</param>
+/// <param name="Multiple">Computed divided by 19 when it divides, else null.</param>
+internal sealed record FindingDto(
+    string Id,
+    string Claim,
+    long Expected,
+    long Computed,
+    bool Holds,
+    bool MultipleOf19,
+    long? Multiple,
+    string Measure,
+    string Scope,
+    string TextMode,
+    string Basis,
+    string Rule,
+    string Convention,
+    string Source);
+
 internal sealed record TranslationDto(string Key, string Language, string Name, string Translator, string Kind, bool RightToLeft);
 
 /// <param name="Keys">Translation keys, as translations.list gives them.</param>

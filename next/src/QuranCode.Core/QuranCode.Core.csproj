@@ -10,4 +10,10 @@
     <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.12" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- The findings travel with the engine, so a sidecar needs no data file
+         beside it. Adding a finding is editing this file. -->
+    <EmbeddedResource Include="Code19/findings.tsv" />
+  </ItemGroup>
+
 </Project>

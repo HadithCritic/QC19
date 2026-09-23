@@ -1,0 +1,19 @@
+# Published Code 19 results, each with the rule that checks it (ADR 0004 §7).
+#
+# expected   is the published number, never a computed one. A row whose rule
+#            stops reproducing it fails the build; the row is not edited to
+#            agree.
+# basmalas   the counting convention this finding holds under: yes counts the
+#            112 unnumbered verse-0 Basmalahs, no leaves them out. It belongs
+#            to the finding, not to a global setting, because the published
+#            results disagree about it.
+# basis      stated when the source gives the rule, inferred when it was
+#            derived. An inferred rule is shown as inferred wherever the
+#            finding appears.
+#
+# id	claim	expected	measure	scope	match	basmalas	textMode	basis	rule	source
+allah-count	The word God (Allah) occurs 2,698 times, 19x142	2698	wordFormOccurrences	book	allah	no	Simplified29	inferred	Count a word when its whole normalized form is one of the eleven written forms, in numbered verses only. Never a substring. اللهم is not one of them.	Appendix 1
+allah-verse-number-sum	The verse numbers of those verses add up to 118,123, 19x6217	118123	verseNumberSum	book	allah	no	Simplified29	inferred	Add the in-chapter verse number of every numbered verse holding at least one of the eleven forms. A verse counts once however many it holds.	Appendix 1
+qaf-in-chapter-50	The letter Q occurs 57 times in chapter 50, 19x3	57	letterOccurrences	chapter:50	ق	yes	Simplified29	stated	Count the letter ق through the chapter that opens with it.	Mysterious Alphabets, Table 9
+basmalah-words	The Basmalah is 4 words	4	words	1:1	 	yes	Original	stated	The words of 1:1, which is the Basmalah of chapter 1.	Appendix 1
+basmalah-letters	The Basmalah is 19 letters	19	letters	1:1	 	yes	Original	stated	The letters of 1:1.	Appendix 1

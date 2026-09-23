@@ -37,6 +37,7 @@ namespace QuranCode.Engine.Protocol;
 [JsonSerializable(typeof(UnitSearchResultDto))]
 [JsonSerializable(typeof(NumberDetailsDto))]
 [JsonSerializable(typeof(IReadOnlyList<TranslationDto>))]
+[JsonSerializable(typeof(IReadOnlyList<FindingDto>))]
 [JsonSerializable(typeof(WordParams))]
 [JsonSerializable(typeof(WordInfoDto))]
 [JsonSerializable(typeof(TranslationTextParams))]

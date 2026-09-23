@@ -111,6 +111,30 @@ public sealed class StatisticsProtocolTests : IDisposable
     }
 
     [Fact]
+    public void FindingsComeWithTheirProvenance()
+    {
+        JsonElement findings = Result("findings.list", new { });
+        Assert.True(findings.GetArrayLength() >= 5);
+        Assert.All(findings.EnumerateArray(), f => Assert.True(
+            f.GetProperty("holds").GetBoolean(),
+            $"{f.GetProperty("id").GetString()} computed {f.GetProperty("computed").GetInt64()}, " +
+            $"published {f.GetProperty("expected").GetInt64()}"));
+
+        JsonElement allah = findings.EnumerateArray().Single(f => f.GetProperty("id").GetString() == "allah-count");
+        Assert.Equal(2698, allah.GetProperty("computed").GetInt64());
+        Assert.True(allah.GetProperty("multipleOf19").GetBoolean());
+        Assert.Equal(142, allah.GetProperty("multiple").GetInt64());
+        // The rule was derived, not published, so the wire says so.
+        Assert.Equal("inferred", allah.GetProperty("basis").GetString());
+        Assert.Equal("numbered verses only", allah.GetProperty("convention").GetString());
+        Assert.Equal("Appendix 1", allah.GetProperty("source").GetString());
+
+        JsonElement qaf = findings.EnumerateArray().Single(f => f.GetProperty("id").GetString() == "qaf-in-chapter-50");
+        Assert.Equal("stated", qaf.GetProperty("basis").GetString());
+        Assert.Equal("chapter 50", qaf.GetProperty("scope").GetString());
+    }
+
+    [Fact]
     public void WordInfoGivesMeaningAndGrammar()
     {
         JsonElement word = Result("word.info", new { verse = 1, word = 2 });

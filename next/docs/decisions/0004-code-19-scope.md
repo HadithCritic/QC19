@@ -141,9 +141,17 @@ and verified to reproduce both of Appendix 1's totals exactly:
 > matched as a **whole word, never a substring**, in **numbered verses
 > only**. اللهم is excluded.
 
-A substring rule over-counts by 12, catching ظِلَٰلُهَا (their shadows),
-خِلَٰلِهِۦ (through it), ٱللَّهَبِ (the flame), ٱللَّهْوِ (the amusement) and
-يُضْلِلْهُ (misleads him). None is the name.
+A substring rule gives 2,726 instead, which is not a multiple of 19: 28
+extra occurrences across 16 word types, none of them the name — ظِلَٰلُهَا
+(their shadows), خِلَٰلِهِۦ (through it), ٱللَّهَبِ (the flame), ٱللَّهْوِ
+(the amusement), يُضْلِلْهُ (misleads him) and others. اللهم is among them,
+which is why it has to be excluded by name rather than by spelling.
+
+> Corrected 2026-09-23. This paragraph first said the substring rule
+> over-counts by 12. Measuring it while building the findings tests gave 28
+> across 16 types. The whole-word rule above, and both Appendix 1 totals, are
+> unaffected; only this aside was wrong. The measurement is now a test
+> (`FindingsTests.ASubstringRuleWouldOverCount`).
 
 ### 8. Licensing
 

@@ -209,6 +209,28 @@ export interface Translation {
   rightToLeft: boolean;
 }
 
+/** One published Code 19 result and what the engine computes for it. */
+export interface Finding {
+  id: string;
+  claim: string;
+  expected: number;
+  computed: number;
+  /** The computed number is the published one. */
+  holds: boolean;
+  multipleOf19: boolean;
+  /** computed / 19 when it divides, else null. */
+  multiple: number | null;
+  measure: string;
+  scope: string;
+  textMode: string;
+  /** "stated" when the source gives the counting rule, "inferred" when it was derived. */
+  basis: "stated" | "inferred";
+  rule: string;
+  /** The counting convention this finding holds under, in words. */
+  convention: string;
+  source: string;
+}
+
 export interface TranslationText {
   key: string;
   verses: { verse: number; text: string }[];
