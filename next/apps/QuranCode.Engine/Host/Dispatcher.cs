@@ -40,6 +40,11 @@ internal sealed class Dispatcher
             ["number.analyze"] = With(json.NumberParams, handlers.AnalyzeNumber, json.NumberDto),
             ["text.values"] = With(json.TextValuesParams, handlers.TextValues, json.IReadOnlyListSystemValueDto),
             ["search.text"] = With(json.SearchParams, handlers.Search, json.SearchResultDto),
+            ["search.roots"] = With(json.SearchParams, handlers.SearchRoots, json.SearchResultDto),
+            ["search.harakat"] = With(json.SearchParams, handlers.SearchHarakat, json.SearchResultDto),
+            ["search.related"] = With(json.VerseSearchParams, handlers.SearchRelated, json.SearchResultDto),
+            ["search.relatedVerses"] = With(json.VerseSearchParams, handlers.SearchRelatedVerses, json.SearchResultDto),
+            ["search.similar"] = With(json.VerseSearchParams, handlers.SearchSimilar, json.SearchResultDto),
             ["chapters.stats"] = WithDefault(json.ChaptersStatsParams, new ChaptersStatsParams(), handlers.ChapterStats, json.IReadOnlyListChapterStatsDto),
             ["words.distance"] = With(json.DistanceParams, handlers.Distance, json.DistanceDto),
         };

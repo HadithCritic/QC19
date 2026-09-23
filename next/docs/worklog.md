@@ -216,3 +216,69 @@ with a note, recent searches, Saved view lists and reopens entries.
 **Phase 3 complete.**
 
 ---
+
+## Phase 4: Search
+
+A read of the original's search code (Server.cs, Client.cs, MainForm.cs)
+came first, since several Features.txt entries describe things the code does
+differently. Findings that shaped this phase:
+
+- `+` and `-` (#55) are not implemented in the original: the labels exist but
+  are hidden and the server never parses them.
+- "Search across all text modes" (#52) is really a fallback to the Emlaaei
+  (standard spelling) text when a search finds nothing.
+- F4 to F9 act on the word at the caret, and F3 steps through the marks of the
+  current result (or through bookmarks when there is none).
+- Similar verses (F6) compare one verse with the rest by text, words, word
+  roots or word values, at 70% unless changed.
+
+### 4.1 Text, roots, related and similar verses
+
+- Text search takes several terms: any of them, all of them, or the exact
+  phrase (the original's WORDS and Exact searches), within the whole book, the
+  selected verses or the current results.
+- **Decision:** `+word` (must contain) and `-word` (must not contain) are
+  implemented, since Features.txt lists them; in a phrase they are literal.
+- **Decision:** a word that matches two terms is marked and counted once. The
+  original adds it twice; the verse list is the same either way.
+- **Fix (changes behavior):** search terms now go through the same word
+  normalization as the text, so a term typed with its marks follows the
+  counting options (a typed shadda doubles its letter when shadda counts as a
+  letter). Before, terms were always Simplify29, and typed marks never
+  matched under those options. Golden search results are unchanged.
+- Roots: the legacy word-roots file was imported but never linked to words.
+  The new `verse_word_roots` table (schema 5) links every display word to its
+  roots in both editions. The legacy file counts the Bismillah as the first
+  four words of verse 1 and joins "بعد ما" in 2:181, 8:6 and 13:37; the
+  Submission edition also writes 15:7's "لو ما" as one word. The importer
+  aligns these and fails the build if any verse cannot be aligned. All 77,851
+  display words have roots.
+- Root search resolves each term as the original's `GetBestRoot` does (exact,
+  then each simplification, then the root of a word spelled that way, then the
+  closest root containing the term), with any/all grouping and `+`/`-`.
+- Ctrl+click and F4: words sharing the clicked word's longest root. F5:
+  verses where every word pairs with its own word sharing a root. F6: similar
+  verses by text, words, roots or values, threshold adjustable. F7: the same
+  word (or the verse as a phrase). F8: the same text with its marks.
+- **Decision:** the original's all-pairs similar-verses mode (every verse
+  against every other, grouped) is not reproduced. It is quadratic, and in the
+  original its "same roots" method compares word texts and its "similar
+  words" method compares against a character count, so it cannot be matched
+  faithfully without copying bugs. The one-verse form, which F6 uses, is
+  complete.
+- **Fix:** exact comparison with marks needed one mark order. Typed text puts
+  fatha before shadda; the source often does not. The engine runs with
+  invariant globalization, where `string.Normalize` does not reorder, so
+  `MarkOrder` reorders Arabic marks by their combining classes. A test checks
+  it against .NET's own normalization on every word.
+- Chapter list shading (#15): while results exist, each chapter is shaded by
+  its matches. **Decision:** the original fades a color in 16-step jumps and
+  reaches black at 44 matches; here the same ramp sets the strength of the
+  theme's gold, so it works in light and dark themes.
+- F3 and Shift+F3 step through the marks of the loaded results with a
+  counter; in the reader they step through bookmarks, as in the original.
+- **Decision:** #52 needs an Emlaaei text. The classic edition's Emlaaei text
+  is a translation file, which arrives with translations in Phase 6; the
+  Submission edition has none (see Phase 1).
+- Timing through the sidecar: similar verses for 2:282 (the longest) at 30%
+  takes 16 to 83 ms by method; related verses 23 ms; root search 7 ms.

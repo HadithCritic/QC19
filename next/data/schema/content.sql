@@ -337,6 +337,18 @@ CREATE TABLE word_roots (
 );
 CREATE INDEX idx_word_roots_root ON word_roots(root_id);
 
+-- Roots of the words a reader sees. word_index counts the verse's display
+-- words from 0 (DisplayWords.Split over verses.text), so it holds in every
+-- text mode and needs no segmentation. A word may have several roots
+-- (particles and pronouns are listed too, as the legacy file lists them).
+CREATE TABLE verse_word_roots (
+    verse_number INTEGER NOT NULL REFERENCES verses(number),
+    word_index   INTEGER NOT NULL,
+    root_id      INTEGER NOT NULL REFERENCES roots(id),
+    PRIMARY KEY (verse_number, word_index, root_id)
+);
+CREATE INDEX idx_verse_word_roots_root ON verse_word_roots(root_id);
+
 CREATE TABLE word_grammar (
     segmentation_id INTEGER NOT NULL,
     word_number     INTEGER NOT NULL,

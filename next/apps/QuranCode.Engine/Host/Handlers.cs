@@ -14,7 +14,7 @@ namespace QuranCode.Engine.Host;
 /// Maps protocol calls onto the engine. Validation happens here, at the
 /// boundary; the engine below assumes well-formed arguments.
 /// </summary>
-internal sealed class Handlers
+internal sealed partial class Handlers
 {
     /// <summary>Longest text accepted for valuation: several pages of Arabic.</summary>
     public const int MaxTextLength = 20_000;
@@ -165,59 +165,6 @@ internal sealed class Handlers
                 textMode, Counting(p.Counting))
             ?? throw RpcException.NotFound("One of those words is not counted, so there is no distance to measure.");
         return new DistanceDto(distance.Chapters, distance.Verses, distance.Words, distance.Letters);
-    }
-
-    public SearchResultDto Search(SearchParams p)
-    {
-        RequireText(p.Term, "term");
-        Wordness wordness = ParseWordness(p.Wordness);
-        int offset = p.Offset ?? 0;
-        int limit = p.Limit ?? DefaultSearchLimit;
-        if (offset < 0) throw RpcException.InvalidParams("offset must not be negative.");
-        if (limit is < 1 or > MaxSearchLimit) throw RpcException.InvalidParams($"limit must be between 1 and {MaxSearchLimit}.");
-
-        string textMode = RequireSystem(p.ValueSystem).TextMode;
-        CountingOptions counting = Counting(p.Counting);
-        SearchResult result = _engine.Search(textMode, counting).Find(p.Term, wordness);
-        Segmentation segmentation = _engine.Segmentation(textMode, counting);
-        CorpusView view = _engine.View(counting);
-        CountingText text = _engine.CountingText(textMode, counting);
-
-        int[] page = result.Verses.Skip(offset).Take(limit).ToArray();
-        var hitsByVerse = page.ToDictionary(v => v, _ => new List<int>());
-        foreach (WordMatch match in result.Words)
-        {
-            if (hitsByVerse.TryGetValue(match.VerseNumber, out List<int>? hits))
-            {
-                hits.Add(match.WordIndex - segmentation.VerseFirstWord[view.IndexOf(match.VerseNumber)]);
-            }
-        }
-
-        SearchVerseDto[] verses = page
-            .Select(number => SearchVerse(number, hitsByVerse[number], segmentation, view, text))
-            .ToArray();
-
-        return new SearchResultDto(result.Term, result.WordCount, result.VerseCount, offset, verses);
-    }
-
-    private SearchVerseDto SearchVerse(
-        int number, List<int> hitWords, Segmentation segmentation, CorpusView view, CountingText text)
-    {
-        Verse verse = _engine.Verse(number);
-        VerseDisplay display = _engine.Display(verse);
-        DisplaySpan[]? spans = DisplayWords.Align(display, segmentation.VerseWords(view.IndexOf(number)), text.NormalizeWord);
-
-        // An unalignable verse gets no word highlights; the UI marks the
-        // whole verse instead of pointing at the wrong words.
-        int[] highlights = spans is null
-            ? []
-            : hitWords.SelectMany(w => Enumerable.Range(spans[w].First, spans[w].Count)).Distinct().Order().ToArray();
-        int[] bismillahHighlights = hitWords.Where(w => w < display.WordOffset).Distinct().Order().ToArray();
-
-        return new SearchVerseDto(
-            verse.Number, verse.ChapterNumber, verse.NumberInChapter, verse.IsBasmala,
-            display.Bismillah, display.Words, highlights,
-            spans is not null, bismillahHighlights, hitWords.Count);
     }
 
     private static CountingOptions Counting(CountingDto? dto) => dto is null

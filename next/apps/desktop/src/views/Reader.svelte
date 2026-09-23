@@ -5,7 +5,9 @@
   import { describeError, engine, latest } from "../lib/engine/client";
   import type { ClassCode, Verse } from "../lib/engine/types";
   import { CLASS_NAMES } from "../lib/numbers";
+  import { keySearch, nextBookmark } from "../lib/readerKeys";
   import { app } from "../lib/state/app.svelte";
+  import { search } from "../lib/state/search.svelte";
 
   // One verse per line, right-aligned, each closed by its rosette. The
   // rosette's ring is the verse's value class under the current system, so the
@@ -77,16 +79,64 @@
     }
   }
 
+  /** Display index of a reader word: the Bismillah header an edition prefixes to verse 1 comes first. */
+  function displayIndex(verse: Verse, index: number): number {
+    return (verse.bismillah ? verse.bismillah.split(" ").length : 0) + index;
+  }
+
+  function reference(verse: Verse): string {
+    return `${verse.chapter}:${verse.numberInChapter}`;
+  }
+
   // Alt+click measures from the previous Alt+clicked word (Features.txt #63);
-  // a plain click selects the verse.
-  function onVerseClick(event: MouseEvent, verse: number): void {
-    const word = (event.target as HTMLElement).closest<HTMLElement>("[data-word]");
-    if (event.altKey && word) {
+  // Ctrl+click finds the words of the same root (#1); a plain click selects
+  // the verse and makes the word the one F4, F7 and F8 act on.
+  function onVerseClick(event: MouseEvent, verse: Verse): void {
+    const target = (event.target as HTMLElement).closest<HTMLElement>("[data-word]");
+    const index = target ? Number(target.dataset.word) : null;
+    if (event.altKey && index !== null) {
       event.preventDefault();
-      void app.measureTo({ verse, word: Number(word.dataset.word) });
+      void app.measureTo({ verse: verse.number, word: index });
       return;
     }
-    app.selectVerse(verse, event.shiftKey);
+    if ((event.ctrlKey || event.metaKey) && index !== null) {
+      event.preventDefault();
+      const text = verse.words[index] ?? "";
+      void search.start({ kind: "related", verse: verse.number, word: displayIndex(verse, index), label: `“${text}” (${reference(verse)})` });
+      return;
+    }
+    app.currentWord = index === null ? null : { verse: verse.number, word: displayIndex(verse, index), text: verse.words[index] ?? "" };
+    app.selectVerse(verse.number, event.shiftKey);
+  }
+
+  function isCurrentWord(verse: Verse, index: number): boolean {
+    return app.currentWord?.verse === verse.number && app.currentWord.word === displayIndex(verse, index);
+  }
+
+  // F3 steps through bookmarks here; F4 to F8 start searches from the clicked
+  // word or the selected verse (Features.txt #38 to #43).
+  function onWindowKey(event: KeyboardEvent): void {
+    if (app.view !== "read" || event.ctrlKey || event.altKey || event.metaKey) return;
+    if (event.target instanceof Element && event.target.closest("input, textarea, select")) return;
+
+    if (event.key === "F3") {
+      event.preventDefault();
+      const bookmark = nextBookmark(app.bookmarks ?? [], app.selection?.first ?? null, event.shiftKey);
+      if (bookmark?.first != null && bookmark.last != null) app.goTo({ first: bookmark.first, last: bookmark.last });
+      return;
+    }
+
+    const selected = verses.find((v) => v.number === app.selection?.first) ?? null;
+    const word = app.currentWord;
+    const wordVerse = word ? verses.find((v) => v.number === word.verse) : undefined;
+    const request = keySearch(
+      event.key,
+      word && wordVerse ? { ...word, label: reference(wordVerse) } : null,
+      selected ? { number: selected.number, label: reference(selected), text: selected.words.join(" ") } : null,
+    );
+    if (!request) return;
+    event.preventDefault();
+    void search.start(request);
   }
 
   function isMeasured(verse: number, word: number, end: "from" | "to"): boolean {
@@ -105,6 +155,8 @@
     return `Verse ${verse.numberInChapter}${suffix}`;
   }
 </script>
+
+<svelte:window onkeydown={onWindowKey} />
 
 <article class="reader" bind:this={scroller} aria-busy={loading}>
   {#if error}
@@ -139,12 +191,13 @@
           tabindex="0"
           aria-pressed={isSelected(verse.number)}
           aria-label={label(verse)}
-          onclick={(e) => onVerseClick(e, verse.number)}
+          onclick={(e) => onVerseClick(e, verse)}
           onkeydown={(e) => onKey(e, verse.number)}
         >{#each verse.words as word, index (index)}<span
               class="word"
               class:measure-from={isMeasured(verse.number, index, "from")}
               class:measure-to={isMeasured(verse.number, index, "to")}
+              class:current-word={isCurrentWord(verse, index)}
               data-word={index}>{word}</span>{" "}{/each}<Rosette number={verse.numberInChapter} code={codes.get(verse.number)?.code ?? null} />{#if uncounted(verse)}<span class="note" lang="en" dir="ltr">not counted</span>{/if}</div></li>
       {/each}
     </ol>
@@ -255,6 +308,11 @@
 
   .word {
     border-radius: 3px;
+  }
+
+  .word.current-word {
+    text-decoration: underline 1px var(--ink-faint);
+    text-underline-offset: 0.4em;
   }
 
   .word.measure-from,

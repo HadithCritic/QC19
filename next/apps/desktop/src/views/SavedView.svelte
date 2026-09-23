@@ -3,6 +3,7 @@
   import { describeError, engine } from "../lib/engine/client";
   import type { HistoryEntry, HistoryKind } from "../lib/engine/types";
   import { app } from "../lib/state/app.svelte";
+  import { search } from "../lib/state/search.svelte";
 
   // Bookmarks with their notes, and browse and find history (Features.txt #69,
   // #70). Opening a browse entry selects its range in the reader.
@@ -113,7 +114,7 @@
               <ul class="list compact">
                 {#each find as entry (entry.id)}
                   <li>
-                    <button type="button" class="ref arabic" lang="ar" dir="rtl" onclick={() => app.searchFor(entry.term ?? "", entry.wordness ?? "any")}>{entry.term}</button>
+                    <button type="button" class="ref arabic" lang="ar" dir="rtl" onclick={() => search.start({ kind: "text", term: entry.term ?? "", wordness: entry.wordness ?? "any", grouping: "any" })}>{entry.term}</button>
                     <span class="time">{when(entry.atUtc)}</span>
                   </li>
                 {/each}

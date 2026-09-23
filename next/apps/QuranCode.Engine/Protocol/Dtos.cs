@@ -122,14 +122,26 @@ internal sealed record SearchVerseDto(
     IReadOnlyList<int> Highlights,
     bool Aligned,
     IReadOnlyList<int> BismillahHighlights,
-    int MatchCount);
+    int MatchCount,
+    double? Score = null);
 
+/// <param name="ChapterCounts">Matches per chapter (words, or verses when no words are marked), for shading the chapter list.</param>
+/// <param name="Roots">For a root search, the root each term resolved to (null when none).</param>
+/// <param name="VerseNumbers">Every found verse, not only this page, so a later search can look within them.</param>
 internal sealed record SearchResultDto(
     string Term,
     int WordCount,
     int VerseCount,
     int Offset,
-    IReadOnlyList<SearchVerseDto> Verses);
+    IReadOnlyList<SearchVerseDto> Verses,
+    IReadOnlyList<int> ChapterCounts,
+    IReadOnlyList<int> VerseNumbers,
+    IReadOnlyList<RootTermDto>? Roots = null);
+
+internal sealed record RootTermDto(string Term, string Kind, string? Root);
+
+/// <summary>Where to search: the whole book when null, else a verse range or a list of verses.</summary>
+internal sealed record ScopeDto(int? First = null, int? Last = null, IReadOnlyList<int>? Verses = null);
 
 /// <summary>How the text is counted; every member optional, defaults as in the original.</summary>
 internal sealed record CountingDto(
@@ -176,4 +188,21 @@ internal sealed record SearchParams(
     string? ValueSystem = null,
     int? Offset = null,
     int? Limit = null,
-    CountingDto? Counting = null);
+    CountingDto? Counting = null,
+    string? Grouping = null,
+    ScopeDto? Scope = null);
+
+/// <summary>A search that starts from one verse, or one word of it (F4 to F6).</summary>
+/// <param name="Word">Index among the verse's display words, Bismillah header included.</param>
+/// <param name="Method">For search.similar: text, words, roots or values.</param>
+/// <param name="Threshold">For search.similar: 0 to 1, default 0.7 as in the original.</param>
+internal sealed record VerseSearchParams(
+    int Verse,
+    int? Word = null,
+    string? Method = null,
+    double? Threshold = null,
+    string? ValueSystem = null,
+    int? Offset = null,
+    int? Limit = null,
+    CountingDto? Counting = null,
+    ScopeDto? Scope = null);

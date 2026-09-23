@@ -1,0 +1,90 @@
+import type { Grouping, SearchMethod, SearchScope, SimilarityMethod, Wordness } from "./engine/types";
+
+/** What the reader asked to find. Verse and word numbers are absolute verse numbers and display word indexes. */
+export type SearchRequest =
+  | { kind: "text"; term: string; wordness: Wordness; grouping: Grouping }
+  | { kind: "roots"; term: string; grouping: Grouping }
+  | { kind: "harakat"; term: string }
+  | { kind: "related"; verse: number; word: number; label: string }
+  | { kind: "relatedVerses"; verse: number; label: string }
+  | { kind: "similar"; verse: number; method: SimilarityMethod; threshold: number; label: string };
+
+export type ScopeChoice = "book" | "selection" | "results";
+
+const METHODS: Record<SearchRequest["kind"], SearchMethod> = {
+  text: "search.text",
+  roots: "search.roots",
+  harakat: "search.harakat",
+  related: "search.related",
+  relatedVerses: "search.relatedVerses",
+  similar: "search.similar",
+};
+
+/** The engine method and the request's own parameters (paging and context are added by the caller). */
+export function toCall(request: SearchRequest): { method: SearchMethod; params: Record<string, unknown> } {
+  const method = METHODS[request.kind];
+  switch (request.kind) {
+    case "text":
+      return { method, params: { term: request.term, wordness: request.wordness, grouping: request.grouping } };
+    case "roots":
+      return { method, params: { term: request.term, grouping: request.grouping } };
+    case "harakat":
+      return { method, params: { term: request.term } };
+    case "related":
+      return { method, params: { verse: request.verse, word: request.word } };
+    case "relatedVerses":
+      return { method, params: { verse: request.verse } };
+    case "similar":
+      return { method, params: { verse: request.verse, method: request.method, threshold: request.threshold } };
+  }
+}
+
+/** How a request reads in a heading. */
+export function describe(request: SearchRequest): string {
+  switch (request.kind) {
+    case "text":
+      return request.term;
+    case "roots":
+      return `roots ${request.term}`;
+    case "harakat":
+      return `${request.term} with its marks`;
+    case "related":
+      return `words related to ${request.label}`;
+    case "relatedVerses":
+      return `verses related to ${request.label}`;
+    case "similar":
+      return `verses like ${request.label}, ${Math.round(request.threshold * 100)}% by ${request.method}`;
+  }
+}
+
+/**
+ * The verses to search within. "selection" and "results" fall back to the
+ * whole book when there is nothing to search within, and the caller says so.
+ */
+export function scopeFor(
+  choice: ScopeChoice,
+  selection: { first: number; last: number } | null,
+  previous: number[] | null,
+): SearchScope | undefined {
+  if (choice === "selection" && selection) return { first: selection.first, last: selection.last };
+  if (choice === "results" && previous && previous.length > 0) return { verses: previous };
+  return undefined;
+}
+
+/** Next or previous mark for F3 and Shift+F3, wrapping at either end; -1 when there are none. */
+export function step(current: number, count: number, backward: boolean): number {
+  if (count <= 0) return -1;
+  if (current < 0 || current >= count) return backward ? count - 1 : 0;
+  return (current + (backward ? count - 1 : 1)) % count;
+}
+
+/**
+ * Shading strength (0 to 1) for a chapter with n matches. The original fades
+ * its color by 16 steps per match through green, red, then blue, reaching
+ * black at 44 matches; this keeps that ramp as one strength.
+ */
+export function shade(matches: number): number {
+  const DARKEST = 44;
+  if (matches <= 0) return 0;
+  return Math.min(matches, DARKEST) / DARKEST;
+}

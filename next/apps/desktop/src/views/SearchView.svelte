@@ -1,11 +1,13 @@
 <script lang="ts">
-  import Notice from "../lib/components/Notice.svelte";
-  import { describeError, engine } from "../lib/engine/client";
-  import type { HistoryEntry, SearchResult, SearchVerse, Wordness } from "../lib/engine/types";
+  import SearchResults from "../lib/components/SearchResults.svelte";
+  import { engine } from "../lib/engine/client";
+  import type { Grouping, HistoryEntry, SimilarityMethod, Wordness } from "../lib/engine/types";
+  import type { ScopeChoice } from "../lib/searchRequest";
   import { app } from "../lib/state/app.svelte";
+  import { search } from "../lib/state/search.svelte";
   import { humanize } from "../lib/systems";
 
-  const PAGE = 50;
+  type Kind = "text" | "roots";
 
   const WORDNESS: { value: Wordness; label: string }[] = [
     { value: "any", label: "Anywhere" },
@@ -13,13 +15,29 @@
     { value: "part", label: "Inside a word" },
   ];
 
+  const GROUPINGS: { value: Grouping; label: string; roots: boolean }[] = [
+    { value: "any", label: "any of the words", roots: true },
+    { value: "all", label: "all of the words", roots: true },
+    { value: "phrase", label: "the exact phrase", roots: false },
+  ];
+
+  const SCOPES: { value: ScopeChoice; label: string }[] = [
+    { value: "book", label: "the whole book" },
+    { value: "selection", label: "the selected verses" },
+    { value: "results", label: "the current results" },
+  ];
+
+  const METHODS: { value: SimilarityMethod; label: string }[] = [
+    { value: "text", label: "text" },
+    { value: "words", label: "words" },
+    { value: "roots", label: "word roots" },
+    { value: "values", label: "word values" },
+  ];
+
+  let kind = $state<Kind>("text");
   let term = $state("");
   let wordness = $state<Wordness>("any");
-  let result = $state<SearchResult | null>(null);
-  let verses = $state<SearchVerse[]>([]);
-  let error = $state<string | null>(null);
-  let loading = $state(false);
-
+  let grouping = $state<Grouping>("any");
   let recent = $state<HistoryEntry[]>([]);
 
   async function loadRecent(): Promise<void> {
@@ -30,137 +48,152 @@
     }
   }
 
-  // A search chosen from history runs as soon as the view opens.
-  $effect(() => {
-    const pending = app.pendingSearch;
-    if (!pending) return;
-    app.pendingSearch = null;
-    term = pending.term;
-    wordness = pending.wordness;
-    void run(0);
-  });
-
   $effect(() => {
     void loadRecent();
   });
 
-  async function run(offset: number): Promise<void> {
-    if (!term.trim()) return;
-    loading = true;
-    error = null;
-    try {
-      const page = await engine.search(term, wordness, app.valueSystem, { ...app.counting }, offset, PAGE);
-      result = page;
-      verses = offset === 0 ? page.verses : [...verses, ...page.verses];
-      if (offset === 0) {
-        engine.addFind(term.trim(), wordness).then(loadRecent, () => {});
-      }
-    } catch (e) {
-      error = describeError(e);
-    } finally {
-      loading = false;
+  // A search started elsewhere (history, the reader) fills the form it came from.
+  $effect(() => {
+    const request = search.request;
+    if (request?.kind === "text" || request?.kind === "roots") {
+      kind = request.kind;
+      term = request.term;
+      grouping = request.grouping;
+      if (request.kind === "text") wordness = request.wordness;
     }
-  }
+  });
 
   // Changing how the text is counted changes which words match; rerun an
   // existing search rather than leave stale results on screen.
   let searchedWith: string | null = null;
   $effect(() => {
     const counting = JSON.stringify(app.counting);
-    if (result && searchedWith !== null && searchedWith !== counting) void run(0);
+    if (search.result && searchedWith !== null && searchedWith !== counting) void search.rerun();
     searchedWith = counting;
   });
 
-  function submit(event: SubmitEvent): void {
+  async function submit(event: SubmitEvent): Promise<void> {
     event.preventDefault();
-    void run(0);
+    if (!term.trim()) return;
+    const kindGrouping = kind === "roots" && grouping === "phrase" ? "any" : grouping;
+    await search.start(
+      kind === "text" ? { kind, term, wordness, grouping: kindGrouping } : { kind, term, grouping: kindGrouping },
+    );
+    if (kind === "text") void loadRecent();
   }
 
-  function reference(verse: SearchVerse): string {
-    return `${verse.chapter}:${verse.numberInChapter}`;
+  function refineSimilar(change: { method?: SimilarityMethod; threshold?: number }): void {
+    const request = search.request;
+    if (request?.kind === "similar") void search.refine({ ...request, ...change });
   }
+
+  const similar = $derived(search.request?.kind === "similar" ? search.request : null);
+  const scopeDisabled = (value: ScopeChoice): boolean =>
+    (value === "selection" && !app.selection) || (value === "results" && !search.result?.verseCount);
 </script>
 
 <section class="search" aria-labelledby="search-title">
   <header>
-    <h1 id="search-title">Search the text</h1>
+    <h1 id="search-title">Search</h1>
     <p class="hint">
-      Matching ignores diacritics and letter forms, as the {humanize(app.currentSystem?.textMode ?? "Original")} text mode defines them.
-      {#if app.counting.shaddaAsLetter || app.counting.wawAsWord}
-        With {app.counting.shaddaAsLetter ? "shadda counted as a letter" : "waw counted as a word"} the searched text
-        changes too, so type the word as it is then counted{app.counting.shaddaAsLetter ? ", with the doubled letter" : ""}.
+      {#if kind === "text"}
+        Matching ignores diacritics and letter forms, as the {humanize(app.currentSystem?.textMode ?? "Original")} text mode defines them.
+        {#if app.counting.shaddaAsLetter || app.counting.wawAsWord}
+          With {app.counting.shaddaAsLetter ? "shadda counted as a letter" : "waw counted as a word"} the searched text
+          changes too, so type the word as it is then counted{app.counting.shaddaAsLetter ? ", with the doubled letter" : ""}.
+        {/if}
+      {:else}
+        Type roots, or words whose roots you want; each word is matched to its closest root.
       {/if}
+      Put + before a word a verse must have, and - before one it must not.
     </p>
 
+    <div class="kinds" role="group" aria-label="What to search">
+      <button type="button" aria-pressed={kind === "text"} onclick={() => (kind = "text")}>Text</button>
+      <button type="button" aria-pressed={kind === "roots"} onclick={() => (kind = "roots")}>Roots</button>
+    </div>
+
     <form onsubmit={submit}>
-      <label class="visually-hidden" for="search-term">Arabic text to find</label>
-      <input id="search-term" class="field term arabic" lang="ar" dir="rtl" bind:value={term} placeholder="اكتب كلمة" autocomplete="off" />
+      <label class="visually-hidden" for="search-term">{kind === "text" ? "Arabic text to find" : "Roots or words to find"}</label>
+      <input
+        id="search-term"
+        class="field term arabic"
+        lang="ar"
+        dir="rtl"
+        bind:value={term}
+        placeholder={kind === "text" ? "اكتب كلمة" : "جذر"}
+        autocomplete="off"
+      />
 
-      <div class="wordness" role="radiogroup" aria-label="Where the text must appear">
-        {#each WORDNESS as option (option.value)}
-          <label class:checked={wordness === option.value}>
-            <input type="radio" name="wordness" value={option.value} bind:group={wordness} />
-            {option.label}
-          </label>
-        {/each}
-      </div>
+      {#if kind === "text"}
+        <div class="wordness" role="radiogroup" aria-label="Where the text must appear">
+          {#each WORDNESS as option (option.value)}
+            <label class:checked={wordness === option.value}>
+              <input type="radio" name="wordness" value={option.value} bind:group={wordness} />
+              {option.label}
+            </label>
+          {/each}
+        </div>
+      {/if}
 
-      <button type="submit" class="button primary" disabled={loading || !term.trim()}>Search</button>
+      <button type="submit" class="button primary" disabled={search.loading || !term.trim()}>Search</button>
     </form>
+
+    <div class="options">
+      <label>
+        Find
+        <select class="field" bind:value={grouping}>
+          {#each GROUPINGS.filter((g) => kind === "text" || g.roots) as option (option.value)}<option value={option.value}>{option.label}</option>{/each}
+        </select>
+      </label>
+      <label>
+        in
+        <select class="field" bind:value={search.scope}>
+          {#each SCOPES as option (option.value)}<option value={option.value} disabled={scopeDisabled(option.value)}>{option.label}</option>{/each}
+        </select>
+      </label>
+    </div>
+
+    {#if similar}
+      <div class="origin">
+        <label>
+          Compare by
+          <select class="field" value={similar.method} onchange={(e) => refineSimilar({ method: e.currentTarget.value as SimilarityMethod })}>
+            {#each METHODS as option (option.value)}<option value={option.value}>{option.label}</option>{/each}
+          </select>
+        </label>
+        <label>
+          at least <span class="num">{Math.round(similar.threshold * 100)}%</span>
+          <input
+            type="range"
+            min="0.3"
+            max="1"
+            step="0.05"
+            value={similar.threshold}
+            onchange={(e) => refineSimilar({ threshold: Number(e.currentTarget.value) })}
+          />
+        </label>
+      </div>
+    {/if}
+
     {#if recent.length > 0}
       <p class="recent">
         <span>Recent</span>
         {#each recent as entry (entry.id)}
-          <button type="button" class="chip arabic" lang="ar" dir="rtl" onclick={() => { term = entry.term ?? ""; wordness = entry.wordness ?? "any"; void run(0); }}>{entry.term}</button>
+          <button
+            type="button"
+            class="chip arabic"
+            lang="ar"
+            dir="rtl"
+            onclick={() => search.start({ kind: "text", term: entry.term ?? "", wordness: entry.wordness ?? "any", grouping: "any" })}
+            >{entry.term}</button
+          >
         {/each}
       </p>
     {/if}
   </header>
 
-  <div class="results" aria-live="polite" aria-busy={loading}>
-    {#if error}
-      <Notice tone="error" title="The search did not run" detail={error} />
-    {:else if result && result.verseCount === 0}
-      <Notice title="No verse contains “{result.term}”" detail="Try fewer letters, or search anywhere in a word." />
-    {:else if result}
-      <p class="summary">
-        <span class="num">{result.wordCount}</span> words in <span class="num">{result.verseCount}</span> verses
-      </p>
-      <ol>
-        {#each verses as verse (verse.number)}
-          <li>
-            <button type="button" class="ref num" onclick={() => app.goTo({ first: verse.number, last: verse.number })} aria-label="Open {reference(verse)} in the reader">
-              {reference(verse)}
-            </button>
-            <div class="verse-text">
-              {#if verse.bismillahHighlights.length > 0 && verse.bismillah}
-                <p class="quran bismillah" lang="ar" dir="rtl">
-                  {#each verse.bismillah.split(" ") as word, index (index)}
-                    {#if verse.bismillahHighlights.includes(index)}<mark>{word}</mark>{:else}{word}{/if}{" "}
-                  {/each}
-                </p>
-              {/if}
-              <p class="quran" lang="ar" dir="rtl" class:whole={!verse.aligned}>
-                {#each verse.words as word, index (index)}
-                  {#if verse.highlights.includes(index)}<mark>{word}</mark>{:else}{word}{/if}{" "}
-                {/each}
-              </p>
-            </div>
-            {#if verse.matchCount > 1}<span class="count num" title="Matches in this verse">×{verse.matchCount}</span>{/if}
-          </li>
-        {/each}
-      </ol>
-      {#if verses.length < result.verseCount}
-        <button type="button" class="button more" disabled={loading} onclick={() => run(verses.length)}>
-          Show {Math.min(PAGE, result.verseCount - verses.length)} more
-        </button>
-      {/if}
-    {:else if loading}
-      <Notice tone="loading" title="Searching" />
-    {:else}
-      <Notice title="Find a word or part of one" detail="Results show every matching verse with the matching words marked. Open one to see its numbers." />
-    {/if}
-  </div>
+  <SearchResults />
 </section>
 
 <style>
@@ -185,7 +218,7 @@
   }
 
   .hint {
-    margin: var(--space-1) 0 var(--space-4);
+    margin: var(--space-1) 0 var(--space-3);
     font-size: var(--text-sm);
     color: var(--ink-muted);
   }
@@ -235,6 +268,49 @@
     pointer-events: none;
   }
 
+  .kinds {
+    display: flex;
+    gap: var(--space-1);
+    margin-bottom: var(--space-3);
+  }
+
+  .kinds button {
+    padding: 0.3rem 0.8rem;
+    border: 1px solid transparent;
+    border-radius: var(--radius-md);
+    background: none;
+    font-size: var(--text-sm);
+    color: var(--ink-muted);
+  }
+
+  .kinds button[aria-pressed="true"] {
+    border-color: var(--rule-strong);
+    background: var(--surface-sunk);
+    color: var(--ink);
+    font-weight: 550;
+  }
+
+  .options,
+  .origin {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-3);
+    margin: var(--space-3) 0 0;
+    font-size: var(--text-sm);
+  }
+
+  .options select,
+  .origin select {
+    height: 2rem;
+    font-size: var(--text-sm);
+  }
+
+  .origin input[type="range"] {
+    width: 8rem;
+    vertical-align: middle;
+  }
+
   .recent {
     display: flex;
     flex-wrap: wrap;
@@ -256,78 +332,5 @@
 
   .chip:hover {
     border-color: var(--lapis);
-  }
-
-  .results {
-    overflow-y: auto;
-    padding: var(--space-4) var(--space-6) var(--space-7);
-  }
-
-  .summary {
-    margin: 0 0 var(--space-3);
-    font-size: var(--text-sm);
-    color: var(--ink-muted);
-  }
-
-  ol {
-    margin: 0;
-    padding: 0;
-    list-style: none;
-  }
-
-  li {
-    display: grid;
-    grid-template-columns: 4.5rem 1fr auto;
-    align-items: baseline;
-    gap: var(--space-4);
-    padding: var(--space-2) 0;
-    border-top: 1px solid var(--rule);
-  }
-
-  .ref {
-    justify-self: start;
-    padding: 0.1rem 0.4rem;
-    border: 0;
-    border-radius: var(--radius-sm);
-    background: none;
-    font-size: var(--text-sm);
-    color: var(--lapis);
-  }
-
-  .ref:hover {
-    background: var(--lapis-soft);
-  }
-
-  .quran {
-    margin: 0;
-    font-size: 1.45rem;
-    line-height: 2.1;
-  }
-
-  .quran.whole {
-    background: var(--gilt-soft);
-    border-radius: var(--radius-sm);
-  }
-
-  mark {
-    color: inherit;
-    background: var(--gilt-soft);
-    text-decoration: underline 2px var(--gilt);
-    text-underline-offset: 0.35em;
-    border-radius: 2px;
-  }
-
-  .bismillah {
-    font-size: 1.1rem;
-    color: var(--ink-muted);
-  }
-
-  .count {
-    font-size: var(--text-xs);
-    color: var(--ink-faint);
-  }
-
-  .more {
-    margin-top: var(--space-4);
   }
 </style>

@@ -36,24 +36,21 @@ public sealed class SearchResult
 /// </summary>
 /// <remarks>
 /// <para>
-/// Reproduces the behavior of the legacy <c>Server.DoFindWords</c> chain for the
-/// case the UI actually issues: a term, a wordness filter, whole-book scope, no
-/// multiplicity constraint.
+/// Reproduces the legacy <c>Server.DoFindWords</c> (terms, wordness, any or all
+/// words) and the Exact search (<c>DoFindPhrases</c>) over a verse scope.
 /// </para>
 /// <para>
 /// <b>Normalization is the whole game.</b> The legacy engine simplifies both the
-/// search term and the verse text with <c>Simplify29</c> before matching, when
-/// the active text mode is <c>Original</c> or <c>SimplifiedMarks</c> and
-/// diacritics are off. Matching raw text against a normalized term finds
-/// nothing, which is exactly what happens if this step is skipped.
+/// search term and the verse text before matching. The corpus side is the
+/// segmentation, already in the text mode and counting options; the term goes
+/// through the same word normalization, so a term typed with its marks is
+/// changed the way the text was.
 /// </para>
 /// <para>
 /// <b>Why not FTS5 here.</b> The corpus is 77,878 words and a linear scan over
 /// a segmentation runs in single-digit milliseconds, so FTS earns nothing for
 /// Arabic substring matching and would additionally impose its own tokenizer's
-/// idea of a word boundary, which is not the legacy one. FTS5 is reserved for
-/// translation text, where documents are long, prose is natural language, and
-/// ranking matters.
+/// idea of a word boundary, which is not the legacy one.
 /// </para>
 /// </remarks>
 public sealed class TextSearch
@@ -61,8 +58,13 @@ public sealed class TextSearch
     private readonly Segmentation _segmentation;
     private readonly IReadOnlyList<Verse> _verses;
     private readonly string[] _wordTexts;
+    private readonly Func<string, string> _normalizeTerm;
+    private string[]? _verseTexts;
 
-    public TextSearch(Segmentation segmentation, IReadOnlyList<Verse> verses, TextPipeline pipeline)
+    /// <param name="normalizeTerm">How a typed term becomes corpus text; Simplify29 when omitted.</param>
+    public TextSearch(
+        Segmentation segmentation, IReadOnlyList<Verse> verses, TextPipeline pipeline,
+        Func<string, string>? normalizeTerm = null)
     {
         ArgumentNullException.ThrowIfNull(segmentation);
         ArgumentNullException.ThrowIfNull(verses);
@@ -70,6 +72,7 @@ public sealed class TextSearch
 
         _segmentation = segmentation;
         _verses = verses;
+        _normalizeTerm = normalizeTerm ?? ArabicNormalizer.Simplify29;
 
         // Materialize the normalized word text once. The segmentation keeps
         // letters, not words, so rebuilding a word's string per query would
@@ -81,59 +84,120 @@ public sealed class TextSearch
     /// <summary>Words already normalized, in corpus order.</summary>
     public IReadOnlyList<string> WordTexts => _wordTexts;
 
-    /// <summary>
-    /// Finds words matching a term.
-    /// </summary>
-    /// <param name="term">
-    /// Search text. Normalized the same way the corpus was, so a caller may pass
-    /// either raw or simplified Arabic.
-    /// </param>
+    /// <summary>Finds words matching one term (or several, any of which may match).</summary>
     public SearchResult Find(string term, Wordness wordness = Wordness.Any)
     {
         ArgumentNullException.ThrowIfNull(term);
+        return Find(new TextQuery(term, wordness));
+    }
 
-        // Match the legacy: normalize the term exactly as the corpus was, and
-        // collapse internal whitespace.
-        string needle = ArabicNormalizer.Simplify29(term).Trim();
-        while (needle.Contains("  ", StringComparison.Ordinal))
-        {
-            needle = needle.Replace("  ", " ", StringComparison.Ordinal);
-        }
+    public SearchResult Find(TextQuery query)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        IReadOnlyList<Term> terms = query.Terms(_normalizeTerm);
 
         var words = new List<WordMatch>();
         var verses = new List<int>();
-        int lastVerse = -1;
-
-        if (needle.Length != 0)
+        if (terms.Count > 0)
         {
-            for (int w = 0; w < _wordTexts.Length; w++)
+            for (int v = 0; v < _segmentation.VerseCount; v++)
             {
-                string text = _wordTexts[w];
-                if (!Matches(text, needle, wordness)) continue;
+                int verseNumber = _verses[v].Number;
+                if (query.Scope is not null && !query.Scope.Contains(verseNumber)) continue;
 
-                int verseIndex = _segmentation.WordVerse[w];
-                int verseNumber = _verses[verseIndex].Number;
+                IReadOnlyList<int>? hits = query.Grouping == Grouping.Phrase
+                    ? PhraseHits(v, terms, query.Wordness)
+                    : TermHits(v, terms, query.Wordness, query.Grouping);
+                if (hits is null) continue;
 
-                words.Add(new WordMatch(w, verseNumber, text));
-
-                // Words are scanned in corpus order, so verse numbers arrive
-                // sorted and ascending: a single comparison deduplicates them
-                // without a set.
-                if (verseNumber != lastVerse)
-                {
-                    verses.Add(verseNumber);
-                    lastVerse = verseNumber;
-                }
+                verses.Add(verseNumber);
+                foreach (int w in hits) words.Add(new WordMatch(w, verseNumber, _wordTexts[w]));
             }
         }
 
         return new SearchResult
         {
-            Term = needle,
-            Wordness = wordness,
+            Term = string.Join(' ', terms.Select(t => t.Kind switch
+            {
+                TermKind.Required => "+" + t.Text,
+                TermKind.Excluded => "-" + t.Text,
+                _ => t.Text,
+            })),
+            Wordness = query.Wordness,
             Words = words,
             Verses = verses,
         };
+    }
+
+    /// <summary>The verse's matching words, or null when the verse does not qualify.</summary>
+    private List<int>? TermHits(int verse, IReadOnlyList<Term> terms, Wordness wordness, Grouping grouping)
+    {
+        int first = _segmentation.VerseFirstWord[verse];
+        int end = first + _segmentation.VerseWordCount[verse];
+
+        var hits = new SortedSet<int>();
+        int plainTerms = 0, plainFound = 0;
+        foreach (Term term in terms)
+        {
+            bool found = false;
+            for (int w = first; w < end; w++)
+            {
+                if (!Matches(_wordTexts[w], term.Text, wordness)) continue;
+                found = true;
+                if (term.Kind == TermKind.Excluded) break;
+                hits.Add(w);
+            }
+
+            switch (term.Kind)
+            {
+                case TermKind.Excluded when found:
+                case TermKind.Required when !found:
+                    return null;
+                case TermKind.Plain:
+                    plainTerms++;
+                    if (found) plainFound++;
+                    break;
+            }
+        }
+
+        bool grouped = plainTerms == 0 || (grouping == Grouping.All ? plainFound == plainTerms : plainFound > 0);
+        return grouped ? [.. hits] : null;
+    }
+
+    /// <summary>Words covered by each occurrence of the terms written in a row.</summary>
+    private List<int>? PhraseHits(int verse, IReadOnlyList<Term> terms, Wordness wordness)
+    {
+        string text = VerseText(verse);
+        string needle = string.Join(' ', terms.Select(t => t.Text));
+        int first = _segmentation.VerseFirstWord[verse];
+        int count = _segmentation.VerseWordCount[verse];
+
+        List<int>? hits = null;
+        for (int at = text.IndexOf(needle, StringComparison.Ordinal); at >= 0;
+             at = text.IndexOf(needle, at + 1, StringComparison.Ordinal))
+        {
+            int end = at + needle.Length;
+            bool whole = (at == 0 || text[at - 1] == ' ') && (end == text.Length || text[end] == ' ');
+            if (wordness == Wordness.WholeWord && !whole) continue;
+            if (wordness == Wordness.PartOfWord && whole) continue;
+
+            hits ??= [];
+            int start = 0;
+            for (int w = 0; w < count; w++)
+            {
+                int stop = start + _wordTexts[first + w].Length;
+                if (start < end && stop > at && !hits.Contains(first + w)) hits.Add(first + w);
+                start = stop + 1;
+            }
+        }
+        return hits;
+    }
+
+    private string VerseText(int verse)
+    {
+        _verseTexts ??= new string[_segmentation.VerseCount];
+        return _verseTexts[verse] ??= string.Join(' ',
+            _wordTexts, _segmentation.VerseFirstWord[verse], _segmentation.VerseWordCount[verse]);
     }
 
     private static bool Matches(string word, string needle, Wordness wordness) => wordness switch

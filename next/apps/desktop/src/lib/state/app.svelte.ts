@@ -1,5 +1,5 @@
 import { describeError, engine } from "../engine/client";
-import type { Bookmark, Chapter, CountingOptions, Distance, EngineInfo, ValueSystem, VerseRange, WordLocation, Wordness } from "../engine/types";
+import type { Bookmark, Chapter, CountingOptions, Distance, EngineInfo, ValueSystem, VerseRange, WordLocation } from "../engine/types";
 import { DEFAULT_COUNTING, parseCounting, type CountingKey } from "../counting";
 import { back, canGoBack, canGoForward, current, EMPTY_NAVIGATION, forward, visit, type Navigation } from "../navigation";
 import { chapterOfVerse, lastVerse } from "../numbers";
@@ -69,8 +69,8 @@ class AppState {
   canGoForward = $derived(canGoForward(this.navigation));
   private browseTimer: ReturnType<typeof setTimeout> | undefined;
 
-  /** A search requested from elsewhere (search history); the search view runs it. */
-  pendingSearch = $state<{ term: string; wordness: Wordness } | null>(null);
+  /** The word last clicked in the reader, for F4, F7 and F8: its verse, display index (Bismillah header included) and text. */
+  currentWord = $state<{ verse: number; word: number; text: string } | null>(null);
 
   /** Bookmarks, loaded at start; null while unavailable (no user data file). */
   bookmarks = $state<Bookmark[] | null>(null);
@@ -199,11 +199,6 @@ class AppState {
       this.measurement = null;
       this.measureError = describeError(error);
     }
-  }
-
-  searchFor(term: string, wordness: Wordness): void {
-    this.pendingSearch = { term, wordness };
-    this.view = "search";
   }
 
   async loadBookmarks(): Promise<void> {

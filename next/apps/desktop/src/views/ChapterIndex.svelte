@@ -3,7 +3,9 @@
   import { CHAPTER_SORTS, sortChapters, type ChapterSort } from "../lib/chapterSort";
   import { engine, latest } from "../lib/engine/client";
   import type { Chapter, ChapterStats } from "../lib/engine/types";
+  import { shade } from "../lib/searchRequest";
   import { app } from "../lib/state/app.svelte";
+  import { search } from "../lib/state/search.svelte";
 
   let filter = $state("");
   let sort = $state<ChapterSort>("number");
@@ -47,6 +49,16 @@
   }
 
   const details = $derived(hovered ? stats.get(hovered.chapter.number) : undefined);
+
+  // While search results are shown, each chapter is shaded by its matches
+  // (Features.txt #15), darker with more.
+  const matches = $derived(search.result?.chapterCounts ?? null);
+  const matchingChapters = $derived(matches ? matches.filter((n) => n > 0).length : 0);
+
+  function matchTitle(count: number): string | undefined {
+    if (count <= 0) return undefined;
+    return count === 1 ? "1 match" : `${count} matches`;
+  }
 </script>
 
 <nav class="index" aria-label="Chapters">
@@ -66,6 +78,9 @@
         onclick={() => (descending = !descending)}>{descending ? "↓" : "↑"}</button
       >
     </div>
+    {#if matches}
+      <p class="matching">Matches in <span class="num">{matchingChapters}</span> chapters</p>
+    {/if}
   </div>
   <ol onmouseleave={() => (hovered = null)}>
     {#each chapters as chapter (chapter.number)}
@@ -74,6 +89,9 @@
           type="button"
           class:current={chapter.number === app.chapter}
           aria-current={chapter.number === app.chapter ? "page" : undefined}
+          style:--match={matches ? `${Math.round(10 + shade(matches[chapter.number - 1] ?? 0) * 50)}%` : null}
+          class:matched={(matches?.[chapter.number - 1] ?? 0) > 0}
+          title={matchTitle(matches?.[chapter.number - 1] ?? 0)}
           onclick={() => app.openChapter(chapter.number)}
           onmouseenter={(e) => show(chapter, e)}
           onfocus={(e) => show(chapter, e)}
@@ -170,6 +188,16 @@
 
   button:not(.direction):hover {
     background: var(--paper);
+  }
+
+  button.matched {
+    background: color-mix(in srgb, var(--gilt) var(--match), transparent);
+  }
+
+  .matching {
+    margin: 0;
+    font-size: var(--text-xs);
+    color: var(--ink-muted);
   }
 
   button.current {

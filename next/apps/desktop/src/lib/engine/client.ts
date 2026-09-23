@@ -9,6 +9,7 @@ import type {
   WordLocation,
   EngineInfo,
   NumberInfo,
+  SearchMethod,
   SearchResult,
   Stats,
   SystemValue,
@@ -110,8 +111,8 @@ export const engine = {
   analyzeNumber: (value: string) => call<NumberInfo>("number.analyze", { value }),
   textValues: (text: string, valueSystems?: string[]) =>
     call<SystemValue[]>("text.values", valueSystems ? { text, valueSystems } : { text }),
-  search: (term: string, wordness: Wordness, valueSystem: string, counting: CountingOptions, offset: number, limit: number) =>
-    call<SearchResult>("search.text", { term, wordness, valueSystem, counting, offset, limit }),
+  /** Every search method answers with one page of the same result shape. */
+  search: (method: SearchMethod, params: Record<string, unknown>) => call<SearchResult>(method, params),
 };
 
 /** The message to show for any thrown value. */

@@ -174,6 +174,31 @@ export interface SearchVerse extends Verse {
   /** Bismillah words to highlight; the engine counts the header as part of verse 1. */
   bismillahHighlights: number[];
   matchCount: number;
+  /** Similarity to the starting verse (0 to 1), for a similar-verse search by text. */
+  score: number | null;
+}
+
+export type Grouping = "any" | "all" | "phrase";
+export type SearchMethod =
+  | "search.text"
+  | "search.roots"
+  | "search.harakat"
+  | "search.related"
+  | "search.relatedVerses"
+  | "search.similar";
+export type SimilarityMethod = "text" | "words" | "roots" | "values";
+
+/** A verse range, or a list of verses; omitted means the whole book. */
+export interface SearchScope {
+  first?: number;
+  last?: number;
+  verses?: number[];
+}
+
+export interface RootTerm {
+  term: string;
+  kind: "plain" | "required" | "excluded";
+  root: string | null;
 }
 
 export interface SearchResult {
@@ -182,4 +207,9 @@ export interface SearchResult {
   verseCount: number;
   offset: number;
   verses: SearchVerse[];
+  /** Matches per chapter across the whole result, for shading the chapter list. */
+  chapterCounts: number[];
+  /** Every found verse, for searching within the results. */
+  verseNumbers: number[];
+  roots: RootTerm[] | null;
 }

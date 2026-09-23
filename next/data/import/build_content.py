@@ -36,7 +36,7 @@ from datetime import datetime, timezone
 
 import submission
 
-SCHEMA_VERSION = 4
+SCHEMA_VERSION = 5
 
 # Text modes the legacy hides in the Standard edition. Hardcoded there too:
 # Server.LoadSimplificationSystems skips "SimplifiedMarks" when EDITION is Standard.
@@ -67,6 +67,59 @@ PARTITION_SECTIONS = {
     "station": "station", "part": "part", "group": "group", "half": "half",
     "quarter": "quarter", "bowing": "bowing", "page": "page",
 }
+
+
+def display_words(text: str) -> list[str]:
+    """Split a verse as DisplayWords.Split does: marks join the neighboring word."""
+    words: list[str] = []
+    leading: str | None = None
+    for token in text.split(" "):
+        if not token:
+            continue
+        if not any(ch.isalpha() for ch in token):
+            if words:
+                words[-1] = f"{words[-1]} {token}"
+            else:
+                leading = token if leading is None else f"{leading} {token}"
+        else:
+            words.append(token if leading is None else f"{leading} {token}")
+            leading = None
+    if leading is not None:
+        words.append(leading)
+    return words
+
+
+def letters_of(word: str) -> str:
+    # Tatweel is category Lm but only stretches a word; the editions differ in it.
+    return "".join(ch for ch in word if ch.isalpha() and ch != "\u0640")
+
+
+def align_roots(display: list[str], source: list[tuple[str, list[int]]]
+                ) -> list[tuple[int, list[int]]] | None:
+    """Pair display words with legacy words, allowing two-word joins either way.
+
+    Equal counts pair by position (the Submission spellings of 7:69 and 68:1
+    differ in letters, not in words). Otherwise one legacy word may cover two
+    display words ("بعدما") or two legacy words one display word ("لوما").
+    """
+    if len(display) == len(source):
+        return [(i, ids) for i, (_, ids) in enumerate(source)]
+    links: list[tuple[int, list[int]]] = []
+    d = s = 0
+    while d < len(display) and s < len(source):
+        here, there = letters_of(display[d]), letters_of(source[s][0])
+        if here == there:
+            links.append((d, source[s][1]))
+            d, s = d + 1, s + 1
+        elif d + 1 < len(display) and here + letters_of(display[d + 1]) == there:
+            links += [(d, source[s][1]), (d + 1, source[s][1])]
+            d, s = d + 2, s + 1
+        elif s + 1 < len(source) and here == there + letters_of(source[s + 1][0]):
+            links.append((d, source[s][1] + source[s + 1][1]))
+            d, s = d + 1, s + 2
+        else:
+            return None
+    return links if d == len(display) and s == len(source) else None
 
 
 def utcnow() -> str:
@@ -517,6 +570,45 @@ class Importer:
                             "INSERT INTO roots (text) VALUES (?)", (root_text,))
                         roots[root_text] = cur.lastrowid
         print(f"  roots              {len(roots)} distinct")
+        self.link_word_roots(rel, roots)
+
+    def link_word_roots(self, rel: str, roots: dict[str, int]) -> None:
+        """Attach roots to each verse's display words.
+
+        The legacy file keys words by classic chapter:verse:word and counts the
+        Bismillah as the first four words of verse 1. A verse-zero edition holds
+        those four words in verse 0 instead.
+        """
+        legacy: dict[tuple[int, int], list[tuple[str, list[int]]]] = {}
+        with io.open(self.path(rel), encoding="utf-8-sig") as handle:
+            for line in handle:
+                fields = line.rstrip("\r\n").split("\t")
+                if len(fields) < 3:
+                    continue
+                chapter, verse, _ = (int(x) for x in fields[0].split(":"))
+                ids = [roots[r.strip()] for r in fields[2].split("|") if r.strip()]
+                legacy.setdefault((chapter, verse), []).append((fields[1], ids))
+
+        verse_zero = self.edition == "submission"
+        rows: list[tuple[int, int, int]] = []
+        unaligned: list[str] = []
+        verses = self.db.execute(
+            "SELECT number, chapter_number, number_in_chapter, text FROM verses ORDER BY number")
+        for number, chapter, verse, text in verses.fetchall():
+            source = legacy.get((chapter, max(verse, 1)), [])
+            if verse_zero and chapter not in (1, 9) and verse in (0, 1):
+                source = source[:4] if verse == 0 else source[4:]
+            links = align_roots(display_words(text), source)
+            if links is None:
+                unaligned.append(f"{chapter}:{verse}")
+                continue
+            rows.extend((number, index, root) for index, ids in links for root in ids)
+        self.db.executemany(
+            "INSERT OR IGNORE INTO verse_word_roots (verse_number, word_index, root_id) VALUES (?, ?, ?)",
+            rows)
+        print(f"  word roots         {len(rows)} links, {len(unaligned)} verses unaligned")
+        if unaligned:
+            raise SystemExit(f"roots could not be aligned in {', '.join(unaligned[:10])}")
 
     # -- search -----------------------------------------------------------
 

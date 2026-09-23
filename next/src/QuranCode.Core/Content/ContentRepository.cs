@@ -45,7 +45,7 @@ public sealed class ContentRepository : IDisposable
     private readonly SqliteConnection _connection;
 
     /// <summary>Oldest schema this code reads: v3 added editions and verse 0, v4 the waw words.</summary>
-    public const int MinimumSchemaVersion = 4;
+    public const int MinimumSchemaVersion = 5;
 
     private Chapter[]? _chapters;
     private Verse[]? _verses;
@@ -139,6 +139,54 @@ public sealed class ContentRepository : IDisposable
             }
         }
         return new WawWords(words, splits);
+    }
+
+    private WordRoots? _wordRoots;
+
+    /// <summary>Roots of every display word.</summary>
+    public WordRoots WordRoots => _wordRoots ??= LoadWordRoots();
+
+    private WordRoots LoadWordRoots()
+    {
+        var texts = new List<string>();
+        var idOf = new Dictionary<long, int>();
+        using (SqliteCommand command = _connection.CreateCommand())
+        {
+            command.CommandText = "SELECT id, text FROM roots ORDER BY id";
+            using SqliteDataReader reader = command.ExecuteReader();
+            while (reader.Read())
+            {
+                idOf[reader.GetInt64(0)] = texts.Count;
+                texts.Add(reader.GetString(1));
+            }
+        }
+
+        IReadOnlyList<Verse> verses = Verses;
+        var lists = new List<int>[verses.Count][];
+        for (int v = 0; v < verses.Count; v++)
+        {
+            int words = Text.DisplayWords.Split(verses[v].Text).Length;
+            lists[v] = new List<int>[words];
+        }
+
+        using (SqliteCommand command = _connection.CreateCommand())
+        {
+            command.CommandText = "SELECT verse_number, word_index, root_id FROM verse_word_roots ORDER BY verse_number, word_index, root_id";
+            using SqliteDataReader reader = command.ExecuteReader();
+            while (reader.Read())
+            {
+                List<int>[] words = lists[reader.GetInt32(0) - 1];
+                int index = reader.GetInt32(1);
+                if (index >= words.Length)
+                {
+                    throw new InvalidDataException($"verse_word_roots names word {index} of verse {reader.GetInt32(0)}, which has {words.Length} words.");
+                }
+                (words[index] ??= []).Add(idOf[reader.GetInt64(2)]);
+            }
+        }
+
+        int[][][] byVerse = lists.Select(words => words.Select(roots => roots?.ToArray() ?? []).ToArray()).ToArray();
+        return new WordRoots([.. texts], byVerse);
     }
 
     private CorpusInfo LoadCorpus()

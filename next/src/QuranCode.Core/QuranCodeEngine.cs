@@ -41,6 +41,9 @@ public sealed class QuranCodeEngine : IDisposable
     private readonly Dictionary<(string, CountingOptions), Segmentation> _segmentations = [];
     private readonly Dictionary<(string, CountingOptions), TextSearch> _searches = [];
     private readonly Dictionary<(string, CountingOptions), CountingText> _countingTexts = [];
+    private readonly Dictionary<bool, RootSearch> _rootSearches = [];
+    private readonly Dictionary<(string, CountingOptions), VerseSimilarity> _similarities = [];
+    private readonly Dictionary<(string, CountingOptions), long[]> _wordValues = [];
 
     /// <summary>The text mode used when none is named.</summary>
     public const string DefaultTextMode = "Original";
@@ -63,6 +66,9 @@ public sealed class QuranCodeEngine : IDisposable
 
     /// <summary>Every verse row, verse-0 Bismillahs included, in canonical order.</summary>
     public IReadOnlyList<Verse> Verses => _content.Verses;
+
+    /// <summary>Roots of every display word.</summary>
+    public WordRoots Roots => _content.WordRoots;
 
     /// <summary>Names of every installed value system.</summary>
     public IReadOnlyList<string> ValueSystems() => _content.ValueSystemNames();
@@ -140,9 +146,49 @@ public sealed class QuranCodeEngine : IDisposable
         var key = (textMode, effective);
         if (_searches.TryGetValue(key, out TextSearch? cached)) return cached;
 
-        var search = new TextSearch(Segmentation(textMode, effective), View(effective).Verses, Pipeline(textMode));
+        var search = new TextSearch(
+            Segmentation(textMode, effective), View(effective).Verses, Pipeline(textMode),
+            CountingText(textMode, effective).NormalizeWord);
         _searches[key] = search;
         return search;
+    }
+
+    /// <summary>Root search over the counted verses.</summary>
+    public RootSearch RootSearch(CountingOptions? counting = null)
+    {
+        CorpusView view = View(counting);
+        bool key = view.Verses.Count == Verses.Count;
+        if (_rootSearches.TryGetValue(key, out RootSearch? cached)) return cached;
+        return _rootSearches[key] = new RootSearch(Roots, view.Verses);
+    }
+
+    /// <summary>Related and similar verses under a text mode and options.</summary>
+    public VerseSimilarity Similarity(string textMode = DefaultTextMode, CountingOptions? counting = null)
+    {
+        CountingOptions effective = Effective(textMode, counting);
+        var key = (textMode, effective);
+        if (_similarities.TryGetValue(key, out VerseSimilarity? cached)) return cached;
+        return _similarities[key] = new VerseSimilarity(
+            Segmentation(textMode, effective), View(effective).Verses, Search(textMode, effective).WordTexts,
+            Roots, RootSearch(effective));
+    }
+
+    /// <summary>Plain value (sum of letter values) of every counted word, in corpus order.</summary>
+    public IReadOnlyList<long> WordValues(string valueSystem = DefaultValueSystem, CountingOptions? counting = null)
+    {
+        ValueSystem system = ValueSystem(valueSystem);
+        CountingOptions effective = Effective(system.TextModeName, counting);
+        var key = (valueSystem, effective);
+        if (_wordValues.TryGetValue(key, out long[]? cached)) return cached;
+
+        Segmentation segmentation = Segmentation(system.TextModeName, effective);
+        long[] values = new long[segmentation.WordCount];
+        for (int w = 0; w < values.Length; w++)
+        {
+            int first = segmentation.WordFirstLetter[w];
+            for (int l = first; l < first + segmentation.WordLetterCount[w]; l++) values[w] += system[segmentation.LetterChars[l]];
+        }
+        return _wordValues[key] = values;
     }
 
     /// <summary>A verse split for display, following the edition's Bismillah convention.</summary>
