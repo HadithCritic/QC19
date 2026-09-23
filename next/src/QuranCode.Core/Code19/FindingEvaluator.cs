@@ -26,6 +26,7 @@ public static class FindingEvaluator
 
         long computed = finding.Measure switch
         {
+            FindingMeasure.Verses => verses.Length,
             FindingMeasure.Words => verses.Sum(v => (long)segmentation.VerseWordCount[v]),
             FindingMeasure.Letters => verses.Sum(v => LettersIn(segmentation, v, _ => true)),
             FindingMeasure.LetterOccurrences => CountLetters(segmentation, verses, LettersOf(finding)),
@@ -62,7 +63,7 @@ public static class FindingEvaluator
         for (int v = 0; v < segmentation.VerseCount; v++)
         {
             if (!chapters.Contains(segmentation.VerseChapter[v])) continue;
-            if (scope.Verse is not null && segmentation.VerseNumberInChapter[v] != scope.Verse) continue;
+            if (!scope.CoversVerse(segmentation.VerseNumberInChapter[v])) continue;
             verses.Add(v);
         }
         if (verses.Count == 0)

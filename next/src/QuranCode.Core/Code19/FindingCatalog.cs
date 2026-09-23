@@ -58,6 +58,7 @@ public static class FindingCatalog
 
     private static FindingMeasure ParseMeasure(string text, int line) => text switch
     {
+        "verses" => FindingMeasure.Verses,
         "words" => FindingMeasure.Words,
         "letters" => FindingMeasure.Letters,
         "letterOccurrences" => FindingMeasure.LetterOccurrences,
@@ -98,13 +99,20 @@ public static class FindingCatalog
             return new FindingScope(ParseChapterList(text["chapters:".Length..], text, line));
 
         string[] parts = text.Split(':');
-        if (parts.Length == 2
-            && int.TryParse(parts[0], CultureInfo.InvariantCulture, out int c)
-            && int.TryParse(parts[1], CultureInfo.InvariantCulture, out int v))
-            return new FindingScope(c, v);
+        if (parts.Length == 2 && int.TryParse(parts[0], CultureInfo.InvariantCulture, out int c))
+        {
+            string[] verses = parts[1].Split('-');
+            if (verses.Length == 1 && int.TryParse(verses[0], CultureInfo.InvariantCulture, out int v))
+                return new FindingScope(c, v);
+            if (verses.Length == 2
+                && int.TryParse(verses[0], CultureInfo.InvariantCulture, out int first)
+                && int.TryParse(verses[1], CultureInfo.InvariantCulture, out int last)
+                && first <= last)
+                return new FindingScope(c, first, last);
+        }
 
         throw new InvalidDataException(
-            $"findings line {line}: scope is \"book\", \"chapter:N\", \"chapters:A,B\", \"chapters:A-B\" or \"C:V\", not \"{text}\"");
+            $"findings line {line}: scope is \"book\", \"chapter:N\", \"chapters:A,B\", \"chapters:A-B\", \"C:V\" or \"C:V-V\", not \"{text}\"");
     }
 
     private static int[] ParseChapterList(string list, string text, int line)

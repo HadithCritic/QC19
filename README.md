@@ -64,7 +64,7 @@ rather than stated by the source, so a reader can see what rests on an
 assumption. Multiples of 19 are shown with their multiplier.
 
 The catalog is [one data file](next/src/QuranCode.Core/Code19/findings.tsv)
-of 16 findings. Every row runs as a test: a gated finding that stops
+of 24 findings. Every row runs as a test: a gated finding that stops
 reproducing fails the build. Two are marked **open**, the alif counts of
 chapters 2 and 3, which no text mode reproduces; they are shown with their
 gap rather than hidden or edited to agree.
@@ -111,12 +111,13 @@ every one of them, including those now out of scope, as an inventory of what
 the original did — not as a list of work remaining. What is planned is in the
 [roadmap](next/docs/roadmap.md).
 
-Fourteen published findings reproduce exactly from the Submission text,
+Twenty-two published findings reproduce exactly from the Submission text,
 among them: the word God occurs **2,698** times (19×142) and the verse numbers
 of those verses sum to **118,123** (19×6,217); ق occurs **57** times in both
 chapter 50 and chapter 42; ن occurs **133** times in chapter 68 (19×7); and
-the seven حم chapters hold **2,147** of those two letters (19×113). Each is
-checked on every build.
+the seven حم chapters hold **2,147** of those two letters (19×113); and the
+first revelation, 96:1–5, is **19** words and **76** letters. Each is checked
+on every build.
 
 ## The text
 
@@ -222,7 +223,7 @@ composites up to 506.
 Run the tests:
 
 ```bash
-dotnet test next/tests/QuranCode.Core.Tests      # engine: 337 tests
+dotnet test next/tests/QuranCode.Core.Tests      # engine: 346 tests
 dotnet test next/tests/QuranCode.Engine.Tests    # protocol: 82 tests
 cd next/apps/desktop && pnpm test                # interface logic: 51 tests
 cd next/apps/desktop && pnpm check               # types: 333 files, 0 errors

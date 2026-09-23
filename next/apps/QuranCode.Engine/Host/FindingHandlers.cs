@@ -50,6 +50,7 @@ internal sealed partial class Handlers
 
     private static string Name(FindingMeasure measure) => measure switch
     {
+        FindingMeasure.Verses => "verses",
         FindingMeasure.Words => "words",
         FindingMeasure.Letters => "letters",
         FindingMeasure.LetterOccurrences => "letterOccurrences",

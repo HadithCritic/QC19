@@ -3,6 +3,9 @@ namespace QuranCode.Core.Code19;
 /// <summary>What a finding counts.</summary>
 public enum FindingMeasure
 {
+    /// <summary>Verses in the scope, under the finding's Basmalah convention.</summary>
+    Verses,
+
     /// <summary>Counted words in the scope.</summary>
     Words,
 
@@ -41,18 +44,24 @@ public enum RuleBasis
 /// verse. Several chapters need not be contiguous: the three chapters
 /// initialed with ص are 7, 19 and 38.
 /// </summary>
-public sealed record FindingScope(IReadOnlyList<int>? Chapters = null, int? Verse = null)
+/// <param name="LastVerse">With <paramref name="Verse"/>, the last verse of a run such as 96:1-5.</param>
+public sealed record FindingScope(IReadOnlyList<int>? Chapters = null, int? Verse = null, int? LastVerse = null)
 {
     public static readonly FindingScope Book = new();
 
-    public FindingScope(int chapter, int? verse = null)
-        : this([chapter], verse)
+    public FindingScope(int chapter, int? verse = null, int? lastVerse = null)
+        : this([chapter], verse, lastVerse)
     {
     }
+
+    /// <summary>Whether a verse, by its number in its chapter, falls in the verse part of the scope.</summary>
+    public bool CoversVerse(int numberInChapter) =>
+        Verse is null || (numberInChapter >= Verse && numberInChapter <= (LastVerse ?? Verse));
 
     public override string ToString() => Chapters switch
     {
         null => "book",
+        [int one] when Verse is not null && LastVerse is not null => $"{one}:{Verse}-{LastVerse}",
         [int one] when Verse is not null => $"{one}:{Verse}",
         [int one] => $"chapter {one}",
         _ => $"chapters {string.Join(", ", Chapters)}",

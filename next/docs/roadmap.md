@@ -116,6 +116,16 @@ with the new `open` check: shown with their gap, never edited to agree, not
 failing the build, and tested to still disagree so that a change settling
 them is noticed.
 
+Appendix 1's list of simple facts then added eight more, all reproducing:
+6,346 and 6,234 verses, 96:1-5 as 19 words and 76 letters, chapter 96 as 19
+verses and 304 letters, chapter 110 as 19 words and 110:1 as 19 letters. The
+catalog gained a `verses` measure and verse-run scopes such as `96:1-5` for
+them. The same list mixes conventions: chapter 96's 304 letters include its
+Basmalah (285 without), while chapter 110's 19 words leave its Basmalah out
+(23 with). Facts 15 to 17, about the initials data itself, are tests in
+`InitialsTests`. Fact 7, the 342 words between the two Basmalahs of chapter
+27, needs a scope that ends inside a verse and is not yet encoded.
+
 ## Stage D: 19-hunting
 
 General tools for the work, as opposed to checking a published claim.

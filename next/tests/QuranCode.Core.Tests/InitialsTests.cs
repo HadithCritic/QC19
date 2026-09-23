@@ -106,6 +106,26 @@ public sealed class InitialsTests : IDisposable
         Assert.Equal(0, (fifty + fortyTwo) % 19);
     }
 
+    /// <summary>
+    /// Appendix 1, simple facts 15 to 17: facts about the initials data
+    /// itself rather than the text, so they check the stated list.
+    /// </summary>
+    [Fact]
+    public void TheAppendixOneFactsAboutTheInitialsHold()
+    {
+        int sets = QuranicInitials.Chapters.Select(c => c.Letters).Distinct().Count();
+        Assert.Equal(14, sets);
+        Assert.Equal(57, QuranicInitials.Letters.Count + sets + QuranicInitials.Chapters.Count); // 14 + 14 + 29
+
+        int chapterSum = QuranicInitials.Chapters.Sum(c => c.Chapter);
+        Assert.Equal(822, chapterSum);
+        Assert.Equal(19 * 44, chapterSum + sets);
+
+        var initialed = QuranicInitials.Chapters.Select(c => c.Chapter).ToHashSet();
+        int between = Enumerable.Range(2, 68 - 2 + 1).Count(n => !initialed.Contains(n));
+        Assert.Equal(38, between);
+    }
+
     [Fact]
     public void CountsCoverEveryInitialOfEveryChapter()
     {
