@@ -1,6 +1,6 @@
 # QuranCode
 
-A desktop research tool for **Code 19** — Rashad Khalifa's numerical analysis
+A desktop research tool for **Code 19**, Rashad Khalifa's numerical analysis
 of the Quran: finding multiples of 19 in counts and values, and checking
 published results against the text. It also carries the general machinery that
 serves that work: letter-value (gematria-style) systems, number
@@ -59,7 +59,7 @@ Eight screens: **Read**, **Search**, **Values**, **Stats**, **Findings**,
 Khalifa's published results, each recomputed from the text and marked as
 holding or not. A finding shows the counting rule it was computed under, the
 convention (whether the 112 unnumbered Basmalahs count), the text mode and the
-appendix it comes from — and says explicitly when the rule was **inferred**
+appendix it comes from. It also says explicitly when the rule was **inferred**
 rather than stated by the source, so a reader can see what rests on an
 assumption. Multiples of 19 are shown with their multiplier.
 
@@ -108,7 +108,7 @@ Arabic fonts, DNA symbols and the geometry calculators are **out of scope**.
 Of the original's 79 features, 61 are built and 13 are out of scope. The
 [feature matrix](next/docs/compatibility/feature-matrix.md) keeps a row for
 every one of them, including those now out of scope, as an inventory of what
-the original did — not as a list of work remaining. What is planned is in the
+the original did, not as a list of work remaining. What is planned is in the
 [roadmap](next/docs/roadmap.md).
 
 Twenty-two published findings reproduce exactly from the Submission text,

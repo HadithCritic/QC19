@@ -12,7 +12,7 @@ stands.
 Until now the project's stated goal was to reproduce QuranCode 1433's feature
 set on a modern stack. 60 of its 79 features are done on that basis.
 
-The owner's actual purpose is narrower and more specific: **Code 19** —
+The owner's actual purpose is narrower and more specific: **Code 19**,
 Rashad Khalifa's numerical analysis of the Quran. Finding multiples of 19 in
 counts and values, and checking published results. Large parts of the
 original serve a different kind of research and are not wanted.
@@ -114,13 +114,13 @@ scraping of a live site is needed. Twelve of the 38 appendices argue
 numerically, by a count of explicit 19-arithmetic in their own text
 (`19x`, `x 19`, `multiple of 19`, `divisible by 19`):
 
-1, 2, 15, 19, 24, 25, 26, 27, 29, 37, 38 and the introduction — about 98
+1, 2, 15, 19, 24, 25, 26, 27, 29, 37, 38 and the introduction, about 98
 pages. Appendix 23 is added for its revelation-order table, which is data
 rather than argument.
 
 *The Computer Speaks* and *Mysterious Alphabets* are scans with no text
-layer. Their OCR is unreliable for digits — Table 9 comes out with `2018
-i511` and `1s9` — so their tables are read by rendering the page and reading
+layer. Their OCR is unreliable for digits (Table 9 comes out with `2018
+i511` and `1s9`), so their tables are read by rendering the page and reading
 it, which is legible and is how ق = 57 was confirmed.
 
 ### 7. Counting conventions are per finding, not global
@@ -136,13 +136,13 @@ see which figures rest on an assumption.
 The first such rule, derived from a published index of all 2,698 occurrences
 and verified to reproduce both of Appendix 1's totals exactly:
 
-> Count a word when its normalized form is one of eleven whole words — الله،
-> لله، بالله، والله، ولله، فالله، فلله، تالله، وتالله، ءالله، ابالله —
+> Count a word when its normalized form is one of eleven whole words (الله،
+> لله، بالله، والله، ولله، فالله، فلله، تالله، وتالله، ءالله، ابالله),
 > matched as a **whole word, never a substring**, in **numbered verses
 > only**. اللهم is excluded.
 
 A substring rule gives 2,726 instead, which is not a multiple of 19: 28
-extra occurrences across 16 word types, none of them the name — ظِلَٰلُهَا
+extra occurrences across 16 word types, none of them the name: ظِلَٰلُهَا
 (their shadows), خِلَٰلِهِۦ (through it), ٱللَّهَبِ (the flame), ٱللَّهْوِ
 (the amusement), يُضْلِلْهُ (misleads him) and others. اللهم is among them,
 which is why it has to be excluded by name rather than by spelling.
@@ -162,7 +162,7 @@ question is closed. The work remains GPL-3.0 as a derivative of the original.
 ## Consequences
 
 Positive: a much smaller surface; the removed features were the bulk of the
-outstanding work. The engine needs no change to serve Code 19 — four
+outstanding work. The engine needs no change to serve Code 19: four
 published results already reproduce.
 
 Negative: the feature matrix no longer measures progress, because most of

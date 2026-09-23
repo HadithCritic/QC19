@@ -93,7 +93,7 @@ public enum FindingCheck
 /// <param name="Match">A letter for <see cref="FindingMeasure.LetterOccurrences"/>, or a form-set name.</param>
 /// <param name="IncludeBasmalas">
 /// The convention this finding was computed under. ADR 0004 §7: it belongs to
-/// the finding, never to a global setting, because the results disagree — the
+/// the finding, never to a global setting, because the results disagree. The
 /// count of the word God excludes the 112 unnumbered Basmalahs and others
 /// require them.
 /// </param>
