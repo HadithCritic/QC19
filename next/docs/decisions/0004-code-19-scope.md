@@ -62,8 +62,9 @@ the legacy source stays in `C#/` and the feature matrix keeps a row for each.
   hand is the core activity. Still a parser, not runtime code compilation.
 - **User-defined text modes (72)**, because a text mode changes letter counts
   and therefore changes Code 19 results.
-- **The character palette (46)**, reduced to the seven extra characters per
-  text mode. Its job is preventing searches that cannot match: in
+- **The character palette (46)**, reduced to the base letters and the
+  extra characters each text mode keeps (eight at most; first written here
+  as seven). Its job is preventing searches that cannot match: in
   Simplified29 the letter ة has already been folded to ه, so offering it
   would guarantee zero results.
 

@@ -10,7 +10,7 @@ one sitting.
 
 ---
 
-## Stage A: Make the code match the scope (audio and translations done)
+## Stage A: Make the code match the scope (done)
 
 ADR 0004 is a decision; the code still carries what it cut. This stage is
 deletion, and it comes first because everything after it is smaller once it
@@ -22,8 +22,8 @@ is done.
 - Narrow translations to Rashad Khalifa's English, the Emlaaei Arabic and the
   transliteration. Drop the 11 other WikiSubmission languages and the
   108-file Tanzil pack from the import and from the translation menu.
-- Reduce the character palette to the seven extra characters of the active
-  text mode.
+- Reduce the character palette to the extra characters of the active text
+  mode.
 - One Arabic font.
 
 **Done when** the app builds and every test passes with those paths gone, and
@@ -34,9 +34,17 @@ app's only use of `reqwest`, so the desktop shell no longer links an HTTP and
 TLS stack or reaches the network at all. The Submission database went from
 41.2 MB to 21.2 MB.
 
-**Still open:** the character palette (feature 46) is not yet reduced to the
-seven extra characters of the active text mode, and the Arabic fonts have not
-been narrowed. Both are presentation and neither blocks a later stage.
+The character palette opens beside the search box: the 28 base letters,
+then only the extra characters the active text mode keeps, after the
+original's `UpdateKeyboard`. There are eight such extras, not seven as first
+written (ء ة ى ٱ أ إ ؤ ئ): Simplified28 keeps none, Simplified29 keeps ء,
+Simplified30 keeps ة and ى, Simplified31 keeps all three, and Original and the
+finer modes keep all eight. A root search offers every one. The base letters
+stay because not every reader has an Arabic keyboard, and every mode keeps
+them, so none of them can produce an unmatchable search.
+
+One Arabic font: Amiri Quran sets the Quran text and every other Arabic word.
+The second family, Amiri, is removed (1.3 MB of font files).
 
 ## Stage B: Findings (done)
 
@@ -124,7 +132,8 @@ them. The same list mixes conventions: chapter 96's 304 letters include its
 Basmalah (285 without), while chapter 110's 19 words leave its Basmalah out
 (23 with). Facts 15 to 17, about the initials data itself, are tests in
 `InitialsTests`. Fact 7, the 342 words between the two Basmalahs of chapter
-27, needs a scope that ends inside a verse and is not yet encoded.
+27, needed a scope that ends inside a verse; it was encoded later the same
+day, below.
 
 Later the same day the catalog took in Khalifa's complete per-chapter tables
 from *The Computer Speaks*, as tabulated by Quran Initial Count, and grew to

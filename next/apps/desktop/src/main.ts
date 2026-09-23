@@ -1,6 +1,6 @@
+// One Arabic font throughout, for the Quran text and every other Arabic word
+// alike (ADR 0004).
 import "@fontsource/amiri-quran/400.css";
-import "@fontsource/amiri/400.css";
-import "@fontsource/amiri/700.css";
 import "@fontsource-variable/instrument-sans";
 import "@fontsource/ibm-plex-mono/400.css";
 import "@fontsource/ibm-plex-mono/500.css";

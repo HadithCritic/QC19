@@ -207,6 +207,7 @@
 
   .name {
     font-family: var(--font-arabic);
+    font-size: var(--text-lg);
   }
 
   .letters {

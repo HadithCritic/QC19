@@ -44,7 +44,7 @@ were imported in Phase 6.
 | 69 | Find and browse history | port | **done** | `user.db`, 500 per kind, repeats skipped; Saved view and recent searches |
 | 70 | Bookmarks with notes, auto-save | port | **done** | Inspector bookmark with an auto-saved note; Saved view lists, opens, deletes |
 | 17 | IndoPak font family support | port | out | ADR 0004: one Arabic font |
-| 46 | Dynamic keyboard per text mode | rewrite | todo | Kept by ADR 0004, reduced to the seven extra characters of the active text mode |
+| 46 | Dynamic keyboard per text mode | rewrite | **done** | A palette beside the search box: the 28 base letters and only the extras the active text mode keeps (up to eight), after `UpdateKeyboard`; every extra for a root search |
 
 ## Numerology and values
 
@@ -170,9 +170,9 @@ capability.
 
 | Status | Count |
 | --- | ---: |
-| done | 61 |
+| done | 62 |
 | engine (no UI yet) | 1 (#72) |
-| todo | 2 (#30, #46) |
+| todo | 1 (#30) |
 | out (ADR 0004) | 13 |
 | drop | 1 (#36) |
 | part of another row | 1 (#37, see #70) |
@@ -182,12 +182,11 @@ Counted per numbered feature, 79 in all; a row such as 32–35 counts as four.
 Arabic text search, which `Features.txt` does not number, is also done. The
 11 other standalone tools listed above are all todo and are not part of the 79.
 
-Two numbered features remain in scope, both kept deliberately by ADR 0004:
+One numbered feature remains in scope, kept deliberately by ADR 0004:
 
 | # | Feature | Where |
 | ---: | --- | --- |
 | 30 | Expression calculator | Roadmap stage D |
-| 46 | Character palette | Roadmap stage A, reduced |
 
 The 13 marked **out** are audio (45, 56, 65, 66), drawing (57, 58), the other
 standalone tools (74, 75, 77, 79), the IndoPak fonts (17), DNA symbols (23)

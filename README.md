@@ -41,6 +41,9 @@ Eight screens: **Read**, **Search**, **Values**, **Stats**, **Findings**,
   with `+must` and `-must-not`; anywhere in a word, as a whole word, or only
   inside a longer word. Scope is the book, the current selection, or the
   previous results.
+- A letter palette for typing without an Arabic keyboard. It offers only
+  the characters the active text mode keeps, so it never builds a search
+  that cannot match.
 - Roots, with multiple roots and any/all grouping. Ctrl+click or F4 searches
   the clicked word's longest root.
 - Related verses (F5), similar verses by text, words, roots or values with an
@@ -111,7 +114,7 @@ each. 63 of the 78 reproduce; the 15 that do not are the 13 alifs and the two
 Code 19. Audio, drawing, the standalone tools except InitialLetters, multiple
 Arabic fonts, DNA symbols and the geometry calculators are **out of scope**.
 
-Of the original's 79 features, 61 are built and 13 are out of scope. The
+Of the original's 79 features, 62 are built and 13 are out of scope. The
 [feature matrix](next/docs/compatibility/feature-matrix.md) keeps a row for
 every one of them, including those now out of scope, as an inventory of what
 the original did, not as a list of work remaining. What is planned is in the
@@ -231,8 +234,8 @@ Run the tests:
 ```bash
 dotnet test next/tests/QuranCode.Core.Tests      # engine: 377 tests
 dotnet test next/tests/QuranCode.Engine.Tests    # protocol: 82 tests
-cd next/apps/desktop && pnpm test                # interface logic: 51 tests
-cd next/apps/desktop && pnpm check               # types: 333 files, 0 errors
+cd next/apps/desktop && pnpm test                # interface logic: 59 tests
+cd next/apps/desktop && pnpm check               # types: 336 files, 0 errors
 cd next/apps/desktop/src-tauri && cargo test     # Rust bridge: 7 tests
 ```
 
@@ -288,7 +291,7 @@ boundaries from the original's data in `C#/`.
 ## License
 
 GPL-3.0, the license of the original QuranCode; see [LICENSE](LICENSE). The
-interface fonts (Amiri, Amiri Quran, Instrument Sans, IBM Plex Mono) are under
+interface fonts (Amiri Quran, Instrument Sans, IBM Plex Mono) are under
 the SIL Open Font License. The classic text comes from tanzil.net. The
 Submission edition export carries no license statement; its terms should be
 confirmed before a public release.

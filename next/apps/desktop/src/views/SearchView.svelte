@@ -1,4 +1,5 @@
 <script lang="ts">
+  import CharacterPalette from "../lib/components/CharacterPalette.svelte";
   import FrequencyForm from "../lib/components/FrequencyForm.svelte";
   import NumbersForm from "../lib/components/NumbersForm.svelte";
   import SearchResults from "../lib/components/SearchResults.svelte";
@@ -29,6 +30,9 @@
     { value: "all", label: "all of the words", roots: true },
     { value: "phrase", label: "the exact phrase", roots: false },
   ];
+
+  let termInput = $state<HTMLInputElement>();
+  let showPalette = $state(false);
 
   const SCOPES: { value: ScopeChoice; label: string }[] = [
     { value: "book", label: "the whole book" },
@@ -146,9 +150,18 @@
         lang="ar"
         dir="auto"
         bind:value={term}
+        bind:this={termInput}
         placeholder={kind === "text" ? "اكتب كلمة" : "جذر"}
         autocomplete="off"
       />
+      <button
+        type="button"
+        class="button palette-toggle"
+        aria-expanded={showPalette}
+        aria-controls="character-palette"
+        title="Letters to type with, limited to those the text mode keeps"
+        onclick={() => (showPalette = !showPalette)}>ا ب ت</button
+      >
 
       {#if kind === "text"}
         <div class="wordness" role="radiogroup" aria-label="Where the text must appear">
@@ -163,6 +176,16 @@
 
       <button type="submit" class="button primary" disabled={search.loading || !term.trim()}>Search</button>
     </form>
+    {#if showPalette}
+      <div id="character-palette">
+        <CharacterPalette
+          bind:value={term}
+          input={termInput}
+          textMode={app.currentSystem?.textMode ?? "Original"}
+          roots={kind === "roots"}
+        />
+      </div>
+    {/if}
     {/if}
 
     <div class="options">
@@ -261,6 +284,15 @@
     flex-wrap: wrap;
     align-items: center;
     gap: var(--space-3);
+  }
+
+  .palette-toggle {
+    font-family: var(--font-arabic);
+  }
+
+  #character-palette {
+    max-width: 36rem;
+    margin-top: var(--space-3);
   }
 
   .term {

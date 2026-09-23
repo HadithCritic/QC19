@@ -11,9 +11,6 @@ importers:
       '@fontsource-variable/instrument-sans':
         specifier: ^5.3.0
         version: 5.3.0
-      '@fontsource/amiri':
-        specifier: ^5.3.0
-        version: 5.3.0
       '@fontsource/amiri-quran':
         specifier: ^5.3.0
         version: 5.3.0
@@ -59,9 +56,6 @@ packages:
 
   '@fontsource/amiri-quran@5.3.0':
     resolution: {integrity: sha512-z/Y3JCqGWnWLpfJGBWPf7C42IxHjxxuwgcCHLmsU/hYd65GHXkZ/XTVpEGtWrEx9VlzdzMMRHDNTJvs8OwAeEw==}
-
-  '@fontsource/amiri@5.3.0':
-    resolution: {integrity: sha512-i4SWJnVIphj8556EdVzNrEG/Qu82k6JXjXTtSUIohx3tHmo2GHw1Kv60TWo+xjk7Yf1Etb2Gskh0lUFclTKyUw==}
 
   '@fontsource/ibm-plex-mono@5.3.0':
     resolution: {integrity: sha512-eTgnZjZEGk1QtD3ZstF+Vclo2HLAni8YMy34/DxllwZvyz1lR/1RF/xTiAquOBO7MvqBx8D2Ig2WCPMVfdZu7Q==}
@@ -656,8 +650,6 @@ snapshots:
   '@fontsource-variable/instrument-sans@5.3.0': {}
 
   '@fontsource/amiri-quran@5.3.0': {}
-
-  '@fontsource/amiri@5.3.0': {}
 
   '@fontsource/ibm-plex-mono@5.3.0': {}
 
