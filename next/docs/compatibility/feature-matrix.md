@@ -1,5 +1,13 @@
 # Feature matrix
 
+> **This is an inventory of the original, not a plan.**
+> [ADR 0004](../decisions/0004-code-19-scope.md) narrowed the project to Code 19
+> and removed audio, drawing, the standalone tools except InitialLetters,
+> multiple Arabic fonts, DNA symbols and the geometry calculators. Rows for
+> those features are kept so the record of what the original did stays
+> complete, but they are no longer work to be done. Read the statuses as
+> "what exists", never as "what is left".
+
 Every feature listed in `C#/QuranCode/Features.txt` (79 items), classified per brief §3.3 and
 §47. This is the guard against silent feature loss: nothing may be dropped
 without a row here saying so and why.

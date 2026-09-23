@@ -1,5 +1,11 @@
 # Work log: Phases 0 to 12
 
+> **Superseded by [ADR 0004](decisions/0004-code-19-scope.md).** These phases
+> assumed the goal was feature parity with the original. The project is now
+> scoped to Code 19, and the remaining phases in that plan are not being
+> carried out. This log stays as the record of how phases 0 to 6 were built
+> and what was decided along the way; several of those decisions still bind.
+
 Running record of the autonomous build: what was completed, each judgment
 call and why, each gated item and how it was handled, and any unresolved
 failures. Newest entries go at the bottom of each phase.

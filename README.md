@@ -1,8 +1,11 @@
 # QuranCode
 
-A desktop research tool for the numerical study of the Quran: letter-value
-(gematria-style) systems, number classification, live statistics for any
-selection of verses, and Arabic text search.
+A desktop research tool for **Code 19** — Rashad Khalifa's numerical analysis
+of the Quran: finding multiples of 19 in counts and values, and checking
+published results against the text. It also carries the general machinery that
+serves that work: letter-value (gematria-style) systems, number
+classification, live statistics for any selection of verses, and Arabic text
+search.
 
 This is a rebuild of **QuranCode 1433** by Ali Adams (qurancode.com), a
 Windows Forms application. The original is kept in [`C#/`](C%23/) as the
@@ -25,8 +28,10 @@ Six screens: **Read**, **Search**, **Values**, **Stats**, **Saved** and
 - Click a word for its root, its English meaning, its transliteration and its
   grammar from the Quranic Arabic Corpus. Alt+click a second word to measure
   the distance between them in chapters, verses, words and letters.
-- Any number of translations under each verse: the edition's own 13 and its
-  transliteration, plus 108 Tanzil translations from an optional pack.
+- Translations under each verse, Rashad Khalifa's English by default, with the
+  transliteration. (ADR 0004 narrows this to Khalifa, Emlaaei and the
+  transliteration; the other languages and the Tanzil pack are still present in
+  the code until that is carried out.)
 - Ratio coloring: split a verse, chapter, partition or the whole book at 1/π,
   1/e, 1/φ or any ratio, by letters or by value.
 - Back and forward through selections; F3 steps through bookmarks.
@@ -52,10 +57,10 @@ Six screens: **Read**, **Search**, **Values**, **Stats**, **Saved** and
 
 ### Values, Stats and Numbers
 
-- **Values.** Any Arabic text valued in all 407 letter-value systems at once.
-  122 research-only systems appear when **Research** is switched on. The 20
-  Base systems read a word's letters as digits in that base, as the original
-  does.
+- **Values.** Any Arabic text valued across the letter-value systems at once.
+  A core set shows by default; the rest of the 407 appear when **Research** is
+  switched on. The 20 Base systems read a word's letters as digits in that
+  base, as the original does.
 - **Stats.** Word frequencies, letter statistics, the Maths sums (C, V, C±V,
   C×V, C÷V split by odd, even, prime and composite), front-back symmetry, and
   the research lists (Allah words, look-alikes, doubles, repeats).
@@ -75,16 +80,21 @@ Six screens: **Read**, **Search**, **Values**, **Stats**, **Saved** and
   (`next/tests/golden/counting-options.tsv`).
 - Light, dark and automatic themes.
 
-Of the original's 79 listed features, **60 are done**, 1 is in the engine
-without a screen yet, 16 are still to do, 1 is deliberately dropped and 1 is
-covered by another row.
-[`next/docs/compatibility/feature-matrix.md`](next/docs/compatibility/feature-matrix.md)
-tracks each one, along with the 16 standalone tools the original shipped, which
-are all still to do.
+## Scope
 
-What remains is audio (4), folding in the standalone tools (5), two drawing
-features, and five smaller items: IndoPak fonts, the dynamic keyboard, DNA
-symbols, the expression calculator and the geometry calculators.
+[ADR 0004](next/docs/decisions/0004-code-19-scope.md) narrowed the project to
+Code 19. Audio, drawing, the standalone tools except InitialLetters, multiple
+Arabic fonts, DNA symbols and the geometry calculators are **out of scope**.
+
+Of the original's 79 features, 60 are built. The
+[feature matrix](next/docs/compatibility/feature-matrix.md) keeps a row for
+every one of them, including those now out of scope, as an inventory of what
+the original did — not as a list of work remaining.
+
+Four of Khalifa's published results already reproduce exactly from the
+Submission text: the word God occurs **2,698** times (19×142), the verse
+numbers of those verses sum to **118,123** (19×6,217), ق occurs **57** times
+in chapter 50 (19×3), and the Basmalah is **19** letters.
 
 ## The text
 
@@ -237,6 +247,7 @@ boundaries from the original's data in `C#/`.
 | [ADR 0001](next/docs/decisions/0001-core-language-and-ui-stack.md) | Why the engine stays in C# |
 | [ADR 0002](next/docs/decisions/0002-tauri-shell-over-dotnet-engine.md) | The Tauri app over a .NET engine |
 | [ADR 0003](next/docs/decisions/0003-editions-and-verse-zero.md) | Editions as databases; the Bismillah as verse 0 |
+| [ADR 0004](next/docs/decisions/0004-code-19-scope.md) | **Code 19 as the purpose; scope cut to match** |
 | [Feature matrix](next/docs/compatibility/feature-matrix.md) | All 79 original features and 16 tools, with status |
 | [Submission vs classic](next/docs/compatibility/submission-vs-classic.md) | Every verse where the two texts differ |
 | [Text normalization](next/docs/specs/text-normalization.md) | The two-stage pipeline, verified |
