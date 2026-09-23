@@ -20,6 +20,11 @@
   --lapis-ink: #ffffff;
   --gilt: #a9832a;
   --gilt-soft: #f4ecd8;
+  /* A number divisible by the reader's divisor (the original uses light cyan). */
+  --divisible: #d6efef;
+  /* The two parts of a ratio split (the original uses dark orange and blue). */
+  --ratio-first: #a8520a;
+  --ratio-second: #1f56b0;
   --rail: #172033;
   --rail-ink: #eef1f6;
   --danger: #b3261e;
@@ -86,6 +91,9 @@
     --lapis-ink: #0e131b;
     --gilt: #d4b060;
     --gilt-soft: #2c2616;
+    --divisible: #183a3a;
+    --ratio-first: #f0a35a;
+    --ratio-second: #86aefc;
     --rail: #090d13;
     --danger: #f2998f;
     --danger-soft: #3a1c1a;
@@ -116,6 +124,9 @@
   --lapis-ink: #0e131b;
   --gilt: #d4b060;
   --gilt-soft: #2c2616;
+  --divisible: #183a3a;
+  --ratio-first: #f0a35a;
+  --ratio-second: #86aefc;
   --rail: #090d13;
   --danger: #f2998f;
   --danger-soft: #3a1c1a;

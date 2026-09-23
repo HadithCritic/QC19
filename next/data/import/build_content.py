@@ -256,6 +256,28 @@ class Importer:
             )
         print(f"  chapters           {len(rows)}")
 
+    INITIALIZATION = {"Key": "key", "FullyInitialized": "full", "PartiallyInitialized": "partial"}
+
+    def import_initialization(self, sections) -> None:
+        """Which chapters open with Quranic initials (the metadata's initialization table).
+
+        The legacy Book forces chapter 42, whose initials span two verses
+        (حم, then عسق), to DoublyInitialized; the metadata lists it as fully
+        initialized.
+        """
+        types: dict[int, str] = {}
+        for row in sections.get("initialization", []):
+            kind = self.INITIALIZATION.get(row[3])
+            if kind is None:
+                self.errors.append(f"unknown initialization type {row[3]!r}")
+                continue
+            types[int(row[1])] = kind
+        types[42] = "double"
+        self.db.executemany("UPDATE chapters SET initialization = ? WHERE number = ?",
+                            [(kind, chapter) for chapter, kind in types.items()])
+        counts = {k: list(types.values()).count(k) for k in sorted(set(types.values()))}
+        print(f"  initialization     {counts}")
+
     def import_submission(self) -> None:
         """Replaces the classic text with the Submission edition's.
 
@@ -755,6 +777,7 @@ class Importer:
             basmala = "verse-zero" if self.edition == "submission" else "prefix"
             self.db.executemany("INSERT INTO corpus (key, value) VALUES (?,?)",
                                 [("edition", self.edition), ("basmala", basmala)])
+            self.import_initialization(sections)
             self.import_partitions(sections)
             self.import_text_modes()
             self.import_value_systems()

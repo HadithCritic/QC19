@@ -1,6 +1,8 @@
 <script lang="ts">
   import type { NumberInfo } from "../engine/types";
+  import { digitalRootIn, digitSumIn } from "../numberDisplay";
   import { CLASS_NAMES, CLASS_RULES, classLabel, familyLabel, formatFactors } from "../numbers";
+  import { app } from "../state/app.svelte";
 
   interface Props {
     info: NumberInfo;
@@ -11,6 +13,9 @@
   const family = $derived(familyLabel(info));
   const ordinal = $derived(classLabel(info));
   const isPrime = $derived(info.factors?.length === 1);
+  // In another base, digit sums are of the digits written in that base.
+  const digitSum = $derived(app.radix === 10 ? info.digitSum : digitSumIn(info.value, app.radix));
+  const digitalRoot = $derived(app.radix === 10 ? info.digitalRoot : digitalRootIn(info.value, app.radix));
 </script>
 
 <dl class="detail" data-class={info.code}>
@@ -24,11 +29,11 @@
   </div>
   <div class="row">
     <dt>Digit sum</dt>
-    <dd class="num">{info.digitSum}</dd>
+    <dd class="num">{digitSum}{#if app.radix !== 10}<span class="muted"> in base {app.radix}</span>{/if}</dd>
   </div>
   <div class="row">
     <dt>Digital root</dt>
-    <dd class="num">{info.digitalRoot}</dd>
+    <dd class="num">{digitalRoot}</dd>
   </div>
   {#if family}
     <div class="row">

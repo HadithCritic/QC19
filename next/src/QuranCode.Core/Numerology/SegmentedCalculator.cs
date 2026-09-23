@@ -90,6 +90,25 @@ public static class SegmentedCalculator
         ArgumentNullException.ThrowIfNull(profile);
         ArgumentNullException.ThrowIfNull(modifiers);
 
+        // A Base system reads each word's letters as digits and adds the words,
+        // with no calculation mode or additions, but only for a single verse:
+        // the legacy CalculateValue(Verse) decodes, while CalculateValue(List<Verse>),
+        // which chapters and the book go through, adds letter values like any
+        // other system. Both are reproduced, as with the word-level digit modes.
+        if (system.Radix is not null && singleVerse)
+        {
+            long sum = 0L;
+            for (int v = firstVerse; v < firstVerse + verseCount; v++)
+            {
+                int firstWord = segmentation.VerseFirstWord[v];
+                for (int w = firstWord; w < firstWord + segmentation.VerseWordCount[v]; w++)
+                {
+                    sum += system.BaseWordValue(segmentation.LetterChars.AsSpan(segmentation.WordFirstLetter[w], segmentation.WordLetterCount[w]));
+                }
+            }
+            return sum;
+        }
+
         bool positions = profile.AddPositions;
         bool distances = profile.AddDistancesToPrevious;
 

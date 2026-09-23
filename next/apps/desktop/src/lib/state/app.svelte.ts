@@ -1,11 +1,13 @@
 import { describeError, engine } from "../engine/client";
-import type { Bookmark, Chapter, CountingOptions, Distance, EngineInfo, ValueSystem, VerseRange, WordLocation } from "../engine/types";
+import type { Bookmark, Chapter, CountingOptions, Distance, EngineInfo, RatioOptions, ValueSystem, VerseRange, WordLocation } from "../engine/types";
 import { DEFAULT_COUNTING, parseCounting, type CountingKey } from "../counting";
 import { back, canGoBack, canGoForward, current, EMPTY_NAVIGATION, forward, visit, type Navigation } from "../navigation";
+import { DEFAULT_DIVISOR, DEFAULT_RADIX, wrapDivisor, wrapRadix } from "../numberDisplay";
+import { DEFAULT_RATIO } from "../ratioColors";
 import { chapterOfVerse, lastVerse } from "../numbers";
 import { visibleSystems } from "../systems";
 
-export type View = "read" | "search" | "values" | "numbers" | "saved";
+export type View = "read" | "search" | "values" | "numbers" | "statistics" | "saved";
 
 /** How long a selection must stay before it is written to browse history. */
 const BROWSE_RECORD_DELAY_MS = 1000;
@@ -16,10 +18,25 @@ interface Settings {
   research: boolean;
   valueSystem: string | null;
   counting: CountingOptions;
+  /** Numbers divisible by this are marked (Features.txt #16). */
+  divisor: number;
+  /** The base numbers are shown in (Features.txt #71). */
+  radix: number;
 }
 
 const SETTINGS_KEY = "qurancode.settings.v1";
-const DEFAULT_SETTINGS: Settings = { theme: "system", research: false, valueSystem: null, counting: DEFAULT_COUNTING };
+const DEFAULT_SETTINGS: Settings = {
+  theme: "system",
+  research: false,
+  valueSystem: null,
+  counting: DEFAULT_COUNTING,
+  divisor: DEFAULT_DIVISOR,
+  radix: DEFAULT_RADIX,
+};
+
+function wholeNumber(value: unknown, fallback: number, wrap: (n: number) => number): number {
+  return typeof value === "number" && Number.isInteger(value) ? wrap(value) : fallback;
+}
 
 // Preferences are a per-user convenience. Storage can be unavailable or
 // hold junk from an older build; either way the app starts on defaults.
@@ -36,6 +53,8 @@ function loadSettings(): Settings {
       research: parsed.research === true,
       valueSystem: typeof parsed.valueSystem === "string" ? parsed.valueSystem : null,
       counting,
+      divisor: wholeNumber(parsed.divisor, DEFAULT_DIVISOR, wrapDivisor),
+      radix: wholeNumber(parsed.radix, DEFAULT_RADIX, wrapRadix),
     };
   } catch {
     return DEFAULT_SETTINGS;
@@ -72,6 +91,13 @@ class AppState {
   /** The word last clicked in the reader, for F4, F7 and F8: its verse, display index (Bismillah header included) and text. */
   currentWord = $state<{ verse: number; word: number; text: string } | null>(null);
 
+  /** Ratio coloring in the reader (Features.txt #24), for this session. */
+  ratioOn = $state(false);
+  ratioOptions = $state<RatioOptions>({ ...DEFAULT_RATIO });
+
+  /** A number another view sent to the Numbers view to look up. */
+  numberToOpen = $state<string | null>(null);
+
   /** Bookmarks, loaded at start; null while unavailable (no user data file). */
   bookmarks = $state<Bookmark[] | null>(null);
 
@@ -85,6 +111,8 @@ class AppState {
   valueSystem = $state("");
   /** How the text is counted; the engine applies only what the text mode allows. */
   counting = $state<CountingOptions>({ ...DEFAULT_COUNTING });
+  divisor = $state(DEFAULT_DIVISOR);
+  radix = $state(DEFAULT_RADIX);
 
   systems = $derived(visibleSystems(this.allSystems, this.research));
   hasVerseZero = $derived(this.info?.basmala === "verse-zero");
@@ -98,6 +126,8 @@ class AppState {
     this.research = settings.research;
     this.valueSystem = settings.valueSystem ?? "";
     this.counting = settings.counting;
+    this.divisor = settings.divisor;
+    this.radix = settings.radix;
   }
 
   async start(): Promise<void> {
@@ -126,7 +156,25 @@ class AppState {
       research: this.research,
       valueSystem: this.valueSystem,
       counting: { ...this.counting },
+      divisor: this.divisor,
+      radix: this.radix,
     });
+  }
+
+  /** Looks a number up in the Numbers view. */
+  openNumber(value: string): void {
+    this.numberToOpen = value;
+    this.view = "numbers";
+  }
+
+  setDivisor(divisor: number): void {
+    this.divisor = wrapDivisor(divisor);
+    this.persist();
+  }
+
+  setRadix(radix: number): void {
+    this.radix = wrapRadix(radix);
+    this.persist();
   }
 
   setResearch(on: boolean): void {

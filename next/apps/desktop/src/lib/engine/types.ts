@@ -31,6 +31,8 @@ export interface Chapter {
   /** Absolute number of the chapter's first row: its verse 0 when it has one. */
   firstVerse: number;
   hasVerseZero: boolean;
+  /** Quranic initials: key (chapter 1), full, partial, double (42) or none. */
+  initialization: "key" | "full" | "partial" | "double" | "none";
 }
 
 export interface ValueSystem {
@@ -176,6 +178,120 @@ export interface SearchVerse extends Verse {
   matchCount: number;
   /** Similarity to the starting verse (0 to 1), for a similar-verse search by text. */
   score: number | null;
+}
+
+export interface WordFrequencies {
+  total: number;
+  unique: number;
+  words: { word: string; count: number }[];
+}
+
+export interface LetterStatistic {
+  letter: string;
+  order: number;
+  count: number;
+  positionSum: number;
+  distanceSum: number;
+}
+
+export type LetterScope = "book" | "chapter" | "verse" | "word";
+
+export interface QuantitySums {
+  sum: number;
+  odd: number;
+  even: number;
+  prime: number;
+  composite: number;
+  ratio: number | null;
+}
+
+export interface CvSums {
+  count: number;
+  c: QuantitySums;
+  v: QuantitySums;
+  plus: QuantitySums;
+  minus: QuantitySums;
+  times: QuantitySums;
+  divided: QuantitySums;
+}
+
+export interface Maths {
+  chapters: CvSums;
+  verses: CvSums;
+}
+
+export type SymmetryKind = "wordLetters" | "verseWords" | "verseLetters";
+
+export interface Symmetry {
+  units: number;
+  points: { position: number; total: number; positionSum: number; totalSum: number }[];
+  percent: number;
+}
+
+export interface AllahSummary {
+  allah: number;
+  withAllah: number;
+  withLillah: number;
+  total: number;
+}
+
+export type ResearchMethod = "allah" | "nonAllah" | "all" | "double" | "repeated";
+
+export interface ResearchTable {
+  columns: string[];
+  rowCount: number;
+  offset: number;
+  rows: string[][];
+  tsv: string | null;
+}
+
+export type RatioScope = "verse" | "chapter" | "page" | "station" | "part" | "group" | "half" | "quarter" | "bowing" | "book";
+export type RatioBoundary = "letter" | "word" | "sentence" | "verse" | "chapter";
+
+export interface RatioOptions {
+  scope: RatioScope;
+  ratio: number;
+  measure: "letters" | "value";
+  length: "short" | "long";
+  boundary: RatioBoundary;
+}
+
+export interface RatioUnit {
+  firstVerse: number;
+  lastVerse: number;
+  colored: boolean;
+  splitVerse: number;
+  splitWord: number;
+  splitLetters: number;
+  firstLetters: number;
+  firstValue: string;
+  secondLetters: number;
+  secondValue: string;
+}
+
+export interface Pair {
+  a: number;
+  b: number;
+}
+
+export interface NumberDetails {
+  number: NumberInfo;
+  divisorCount: number | null;
+  divisors: string[] | null;
+  divisorSum: string | null;
+  power: number | null;
+  carmichael: boolean;
+  fourN: { form: "4n+1" | "4n-1"; n: number; ordinal: number | null } | null;
+  splits: { squareSums: Pair[]; squareDifferences: Pair[]; cubeSums: Pair[]; cubeDifferences: Pair[] } | null;
+  chain: {
+    text: string;
+    length: number;
+    sum: number;
+    primesAsZero: number;
+    primesAsZeroReversed: number;
+    primesAsOne: number;
+    primesAsOneReversed: number;
+  } | null;
 }
 
 export type Grouping = "any" | "all" | "phrase";

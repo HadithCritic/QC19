@@ -26,7 +26,8 @@ internal sealed record ChapterDto(
     string RevelationPlace,
     int VerseCount,
     int FirstVerse,
-    bool HasVerseZero);
+    bool HasVerseZero,
+    string Initialization);
 
 internal sealed record ValueSystemDto(
     string Name,
@@ -60,6 +61,143 @@ internal sealed record NumberDto(
     IReadOnlyList<long>? Factors);
 
 internal sealed record LetterCountDto(string Letter, int Count);
+
+/// <summary>
+/// Parameters shared by the selection lists. Each method reads what it needs:
+/// <c>WithMarks</c> for words, <c>Scope</c> (book, chapter, verse, word) for
+/// letters, <c>AbsoluteDifference</c> and <c>VOverC</c> for the maths sums,
+/// <c>Kind</c> (wordLetters, verseWords, verseLetters) and <c>Boundaries</c> for symmetry.
+/// </summary>
+internal sealed record SelectionParams(
+    int First,
+    int Last,
+    string? ValueSystem = null,
+    CountingDto? Counting = null,
+    bool WithMarks = false,
+    string? Scope = null,
+    bool AbsoluteDifference = false,
+    bool VOverC = false,
+    string? Kind = null,
+    bool Boundaries = false);
+
+internal sealed record WordCountDto(string Word, int Count);
+
+internal sealed record WordFrequenciesDto(int Total, int Unique, IReadOnlyList<WordCountDto> Words);
+
+internal sealed record LetterStatisticDto(string Letter, int Order, int Count, long PositionSum, long DistanceSum);
+
+/// <param name="Ratio">d/u, null when no value occurs once.</param>
+internal sealed record QuantitySumsDto(double Sum, double Odd, double Even, double Prime, double Composite, double? Ratio);
+
+internal sealed record CvSumsDto(
+    int Count,
+    QuantitySumsDto C,
+    QuantitySumsDto V,
+    QuantitySumsDto Plus,
+    QuantitySumsDto Minus,
+    QuantitySumsDto Times,
+    QuantitySumsDto Divided);
+
+/// <summary>The Maths tab: chapter sums (C = chapter, V = its verses) and verse sums (V = verse number).</summary>
+internal sealed record MathsDto(CvSumsDto Chapters, CvSumsDto Verses);
+
+internal sealed record SymmetryPointDto(int Position, long Total, long PositionSum, long TotalSum);
+
+internal sealed record SymmetryDto(int Units, IReadOnlyList<SymmetryPointDto> Points, double Percent);
+
+/// <param name="Method">allah, nonAllah, all, double or repeated.</param>
+/// <param name="Gap">For repeated: words between the two.</param>
+/// <param name="Tsv">Return the whole table as tab-separated text instead of a page of rows.</param>
+internal sealed record ResearchParams(
+    string Method,
+    int? First = null,
+    int? Last = null,
+    int Gap = 0,
+    string? ValueSystem = null,
+    CountingDto? Counting = null,
+    int? Offset = null,
+    int? Limit = null,
+    bool Tsv = false);
+
+internal sealed record ResearchTableDto(
+    IReadOnlyList<string> Columns,
+    int RowCount,
+    int Offset,
+    IReadOnlyList<IReadOnlyList<string>> Rows,
+    string? Tsv);
+
+internal sealed record AllahSummaryDto(int Allah, int WithAllah, int WithLillah, int Total);
+
+/// <param name="Scope">verse, chapter, page, station, part, group, half, quarter, bowing or book.</param>
+/// <param name="Measure">letters or value.</param>
+/// <param name="Length">short (the ratio) or long (one minus it).</param>
+/// <param name="Boundary">letter, word, sentence, verse or chapter.</param>
+internal sealed record RatioParams(
+    int Chapter,
+    string? Scope = null,
+    double? Ratio = null,
+    string? Measure = null,
+    string? Length = null,
+    string? Boundary = null,
+    string? ValueSystem = null,
+    CountingDto? Counting = null);
+
+/// <summary>
+/// One unit's split. <c>SplitVerse</c> and <c>SplitWord</c> (an index into the
+/// verse's displayed words, negative inside a Bismillah header) name the word
+/// the first part ends in, and <c>SplitLetters</c> how many of its letters it
+/// takes.
+/// </summary>
+internal sealed record RatioUnitDto(
+    int FirstVerse,
+    int LastVerse,
+    bool Colored,
+    int SplitVerse,
+    int SplitWord,
+    int SplitLetters,
+    int FirstLetters,
+    string FirstValue,
+    int SecondLetters,
+    string SecondValue);
+
+/// <summary>A pair (a, b) of a split such as a² + b²; numbers stay under a million, so plain integers.</summary>
+internal sealed record PairDto(long A, long B);
+
+internal sealed record SplitsDto(
+    IReadOnlyList<PairDto> SquareSums,
+    IReadOnlyList<PairDto> SquareDifferences,
+    IReadOnlyList<PairDto> CubeSums,
+    IReadOnlyList<PairDto> CubeDifferences);
+
+/// <param name="Ordinal">1-based place among primes (or composites) of the same form; null when too far to count.</param>
+internal sealed record FourNDto(string Form, long N, long? Ordinal);
+
+internal sealed record IndexChainDto(
+    string Text,
+    int Length,
+    long Sum,
+    long PrimesAsZero,
+    long PrimesAsZeroReversed,
+    long PrimesAsOne,
+    long PrimesAsOneReversed);
+
+/// <summary>
+/// The value panel's further facts about a number (Features.txt #6, #7, #9 and
+/// the divisor and power colors). Parts are null where they do not apply or
+/// the number is beyond what they are computed for.
+/// </summary>
+/// <param name="Divisors">Every divisor, when there are at most 1,000 (decimal strings).</param>
+/// <param name="Power">The highest power (2 to 10) the number is.</param>
+internal sealed record NumberDetailsDto(
+    NumberDto Number,
+    int? DivisorCount,
+    IReadOnlyList<string>? Divisors,
+    string? DivisorSum,
+    int? Power,
+    bool Carmichael,
+    FourNDto? FourN,
+    SplitsDto? Splits,
+    IndexChainDto? Chain);
 
 /// <summary>
 /// A verse's value and class code, for coloring verse markers; both null for a

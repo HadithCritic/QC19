@@ -44,9 +44,9 @@ without a row here saying so and why.
 | 48 | Add W, V, C and distances | port | **done** | Same |
 | 49 | Add V, C and distances | port | **done** | Same |
 | 50 | Add C | port | **done** | Same |
-| 16 | Highlight values divisible by a user divisor | port | todo | Presentation over existing values |
-| 24 | Ratio-based colorization, golden ratio default | port | todo | UI |
-| 71 | Base 2–36 number systems | port | todo | Legacy `Radix`; systems named `Base*` |
+| 16 | Highlight values divisible by a user divisor | port | **done** | Divisor 2 to 9999, default 19, wraps as in the original; every number chip and the Maths sums are marked; powers get a dotted underline |
+| 24 | Ratio-based colorization, golden ratio default | port | **done** | Reader colors the parts of each verse, chapter, partition or the book at 1/π, 1/e, 1/φ, 1/♥ or any ratio, by letters or value, at a letter, word, pause mark, verse or chapter end, with totals |
+| 71 | Base 2–36 number systems | port | **done** | Numbers shown and typed in any base 2 to 36, digit sums in that base; the 20 Base letter-value systems value words by their digits (golden: base-systems.tsv) |
 | 72 | User-defined SimplifiedXX books | port | engine | `text_modes` + `text_mode_rules` are data |
 | 23 | DNA symbols (A T C G) in prime proportions | port | todo | Legacy `DNASequenceSystem` |
 | 30 | Expression calculator, bases 2–36 | **rewrite** | todo | Brief §26: legacy uses runtime code compilation for ordinary arithmetic; replace with a parser |
@@ -78,15 +78,15 @@ without a row here saying so and why.
 
 | # | Feature | Class | Status | Notes |
 | ---: | --- | --- | --- | --- |
-| 3 | Full statistics of "Allah" and derivatives | port | engine | Search + counts |
-| 10 | Allah / non-Allah / repeated / all word info | port | engine | Same |
-| 21 | Word frequency list, multi-select | port | engine | Frequencies derivable |
-| 22 | Letter frequency list with prime factorization | port | engine | Frequencies shown for any selection; factorization of the counts todo |
-| 12–13 | C/V classification odd/even, prime/composite | port | engine | Number classes (U, AP, XP, AC, XC) and ordinals done and tested; chapter and verse classification lists todo |
-| 6–7 | 4n±1 prime and composite decompositions | port | todo | Same |
-| 8 | Front-back symmetry | port | todo | |
-| 9 | Waleed's CPIndexChain | port | todo | |
-| 5 | Initialized vs non-initialized chapter selection | port | todo | Initial-letter metadata is in `quran-metadata.txt` |
+| 3 | Full statistics of "Allah" and derivatives | port | **done** | Allah, words with الله, words with لله: 2,816 in the classic text, the figure Features.txt gives; 2,815 in Submission |
+| 10 | Allah / non-Allah / repeated / all word info | port | **done** | The research lists (Allah, non-Allah, all, double, repeated words) paged, or copied as tabbed text |
+| 21 | Word frequency list, multi-select | port | **done** | Stats view: by frequency or word, with marks in Original mode, chosen words totaled and searched together |
+| 22 | Letter frequency list with prime factorization | port | **done** | Order, frequency, Σ position, Σ distance, sortable both ways; chosen letters totaled; any total opens in Numbers for factors |
+| 12–13 | C/V classification odd/even, prime/composite | port | **done** | Maths sums for chapters and verses with d/u (checked against the original's help file: 7906/4885); chapter selection by the kind of number and verse count |
+| 6–7 | 4n±1 prime and composite decompositions | port | **done** | Form, place among its kind, and every sum and difference of two squares and two cubes up to a million |
+| 8 | Front-back symmetry | port | **done** | Letters per word, words or letters per verse, with or without the boundaries |
+| 9 | Waleed's CPIndexChain | port | **done** | Chain, both bit readings each way, sum and length |
+| 5 | Initialized vs non-initialized chapter selection | port | **done** | Imported per chapter (42 doubly, as the original forces); marked in the chapter list and selectable |
 | 57 | Draw locations of "Allah" | port | todo | UI |
 | 58 | Draw values as squares, golden ratios, spirals | port | todo | UI |
 

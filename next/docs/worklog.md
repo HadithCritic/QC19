@@ -340,3 +340,66 @@ root search with `-`, F3, chapter shading, F6 on 55:13, number search for
 chapters of 7 verses, F9 on 1:1. **Phase 4 complete.**
 
 ---
+
+## Phase 5: Statistics and number theory
+
+As before, an agent read the original's code for these features first.
+
+- **Base value systems (fix, changes behavior).** The 20 "Base" letter-value
+  systems were valued as plain sums. The original reads a word's letter
+  values as the digits of a number in that base, first letter least
+  significant. It does this only for a word and a single verse; chapters,
+  the book and runs of verses go through its ordinary sum. Both are
+  reproduced. OracleDump now captures every chapter, the book and sample
+  verses under all 20 systems in a new golden file, base-systems.tsv (2,440
+  rows, all matching). No existing baseline was changed.
+- Number details: divisors (listed up to 1,000), the highest power, Carmichael
+  numbers, the 4n±1 form and its 1-based place among primes or composites of
+  that form (as the original shows it), every sum and difference of two
+  squares and two cubes up to a million, and Waleed's CP index chain with its
+  four bit readings. The chain of 619 is P114-C83-P23-P9-C4-C1.
+- Divisor (2 to 9999, default 19) and base (2 to 36) settings, kept with the
+  other preferences. Every number chip shows the base and marks divisible
+  numbers; squares from 49, cubes from 125, 5th powers from 243 and 7th powers
+  from 128 get a dotted underline, the thresholds the original colors at.
+  Digit sums follow the base, and numbers typed in the Numbers view are read
+  in it. **Decision:** the original's "interesting number" colors have no
+  definition in the code that could be reproduced, so they are not shown.
+- A Stats view for the selection (or the open chapter): word frequencies,
+  letter statistics (order, frequency, Σ position, Σ distance, with position
+  scope), the Maths sums, symmetry, and the research lists.
+- Maths sums: C, V, C+V, C−V (or |C−V|), C×V and C÷V (or V÷C), each split into
+  odd, even, prime and composite, with d/u. **Check:** the original's help file
+  gives d/u = 7906/4885 for C+V over the whole book; the test matches it.
+- Allah statistics: the classic text gives 2,816 (الله 2,265, other words with
+  الله 402, words with لله 149), the figure Features.txt states. The
+  Submission edition gives 2,815: it leaves out 9:128-129, and 9:129 has
+  الله once.
+- Research lists: Allah words, look-alikes, all words, double words and
+  repeated words with a gap, over the selection or the book, paged and
+  copyable as tabbed text. **Decision:** the original writes these to files
+  in a Research folder; copying keeps the app from writing files unasked.
+- Chapter initials imported per chapter (key 1, full 18, partial 10, and 42
+  as doubly initialized, which the original forces in code). The chapter
+  list marks them and selects chapters by initials, place, heavy or light, a
+  Mersenne exponent, and the kind of number and verse count. **Decision:**
+  the original's selection makes a chapter selection; here it filters the
+  chapter list and totals what it shows, since a selection is one range.
+- Ratio coloring in the reader, following `Colorize*UserRatiosText`: every
+  scope from a verse to the book, by letters or value, the ratio first or
+  last, and a boundary at a letter, a word's end, a pause mark, a verse's end
+  or a chapter's end. A split inside a word cuts it after its letters.
+  **Decision:** the ratio options last for the session; the original saves
+  its ratio in its settings file.
+- **Decision:** the original computes symmetry only when translations are
+  showing, which reads as an accident; here it works on the Arabic text.
+
+### Phase 5 checks
+
+All passing: engine 268, protocol 75, interface 51, Rust 7, rustfmt, clippy,
+svelte-check 0 errors, oracle reproduces (with base-systems.tsv). Checked in
+the browser: ratio colors on chapter 1, each Stats tab, the number facts of
+619, and the chapter classes (29 chapters open with initials).
+**Phase 5 complete.**
+
+---

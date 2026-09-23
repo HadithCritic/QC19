@@ -1,5 +1,6 @@
 <script lang="ts">
   import NumberChip from "../lib/components/NumberChip.svelte";
+  import { PRESETS, TESTS, countedVerses, selectChapters, type ChapterPreset, type NumberTest } from "../lib/chapterClasses";
   import { CHAPTER_SORTS, sortChapters, type ChapterSort } from "../lib/chapterSort";
   import { engine, latest } from "../lib/engine/client";
   import type { Chapter, ChapterStats } from "../lib/engine/types";
@@ -12,6 +13,10 @@
   let descending = $state(false);
   let stats = $state<Map<number, ChapterStats>>(new Map());
   let hovered = $state<{ chapter: Chapter; top: number } | null>(null);
+  let preset = $state<ChapterPreset>("all");
+  let numberTest = $state<NumberTest>("any");
+  let versesTest = $state<NumberTest>("any");
+  const classFiltered = $derived(preset !== "all" || numberTest !== "any" || versesTest !== "any");
 
   const load = latest(engine.chapterStats);
 
@@ -31,17 +36,26 @@
   // Matches chapter number, Arabic name, transliteration or English name.
   const chapters = $derived.by(() => {
     const query = filter.trim().toLowerCase();
+    const classes = selectChapters(app.chapters, preset, numberTest, versesTest, !app.verseZeroExcluded);
     const matching = query
-      ? app.chapters.filter(
+      ? classes.filter(
           (c) =>
             String(c.number) === query ||
             c.name.includes(query) ||
             c.transliteratedName.toLowerCase().includes(query) ||
             c.englishName.toLowerCase().includes(query),
         )
-      : app.chapters;
+      : classes;
     return sortChapters(matching, stats, sort, descending);
   });
+
+  const INITIAL_TITLES: Record<Chapter["initialization"], string | undefined> = {
+    key: "The key chapter",
+    full: "Opens with initials on their own",
+    partial: "Opens with initials within a verse",
+    double: "Opens with initials in two verses",
+    none: undefined,
+  };
 
   function show(chapter: Chapter, event: Event): void {
     const item = (event.currentTarget as HTMLElement).getBoundingClientRect();
@@ -78,6 +92,33 @@
         onclick={() => (descending = !descending)}>{descending ? "↓" : "↑"}</button
       >
     </div>
+    <details class="classes" open={classFiltered}>
+      <summary>Chapter classes</summary>
+      <label class="visually-hidden" for="chapter-preset">Which chapters</label>
+      <select id="chapter-preset" class="field" bind:value={preset}>
+        {#each PRESETS as option (option.value)}<option value={option.value}>{option.label}</option>{/each}
+      </select>
+      <label>
+        number
+        <select class="field" bind:value={numberTest}>
+          {#each TESTS as option (option.value)}<option value={option.value}>{option.label}</option>{/each}
+        </select>
+      </label>
+      <label>
+        verses
+        <select class="field" bind:value={versesTest}>
+          {#each TESTS as option (option.value)}<option value={option.value}>{option.label}</option>{/each}
+        </select>
+      </label>
+      {#if classFiltered}
+        <p class="matching">
+          <span class="num">{chapters.length}</span> chapters,
+          <span class="num">{chapters.reduce((sum, c) => sum + countedVerses(c, !app.verseZeroExcluded), 0)}</span> verses,
+          numbers adding to <span class="num">{chapters.reduce((sum, c) => sum + c.number, 0)}</span>
+          <button type="button" class="reset" onclick={() => ((preset = "all"), (numberTest = "any"), (versesTest = "any"))}>Show all</button>
+        </p>
+      {/if}
+    </details>
     {#if matches}
       <p class="matching">Matches in <span class="num">{matchingChapters}</span> chapters</p>
     {/if}
@@ -97,7 +138,7 @@
           onfocus={(e) => show(chapter, e)}
           onblur={() => (hovered = null)}
         >
-          <span class="number num">{chapter.number}</span>
+          <span class="number num" data-initials={chapter.initialization} title={INITIAL_TITLES[chapter.initialization]}>{chapter.number}</span>
           <span class="names">
             <span class="latin">{chapter.transliteratedName}</span>
             <span class="english">{chapter.englishName}</span>
@@ -192,6 +233,65 @@
 
   button.matched {
     background: color-mix(in srgb, var(--gilt) var(--match), transparent);
+  }
+
+  .classes {
+    display: grid;
+    gap: var(--space-1);
+    font-size: var(--text-xs);
+  }
+
+  .classes summary {
+    color: var(--ink-muted);
+    cursor: pointer;
+  }
+
+  .classes .field {
+    width: 100%;
+    height: 1.75rem;
+    font-size: var(--text-xs);
+  }
+
+  .classes label {
+    display: grid;
+    grid-template-columns: 3.2rem 1fr;
+    align-items: center;
+    color: var(--ink-muted);
+  }
+
+  .reset {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--lapis);
+    font-size: var(--text-xs);
+  }
+
+  /* Chapters that open with initials carry a gilt mark under their number,
+     stronger from partial to full to double (the original shades the list). */
+  .number[data-initials="partial"],
+  .number[data-initials="full"],
+  .number[data-initials="double"],
+  .number[data-initials="key"] {
+    text-decoration: underline 2px;
+    text-underline-offset: 0.3em;
+  }
+
+  .number[data-initials="partial"] {
+    text-decoration-color: color-mix(in srgb, var(--gilt) 45%, transparent);
+  }
+
+  .number[data-initials="full"] {
+    text-decoration-color: var(--gilt);
+  }
+
+  .number[data-initials="double"] {
+    text-decoration-style: double;
+    text-decoration-color: var(--gilt);
+  }
+
+  .number[data-initials="key"] {
+    text-decoration-color: var(--ink);
   }
 
   .matching {

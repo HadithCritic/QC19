@@ -1,9 +1,11 @@
 <script lang="ts">
   import { tick } from "svelte";
   import Notice from "../lib/components/Notice.svelte";
+  import RatioControl from "../lib/components/RatioControl.svelte";
   import Rosette from "../lib/components/Rosette.svelte";
   import { describeError, engine, latest } from "../lib/engine/client";
-  import type { ClassCode, Verse } from "../lib/engine/types";
+  import type { ClassCode, RatioUnit, Verse } from "../lib/engine/types";
+  import { cutWord, partOf } from "../lib/ratioColors";
   import { CLASS_NAMES } from "../lib/numbers";
   import { keySearch, nextBookmark } from "../lib/readerKeys";
   import { app } from "../lib/state/app.svelte";
@@ -18,6 +20,22 @@
   let error = $state<string | null>(null);
   let loading = $state(true);
   let scroller: HTMLElement | undefined = $state();
+
+  let ratioUnits = $state<RatioUnit[]>([]);
+  const loadRatio = latest(engine.ratioSplit);
+
+  $effect(() => {
+    if (!app.ratioOn || !app.valueSystem) {
+      ratioUnits = [];
+      return;
+    }
+    loadRatio(app.chapter, { ...app.ratioOptions }, app.valueSystem, { ...app.counting })
+      .then(({ current, value }) => {
+        if (current) ratioUnits = value;
+      })
+      // The text reads the same without colors; the control shows no totals.
+      .catch(() => (ratioUnits = []));
+  });
 
   const loadVerses = latest(engine.chapterVerses);
   const loadValues = latest(engine.chapterValues);
@@ -109,6 +127,15 @@
     app.selectVerse(verse.number, event.shiftKey);
   }
 
+  function ratioPart(verse: number, index: number) {
+    return ratioUnits.length ? partOf(ratioUnits, verse, index) : null;
+  }
+
+  function splitLetters(verse: number, index: number): number {
+    const part = ratioPart(verse, index);
+    return part?.part === "split" ? part.letters : 0;
+  }
+
   function isCurrentWord(verse: Verse, index: number): boolean {
     return app.currentWord?.verse === verse.number && app.currentWord.word === displayIndex(verse, index);
   }
@@ -196,6 +223,7 @@
         {chapter.revelationPlace} · <span class="num">{chapter.verseCount}</span> verses{chapter.hasVerseZero ? " and the Bismillah as verse 0" : ""} · revelation order <span class="num">{chapter.revelationOrder}</span>
         <button type="button" class="link" onclick={() => app.openChapter(chapter.number)}>Select chapter</button>
       </p>
+      <RatioControl units={ratioUnits} />
     </header>
 
     {#if verses[0]?.bismillah}
@@ -221,7 +249,8 @@
               class:measure-from={isMeasured(verse.number, index, "from")}
               class:measure-to={isMeasured(verse.number, index, "to")}
               class:current-word={isCurrentWord(verse, index)}
-              data-word={index}>{word}</span>{" "}{/each}<Rosette number={verse.numberInChapter} code={codes.get(verse.number)?.code ?? null} />{#if uncounted(verse)}<span class="note" lang="en" dir="ltr">not counted</span>{/if}</div></li>
+              data-ratio={ratioPart(verse.number, index)?.part}
+              data-word={index}>{#if ratioPart(verse.number, index)?.part === "split"}{@const [a, b] = cutWord(word, splitLetters(verse.number, index))}<span class="ratio-first">{a}</span><span class="ratio-second">{b}</span>{:else}{word}{/if}</span>{" "}{/each}<Rosette number={verse.numberInChapter} code={codes.get(verse.number)?.code ?? null} />{#if uncounted(verse)}<span class="note" lang="en" dir="ltr">not counted</span>{/if}</div></li>
       {/each}
     </ol>
 
@@ -331,6 +360,16 @@
 
   .word {
     border-radius: 3px;
+  }
+
+  .word[data-ratio="first"],
+  .ratio-first {
+    color: var(--ratio-first);
+  }
+
+  .word[data-ratio="second"],
+  .ratio-second {
+    color: var(--ratio-second);
   }
 
   .word.current-word {

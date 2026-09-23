@@ -56,7 +56,9 @@ CREATE TABLE chapters (
     verse_count         INTEGER NOT NULL,      -- numbered verses, excluding a verse 0
     first_verse         INTEGER NOT NULL,      -- absolute number of the chapter's first row (its verse 0 if any)
     has_verse_zero      INTEGER NOT NULL DEFAULT 0, -- 1: the Bismillah is stored as verse 0
-    bowing_count        INTEGER NOT NULL
+    bowing_count        INTEGER NOT NULL,
+    -- Quranic initials: key (chapter 1), full, partial, double (42) or none
+    initialization      TEXT    NOT NULL DEFAULT 'none'
 );
 
 CREATE TABLE verses (

@@ -1,10 +1,14 @@
 <script lang="ts">
+  import DisplaySettings from "../lib/components/DisplaySettings.svelte";
   import NumberChip from "../lib/components/NumberChip.svelte";
   import NumberDetail from "../lib/components/NumberDetail.svelte";
+  import NumberFacts from "../lib/components/NumberFacts.svelte";
   import Notice from "../lib/components/Notice.svelte";
   import { describeError, engine } from "../lib/engine/client";
-  import type { NumberInfo } from "../lib/engine/types";
+  import type { NumberDetails, NumberInfo } from "../lib/engine/types";
+  import { fromRadix } from "../lib/numberDisplay";
   import { CLASS_NAMES, CLASS_RULES } from "../lib/numbers";
+  import { app } from "../lib/state/app.svelte";
 
   // Look up any whole number: its class, position among primes or composites,
   // digit sum and root, and factors.
@@ -14,6 +18,7 @@
 
   let text = $state("");
   let info = $state<NumberInfo | null>(null);
+  let details = $state<NumberDetails | null>(null);
   let error = $state<string | null>(null);
   let loading = $state(false);
 
@@ -23,9 +28,36 @@
     loading = true;
     error = null;
     try {
-      info = await engine.analyzeNumber(value);
+      // A number typed while another base is chosen is read in that base.
+      const decimal = app.radix === 10 ? value : fromRadix(value.replace(/,/g, ""), app.radix);
+      if (decimal === null) throw new Error(`"${value}" is not a number in base ${app.radix}.`);
+      [info, details] = await Promise.all([engine.analyzeNumber(decimal), engine.numberDetails(decimal)]);
     } catch (e) {
       info = null;
+      details = null;
+      error = describeError(e);
+    } finally {
+      loading = false;
+    }
+  }
+
+  // A number sent from another view (a total, a value) is looked up at once, in decimal.
+  $effect(() => {
+    const sent = app.numberToOpen;
+    if (sent === null) return;
+    app.numberToOpen = null;
+    void analyzeDecimal(sent);
+  });
+
+  async function analyzeDecimal(value: string): Promise<void> {
+    loading = true;
+    error = null;
+    text = value;
+    try {
+      [info, details] = await Promise.all([engine.analyzeNumber(value), engine.numberDetails(value)]);
+    } catch (e) {
+      info = null;
+      details = null;
       error = describeError(e);
     } finally {
       loading = false;
@@ -43,9 +75,10 @@
     <h1 id="numbers-title">Look up a number</h1>
     <form onsubmit={submit}>
       <label class="visually-hidden" for="number-input">Whole number</label>
-      <input id="number-input" class="field num" inputmode="numeric" bind:value={text} placeholder="8317" autocomplete="off" />
+      <input id="number-input" class="field num" inputmode={app.radix > 10 ? "text" : "numeric"} bind:value={text} placeholder="8317" autocomplete="off" />
       <button type="submit" class="button primary" disabled={loading || !text.trim()}>Look up</button>
     </form>
+    <DisplaySettings />
     <p class="examples">
       Try
       {#each EXAMPLES as example (example)}
@@ -61,6 +94,7 @@
       <div class="result">
         <NumberChip value={info.value} code={info.code} size="lg" />
         <NumberDetail {info} />
+        {#if details}<NumberFacts {details} />{/if}
       </div>
     {:else}
       <Notice title="Enter a whole number" detail="Negative numbers are classified by their magnitude, as the original software does." />

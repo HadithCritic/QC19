@@ -35,7 +35,7 @@ namespace QuranCode.Core;
 /// cached per (text mode, effective options).
 /// </para>
 /// </remarks>
-public sealed class QuranCodeEngine : IDisposable
+public sealed partial class QuranCodeEngine : IDisposable
 {
     private readonly ContentRepository _content;
     private readonly Dictionary<bool, CorpusView> _views = [];
@@ -188,6 +188,11 @@ public sealed class QuranCodeEngine : IDisposable
         for (int w = 0; w < values.Length; w++)
         {
             int first = segmentation.WordFirstLetter[w];
+            if (system.Radix is not null)
+            {
+                values[w] = system.BaseWordValue(segmentation.LetterChars.AsSpan(first, segmentation.WordLetterCount[w]));
+                continue;
+            }
             for (int l = first; l < first + segmentation.WordLetterCount[w]; l++) values[w] += system[segmentation.LetterChars[l]];
         }
         return _wordValues[key] = values;

@@ -263,7 +263,7 @@ public sealed class ContentRepository : IDisposable
         command.CommandText =
             """
             SELECT number, name, transliterated_name, english_name,
-                   revelation_order, revelation_place, verse_count, first_verse, has_verse_zero
+                   revelation_order, revelation_place, verse_count, first_verse, has_verse_zero, initialization
             FROM chapters ORDER BY number
             """;
 
@@ -274,7 +274,7 @@ public sealed class ContentRepository : IDisposable
             result.Add(new Chapter(
                 reader.GetInt32(0), reader.GetString(1), reader.GetString(2),
                 reader.GetString(3), reader.GetInt32(4), reader.GetString(5),
-                reader.GetInt32(6), reader.GetInt32(7), reader.GetBoolean(8)));
+                reader.GetInt32(6), reader.GetInt32(7), reader.GetBoolean(8), reader.GetString(9)));
         }
         return [.. result];
     }

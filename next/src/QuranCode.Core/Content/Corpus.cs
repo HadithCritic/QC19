@@ -16,6 +16,7 @@ public sealed record CorpusInfo(string Edition, BasmalaMode Basmala);
 /// <summary>A chapter, as a value rather than an object with back-references.</summary>
 /// <param name="VerseCount">Numbered verses, not counting a verse 0.</param>
 /// <param name="FirstVerse">Absolute number of the chapter's first row: its verse 0 when it has one.</param>
+/// <param name="Initialization">Quranic initials: key (chapter 1), full, partial, double (42) or none.</param>
 public readonly record struct Chapter(
     int Number,
     string Name,
@@ -25,7 +26,8 @@ public readonly record struct Chapter(
     string RevelationPlace,
     int VerseCount,
     int FirstVerse,
-    bool HasVerseZero = false)
+    bool HasVerseZero = false,
+    string Initialization = "none")
 {
     /// <summary>Rows the chapter occupies, its verse 0 included.</summary>
     public int RowCount => VerseCount + (HasVerseZero ? 1 : 0);

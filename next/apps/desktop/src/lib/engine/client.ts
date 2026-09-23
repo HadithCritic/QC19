@@ -8,6 +8,18 @@ import type {
   HistoryKind,
   WordLocation,
   EngineInfo,
+  AllahSummary,
+  LetterScope,
+  LetterStatistic,
+  Maths,
+  NumberDetails,
+  RatioOptions,
+  RatioUnit,
+  ResearchMethod,
+  ResearchTable,
+  Symmetry,
+  SymmetryKind,
+  WordFrequencies,
   NumberInfo,
   SearchMethod,
   SearchResult,
@@ -111,6 +123,39 @@ export const engine = {
   addFind: (term: string, wordness: Wordness) => call<boolean>("history.add", { kind: "find", term, wordness }),
   clearHistory: (kind: HistoryKind) => call<boolean>("history.clear", { kind }),
   analyzeNumber: (value: string) => call<NumberInfo>("number.analyze", { value }),
+  numberDetails: (value: string) => call<NumberDetails>("number.details", { value }),
+  selectionWords: (range: VerseRange, valueSystem: string, counting: CountingOptions, withMarks: boolean) =>
+    call<WordFrequencies>("selection.words", { ...range, valueSystem, counting, withMarks }),
+  selectionLetters: (range: VerseRange, valueSystem: string, counting: CountingOptions, scope: LetterScope) =>
+    call<LetterStatistic[]>("selection.letters", { ...range, valueSystem, counting, scope }),
+  selectionMaths: (range: VerseRange, counting: CountingOptions, absoluteDifference: boolean, vOverC: boolean) =>
+    call<Maths>("selection.maths", { ...range, counting, absoluteDifference, vOverC }),
+  selectionSymmetry: (range: VerseRange, valueSystem: string, counting: CountingOptions, kind: SymmetryKind, boundaries: boolean) =>
+    call<Symmetry>("selection.symmetry", { ...range, valueSystem, counting, kind, boundaries }),
+  selectionAllah: (range: VerseRange, valueSystem: string, counting: CountingOptions) =>
+    call<AllahSummary>("selection.allah", { ...range, valueSystem, counting }),
+  researchWords: (params: {
+    method: ResearchMethod;
+    range: VerseRange | null;
+    gap: number;
+    valueSystem: string;
+    counting: CountingOptions;
+    offset?: number;
+    limit?: number;
+    tsv?: boolean;
+  }) =>
+    call<ResearchTable>("research.words", {
+      method: params.method,
+      ...(params.range ?? {}),
+      gap: params.gap,
+      valueSystem: params.valueSystem,
+      counting: params.counting,
+      ...(params.offset !== undefined ? { offset: params.offset } : {}),
+      ...(params.limit !== undefined ? { limit: params.limit } : {}),
+      ...(params.tsv ? { tsv: true } : {}),
+    }),
+  ratioSplit: (chapter: number, options: RatioOptions, valueSystem: string, counting: CountingOptions) =>
+    call<RatioUnit[]>("ratio.split", { chapter, ...options, valueSystem, counting }),
   textValues: (text: string, valueSystems?: string[]) =>
     call<SystemValue[]>("text.values", valueSystems ? { text, valueSystems } : { text }),
   /** Every search method answers with one page of the same result shape. */

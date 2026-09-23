@@ -48,6 +48,42 @@ public sealed class ValueSystem
         LetterOrder = letterOrder;
         LetterValue = letterValue;
         _values = values.ToFrozenDictionary();
+        Radix = ParseRadix(letterValue);
+    }
+
+    /// <summary>
+    /// For a "Base" system (<c>Base2Dotted</c> and the like), the base its
+    /// letter values are digits in; null for a system whose values add up.
+    /// </summary>
+    /// <remarks>
+    /// The legacy reads a word's letter values as the digits of one number in
+    /// that base, first letter least significant (<c>Radix.Decode</c> over the
+    /// values inserted at the front). A word and a single verse (the sum of its
+    /// words) are valued that way; chapters, the book and runs of verses add
+    /// letter values as any system does. The golden file base-systems.tsv holds
+    /// both.
+    /// </remarks>
+    public int? Radix { get; }
+
+    /// <summary>A word's value in a Base system: its letters' values as digits, first letter least significant.</summary>
+    public long BaseWordValue(ReadOnlySpan<char> letters)
+    {
+        int radix = Radix ?? throw new InvalidOperationException($"{Name} is not a Base system.");
+        long value = 0, place = 1;
+        foreach (char letter in letters)
+        {
+            value = checked(value + this[letter] * place);
+            place = checked(place * radix);
+        }
+        return value;
+    }
+
+    private static int? ParseRadix(string? letterValue)
+    {
+        if (letterValue is null || !letterValue.StartsWith("Base", StringComparison.Ordinal)) return null;
+        int end = 4;
+        while (end < letterValue.Length && char.IsAsciiDigit(letterValue[end])) end++;
+        return end > 4 && int.TryParse(letterValue.AsSpan(4, end - 4), out int radix) && radix is >= 2 and <= 36 ? radix : null;
     }
 
     /// <summary>Distinct letters carrying a value.</summary>

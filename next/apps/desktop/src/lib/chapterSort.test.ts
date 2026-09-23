@@ -4,7 +4,7 @@ import { sortChapters } from "./chapterSort";
 
 const chapter = (number: number, name: string, revelationOrder: number, verseCount: number): Chapter => ({
   number, name, transliteratedName: "", englishName: "", revelationOrder, revelationPlace: "", verseCount,
-  firstVerse: number, hasVerseZero: false,
+  firstVerse: number, hasVerseZero: false, initialization: "none",
 });
 
 const chapters = [chapter(1, "الفاتحة", 5, 7), chapter(2, "البقرة", 87, 286), chapter(96, "العلق", 1, 19)];

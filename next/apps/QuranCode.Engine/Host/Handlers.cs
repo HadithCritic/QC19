@@ -44,7 +44,7 @@ internal sealed partial class Handlers
     public IReadOnlyList<ChapterDto> Chapters() => _engine.Chapters
         .Select(c => new ChapterDto(
             c.Number, c.Name, c.TransliteratedName, c.EnglishName,
-            c.RevelationOrder, c.RevelationPlace, c.VerseCount, c.FirstVerse, c.HasVerseZero))
+            c.RevelationOrder, c.RevelationPlace, c.VerseCount, c.FirstVerse, c.HasVerseZero, c.Initialization))
         .ToArray();
 
     public IReadOnlyList<ValueSystemDto> ValueSystems() => _systems.Values
@@ -109,14 +109,16 @@ internal sealed partial class Handlers
         return new RangeDto(result.Range.First, result.Range.Last);
     }
 
-    public NumberDto AnalyzeNumber(NumberParams p)
+    public NumberDto AnalyzeNumber(NumberParams p) => Number(ParseWholeNumber(p.Value));
+
+    private static long ParseWholeNumber(string value)
     {
-        string text = p.Value.Trim().Replace(",", "", StringComparison.Ordinal);
-        if (!long.TryParse(text, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out long value))
+        string text = value.Trim().Replace(",", "", StringComparison.Ordinal);
+        if (!long.TryParse(text, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out long parsed))
         {
-            throw RpcException.InvalidParams($"\"{Truncate(p.Value)}\" is not a whole number between -9223372036854775808 and 9223372036854775807.");
+            throw RpcException.InvalidParams($"\"{Truncate(value)}\" is not a whole number between -9223372036854775808 and 9223372036854775807.");
         }
-        return Number(value);
+        return parsed;
     }
 
     public IReadOnlyList<SystemValueDto> TextValues(TextValuesParams p)
