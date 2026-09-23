@@ -48,10 +48,27 @@ function hostTriple() {
   return host.slice("host:".length).trim();
 }
 
+// Resolving the executable rather than trusting a bare "dotnet" to be found on
+// PATH. GitHub's windows runners failed here with `spawnSync dotnet ENOENT`
+// even though actions/setup-dotnet had run and DOTNET_ROOT was set, while the
+// same workflow's `dotnet test` steps (which go through a shell) worked. The
+// exact PATH condition on the runner was never reproduced locally, so this
+// checks every place the executable is known to live instead of guessing which
+// one failed.
 function findDotnet() {
-  if (process.env.DOTNET) return process.env.DOTNET;
-  const local = join(homedir(), ".dotnet", process.platform === "win32" ? "dotnet.exe" : "dotnet");
-  return existsSync(local) ? local : "dotnet";
+  const exe = process.platform === "win32" ? "dotnet.exe" : "dotnet";
+  const candidates = [
+    process.env.DOTNET,
+    process.env.DOTNET_ROOT ? join(process.env.DOTNET_ROOT, exe) : null,
+    // setup-dotnet installs here when it cannot write to the shared location.
+    process.env.DOTNET_INSTALL_DIR ? join(process.env.DOTNET_INSTALL_DIR, exe) : null,
+    join(homedir(), ".dotnet", exe),
+  ];
+  for (const candidate of candidates) {
+    if (candidate && existsSync(candidate)) return candidate;
+  }
+  // Nothing absolute found: fall back to PATH lookup, which works locally.
+  return "dotnet";
 }
 
 function newestSourceTime(roots) {
@@ -74,7 +91,14 @@ function publish(rid) {
     // The AOT linker locates MSVC through vswhere, which the VS installer
     // does not put on PATH.
     const installer = join(process.env["ProgramFiles(x86)"] ?? "C:\\Program Files (x86)", "Microsoft Visual Studio", "Installer");
-    env.PATH = `${installer};${env.PATH ?? ""}`;
+    // Extend the existing key whatever its case. Windows treats environment
+    // names case-insensitively, but a spread of process.env is a plain object
+    // that keeps the OS spelling, which is "Path" as often as "PATH". Assigning
+    // to env.PATH when the copy holds "Path" adds a second key instead of
+    // extending the first, and the child then inherits two, one of which holds
+    // only the directory added here.
+    const pathKey = Object.keys(env).find((k) => k.toLowerCase() === "path") ?? "PATH";
+    env[pathKey] = `${installer};${env[pathKey] ?? ""}`;
   }
   console.log(`prepare-engine: publishing ${rid} with Native AOT`);
   execFileSync(findDotnet(), ["publish", engineProject, "-c", "Release", "-r", rid, "-o", publishDir, "--nologo"], {
