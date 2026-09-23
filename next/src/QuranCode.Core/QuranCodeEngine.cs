@@ -80,6 +80,12 @@ public sealed partial class QuranCodeEngine : IDisposable
 
     private readonly List<TranslationPack> _packs = [];
 
+    /// <summary>The reciter catalog (Features.txt #65).</summary>
+    public IReadOnlyList<Reciter> Reciters => _content.Reciters;
+
+    /// <summary>A verse's prostration type, recommended or obligatory, or null.</summary>
+    public string? ProstrationOf(int verseNumber) => _content.Prostrations.GetValueOrDefault(verseNumber);
+
     /// <summary>The translations and other verse texts of this edition, then those of any packs.</summary>
     public IReadOnlyList<TranslationInfo> Translations => [.. _content.Translations, .. _packs.SelectMany(p => p.Translations)];
 

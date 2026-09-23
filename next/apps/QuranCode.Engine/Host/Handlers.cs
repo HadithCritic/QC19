@@ -47,6 +47,9 @@ internal sealed partial class Handlers
             c.RevelationOrder, c.RevelationPlace, c.VerseCount, c.FirstVerse, c.HasVerseZero, c.Initialization))
         .ToArray();
 
+    public IReadOnlyList<ReciterDto> Reciters() =>
+        _engine.Reciters.Select(r => new ReciterDto(r.Folder, r.Language, r.Name, r.Quality)).ToArray();
+
     public IReadOnlyList<ValueSystemDto> ValueSystems() => _systems.Values
         .Select(s => new ValueSystemDto(s.Name, s.TextMode, s.LetterOrder, s.LetterValue, s.ResearchOnly))
         .ToArray();
@@ -60,7 +63,8 @@ internal sealed partial class Handlers
             Verse verse = _engine.Verse(chapter.FirstVerse + i);
             VerseDisplay display = _engine.Display(verse);
             verses[i] = new VerseDto(
-                verse.Number, verse.ChapterNumber, verse.NumberInChapter, verse.IsBasmala, display.Bismillah, display.Words);
+                verse.Number, verse.ChapterNumber, verse.NumberInChapter, verse.IsBasmala, display.Bismillah, display.Words,
+                _engine.ProstrationOf(verse.Number));
         }
         return verses;
     }

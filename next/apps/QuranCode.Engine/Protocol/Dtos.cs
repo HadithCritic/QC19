@@ -44,7 +44,10 @@ internal sealed record VerseDto(
     int NumberInChapter,
     bool IsBasmala,
     string? Bismillah,
-    IReadOnlyList<string> Words);
+    IReadOnlyList<string> Words,
+    string? Prostration = null);
+
+internal sealed record ReciterDto(string Folder, string Language, string Name, string Quality);
 
 /// <summary>
 /// Analysis of one number. <c>Value</c> is a decimal string because a 64-bit

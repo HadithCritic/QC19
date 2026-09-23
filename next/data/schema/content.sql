@@ -351,6 +351,23 @@ CREATE TABLE verse_word_roots (
 );
 CREATE INDEX idx_verse_word_roots_root ON verse_word_roots(root_id);
 
+-- Verses of prostration (sajda), from the metadata's prostration table. The
+-- recitation player pauses after them, longer after an obligatory one.
+CREATE TABLE prostrations (
+    verse_number INTEGER PRIMARY KEY REFERENCES verses(number),
+    type         TEXT NOT NULL    -- recommended | obligatory
+);
+
+-- Reciters whose verse-by-verse recordings everyayah.com serves (legacy
+-- Audio/metadata.txt). folder is the path under https://everyayah.com/data/.
+CREATE TABLE reciters (
+    folder   TEXT PRIMARY KEY,
+    language TEXT NOT NULL,
+    name     TEXT NOT NULL,
+    quality  TEXT NOT NULL,
+    ordinal  INTEGER NOT NULL
+);
+
 -- Word by word: an English gloss and a transliteration for each display word
 -- (legacy en.wordbyword and en.transliteration), and the Quranic Arabic
 -- Corpus morphology of its parts. word_index counts display words from 0.

@@ -1,3 +1,4 @@
+mod audio;
 mod engine;
 
 use std::path::PathBuf;
@@ -6,7 +7,7 @@ use engine::{Engine, EngineError};
 use serde_json::Value;
 use tauri::Manager;
 
-/// The one command the webview may call. Everything the UI does goes through
+/// The main command the webview may call. Everything the UI does goes through
 /// the engine's own method table, which validates its parameters.
 #[tauri::command]
 async fn engine(
@@ -15,6 +16,25 @@ async fn engine(
     params: Option<Value>,
 ) -> Result<Value, EngineError> {
     state.call(&method, params).await
+}
+
+/// A verse recording (Features.txt #65), from the cache in the app's data
+/// folder or downloaded from everyayah.com, as raw bytes for the player.
+#[tauri::command]
+async fn verse_audio(
+    app: tauri::AppHandle,
+    folder: String,
+    name: String,
+) -> Result<tauri::ipc::Response, EngineError> {
+    let root = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| EngineError::new("cache_failed", e.to_string()))?
+        .join("Audio");
+    audio::verse_audio(&root, &folder, &name)
+        .await
+        .map(tauri::ipc::Response::new)
+        .map_err(|e| EngineError::new(e.code, e.message))
 }
 
 /// The sidecar sits next to the app executable, both in development (Tauri
@@ -55,7 +75,7 @@ pub fn run() {
             });
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![engine])
+        .invoke_handler(tauri::generate_handler![engine, verse_audio])
         .run(tauri::generate_context!())
         .expect("error while running QuranCode");
 }
