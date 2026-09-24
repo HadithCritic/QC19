@@ -210,6 +210,26 @@ name, so it appears in the system picker like any other. Modes are kept in
 Khalifa's alif turned out not to need one: it is Simplified29 with the
 original's hamza above line option, which findings carry as `yes+hamza`.
 
+## Stage E2: Research selections (done)
+
+One active selection, from a chapter down to a single letter, drawn in the
+reader and used by every analysis view. The design and its rules are in
+[`specs/research-selection.md`](specs/research-selection.md).
+
+- A Select control above the text picks verses, words or letters. The first
+  click starts, the second finishes, shift-click extends and Esc clears.
+- The inspector shows the exact address, the span, the value with its class
+  and divisibility, endpoint positions and the methodology.
+- Stats, Values and a Breakdown tab (verse, word or letter rows that add up
+  to the total) run over the same selection; a summary line keeps it in view
+  outside the reader.
+- Exact addresses such as `2:255:w4:l2-2:257:w8` can be typed, copied and
+  saved as research selections with their system and counting options.
+
+**Done when** a selection of whole verses gives exactly the verse-range
+figures (gated by tests over every chapter) and a partial selection counts
+only its letters (gated by breakdown and letter-sum tests).
+
 ## Stage F: Release
 
 Installer, the licensing statement ADR 0004 §8 settles, and a first tag.

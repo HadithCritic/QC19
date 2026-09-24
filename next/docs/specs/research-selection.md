@@ -87,22 +87,54 @@ excludes them; a range that crosses from the previous chapter includes them.
 
 ## Protocol
 
-- `selection.analyze` takes an exact selection and returns counts, value,
-  classification, endpoints in display and counted coordinates, methodology
-  and notes.
-- `selection.breakdown` lists a selection by verse, word or letter, paged.
-- The existing range methods accept an optional `selection` in place of
-  `first` and `last`. Requests without it behave as before.
+| Method | Purpose |
+| --- | --- |
+| `selection.analyze` | Counts, value and classification, endpoints in display and counted coordinates, the positional delta, methodology and notes |
+| `selection.values` | The selection's value in many systems; each text mode is resolved once, and a mode in which it cannot be resolved says so per row |
+| `selection.breakdown` | The selection by verse, display word or display letter, paged; letter rows up to 20,000 letters |
+| `selections.list`, `selections.save`, `selections.delete` | Saved research selections in `user.db`, with their value system and counting options |
+| `reference.parse` | Also accepts exact addresses, returning the verses and the selection |
+
+The existing range methods (`selection.stats`, `selection.sweep`,
+`selection.words`, `selection.letters`, `selection.maths`,
+`selection.symmetry`, `selection.allah`, `research.words`) accept an optional
+`selection` in place of `first` and `last`. A selection of whole verses is
+turned into those verses, so the answer is the verse-range answer. The Maths
+sums and research lists work on whole verses and take every verse a partial
+selection touches. Words with marks are listed only for whole verses.
+Requests without `selection` behave as before.
+
+## Breakdown rows
+
+Rows are valued as runs of letters, the way a partial selection is, so they
+add up to the selection's value. A Base system values a single whole verse
+differently on its own path (see `SegmentedCalculator.ValueOfVerse`), so only
+there can a verse row differ from the verse marker. In the classic edition the
+counted Bismillah header of verse 1 is a row of its own.
+
+## Desktop
+
+- `app.exact` holds the exact selection and `app.selection` the verses it
+  touches, so search scope, bookmarks and history keep working on verses.
+  `app.scope` is what every analysis takes.
+- Highlighting is computed in the UI from display coordinates, with no
+  engine call. Letter mode splits into letters only the word under the
+  pointer and the words the selection cuts.
+- `src/lib/selection.ts` mirrors `DisplayLetters` for letter numbering.
 
 ## Phases
 
-| Phase | Scope |
-| --- | --- |
-| A | Model, address parser, `DisplayLetters`, resolver |
-| B | Exact-selection statistics in Core and `selection.analyze` |
-| C | Word selection in the reader, and the inspector |
-| D | Shared selection across Read, Stats and Values |
-| E | Letter selection |
-| F | Breakdowns |
-| G | Saved research selections, address copy and Go To |
-| H | Multiple ranges, search within a selection, overlays |
+| Phase | Scope | Status |
+| --- | --- | --- |
+| A | Model, address parser, `DisplayLetters`, resolver | done |
+| B | Exact-selection statistics in Core and `selection.analyze` | done |
+| C | Word selection in the reader, and the inspector | done |
+| D | Shared selection across Read, Stats and Values | done |
+| E | Letter selection | done |
+| F | Breakdowns | done |
+| G | Saved research selections, address copy and Go To | done |
+| H | Multiple ranges, search within a selection, overlays | not started |
+
+Letter selection is gated by a coverage test: with default counting, every
+one of the 77,433 display words of the classic edition maps letter by letter
+in each of the eight stock text modes.

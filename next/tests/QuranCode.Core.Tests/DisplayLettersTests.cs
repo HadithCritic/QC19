@@ -94,7 +94,13 @@ public sealed class DisplayLettersTests(ITestOutputHelper output)
     /// </summary>
     [Theory]
     [InlineData("Original", 0.99)]
+    [InlineData("Simplified28", 0.99)]
     [InlineData("Simplified29", 0.99)]
+    [InlineData("Simplified30", 0.99)]
+    [InlineData("Simplified31", 0.99)]
+    [InlineData("Simplified36", 0.99)]
+    [InlineData("SimplifiedDots", 0.99)]
+    [InlineData("SimplifiedMarks", 0.99)]
     public void NearlyEveryWordMapsLetterByLetter(string textMode, double minimum)
     {
         QuranCodeEngine engine = SharedEngine.Instance;
