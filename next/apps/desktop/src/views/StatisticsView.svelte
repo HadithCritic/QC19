@@ -1,5 +1,6 @@
 <script lang="ts">
   import DisplaySettings from "../lib/components/DisplaySettings.svelte";
+  import BreakdownPanel from "../lib/components/stats/BreakdownPanel.svelte";
   import LettersPanel from "../lib/components/stats/LettersPanel.svelte";
   import MathsPanel from "../lib/components/stats/MathsPanel.svelte";
   import MultiplesPanel from "../lib/components/stats/MultiplesPanel.svelte";
@@ -13,9 +14,10 @@
   // Lists and sums over the selection, or the open chapter when nothing is
   // selected: the panels the original keeps beside its text.
 
-  type Tab = "multiples" | "words" | "letters" | "maths" | "symmetry" | "research";
+  type Tab = "multiples" | "breakdown" | "words" | "letters" | "maths" | "symmetry" | "research";
   const TABS: { value: Tab; label: string }[] = [
     { value: "multiples", label: "Multiples" },
+    { value: "breakdown", label: "Breakdown" },
     { value: "words", label: "Words" },
     { value: "letters", label: "Letters" },
     { value: "maths", label: "Maths" },
@@ -65,6 +67,7 @@
   <div class="body" role="tabpanel">
     {#if scope}
       {#if tab === "multiples"}<MultiplesPanel {scope} />
+      {:else if tab === "breakdown"}<BreakdownPanel {scope} />
       {:else if tab === "words"}<WordsPanel {scope} />
       {:else if tab === "letters"}<LettersPanel over={scope} />
       {:else if tab === "maths"}<MathsPanel {scope} />
