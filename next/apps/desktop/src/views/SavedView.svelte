@@ -1,12 +1,14 @@
 <script lang="ts">
   import Notice from "../lib/components/Notice.svelte";
+  import TextModeEditor from "../lib/components/TextModeEditor.svelte";
   import { describeError, engine } from "../lib/engine/client";
   import type { HistoryEntry, HistoryKind } from "../lib/engine/types";
   import { app } from "../lib/state/app.svelte";
   import { search } from "../lib/state/search.svelte";
 
-  // Bookmarks with their notes, and browse and find history (Features.txt #69,
-  // #70). Opening a browse entry selects its range in the reader.
+  // Bookmarks with their notes, browse and find history (Features.txt #69,
+  // #70), and the reader's text modes (#72). Opening a browse entry selects
+  // its range in the reader.
 
   let browse = $state<HistoryEntry[]>([]);
   let find = $state<HistoryEntry[]>([]);
@@ -47,7 +49,7 @@
 <section class="saved" aria-labelledby="saved-title">
   <header>
     <h1 id="saved-title">Saved</h1>
-    <p class="hint">Bookmarks and notes, and what you have read and searched. Everything here is kept on this computer.</p>
+    <p class="hint">Bookmarks and notes, your text modes, and what you have read and searched. Everything here is kept on this computer.</p>
   </header>
 
   <div class="body">
@@ -75,6 +77,8 @@
           </ul>
         {/if}
       </section>
+
+      <TextModeEditor />
 
       {#if error}
         <Notice tone="error" title="History could not be loaded" detail={error} />

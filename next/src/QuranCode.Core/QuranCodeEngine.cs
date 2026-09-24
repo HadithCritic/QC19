@@ -131,10 +131,10 @@ public sealed partial class QuranCodeEngine : IDisposable
     private static int CacheKey(TranslationInfo translation) => translation.Id;
 
     /// <summary>Names of every installed value system.</summary>
-    public IReadOnlyList<string> ValueSystems() => _content.ValueSystemNames();
+    public IReadOnlyList<string> ValueSystems() => [.. _content.ValueSystemNames(), .. DerivedSystemSummaries().Select(s => s.Name)];
 
     /// <summary>Every installed value system with its parts and visibility.</summary>
-    public IReadOnlyList<ValueSystemSummary> ValueSystemSummaries() => _content.ValueSystemSummaries();
+    public IReadOnlyList<ValueSystemSummary> ValueSystemSummaries() => [.. _content.ValueSystemSummaries(), .. DerivedSystemSummaries()];
 
     /// <summary>One verse by absolute number.</summary>
     public Verse Verse(int number) => _content.Verses[number - 1];
@@ -165,7 +165,7 @@ public sealed partial class QuranCodeEngine : IDisposable
 
     /// <summary>A value system by name.</summary>
     public ValueSystem ValueSystem(string name = DefaultValueSystem) =>
-        _content.GetValueSystem(name);
+        DerivedSystem(name) ?? _content.GetValueSystem(name);
 
     /// <summary>How verses are turned into counted text under a text mode and options.</summary>
     public CountingText CountingText(string textMode = DefaultTextMode, CountingOptions? counting = null)

@@ -193,11 +193,22 @@ nCk, pi, e, phi and functions such as sqrt are there. Arabic text is valued
 in the current system, as in the original. A result that is not whole is
 reported as such instead of rounded.
 
-## Stage E: User-defined text modes
+## Stage E: User-defined text modes (done)
 
 Feature 72. A text mode changes letter counts, so it changes results, which
 is why ADR 0004 kept it. It comes after findings so that a custom mode can be
 checked against the findings that already pass in the stock modes.
+
+A reader's mode names a stock base and adds find-and-replace rules. The base's
+rules run first, so its word joins still see the text as written, then the
+reader's, then the base's letter stage, which is chosen by name and so cannot
+come from a rules file alone (the original's `Rules/SimplifiedXX.txt` was only
+half of a mode). Each mode gets every value system its base has under its own
+name, so it appears in the system picker like any other. Modes are kept in
+`user.db` (schema 2) and edited in the Saved view.
+
+Khalifa's alif turned out not to need one: it is Simplified29 with the
+original's hamza above line option, which findings carry as `yes+hamza`.
 
 ## Stage F: Release
 

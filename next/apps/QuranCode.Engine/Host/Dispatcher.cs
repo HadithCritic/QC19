@@ -75,6 +75,11 @@ internal sealed class Dispatcher
         _methods["history.list"] = With(json.HistoryListParams, p => requireUser().History(p), json.IReadOnlyListHistoryDto);
         _methods["history.add"] = With(json.HistoryAddParams, p => requireUser().AddHistory(p), json.Boolean);
         _methods["history.clear"] = With(json.HistoryClearParams, p => requireUser().ClearHistory(p), json.Boolean);
+
+        // Listing needs no user file; the stock modes are always there.
+        _methods["textModes.list"] = NoParams(handlers.TextModes, json.TextModesDto);
+        _methods["textModes.save"] = With(json.TextModeDto, p => requireUser().SaveTextMode(p), json.TextModeDto);
+        _methods["textModes.delete"] = With(json.NameParams, p => requireUser().DeleteTextMode(p), json.Boolean);
     }
 
     public IReadOnlyCollection<string> MethodNames => _methods.Keys;

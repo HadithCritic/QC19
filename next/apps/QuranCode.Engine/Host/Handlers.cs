@@ -23,12 +23,24 @@ internal sealed partial class Handlers
     public const int MaxSearchLimit = 500;
 
     private readonly QuranCodeEngine _engine;
-    private readonly Dictionary<string, ValueSystemSummary> _systems;
+    private Dictionary<string, ValueSystemSummary> _systemsByName = [];
+    private int _systemsVersion = -1;
 
     public Handlers(QuranCodeEngine engine)
     {
         _engine = engine;
-        _systems = engine.ValueSystemSummaries().ToDictionary(s => s.Name, StringComparer.Ordinal);
+    }
+
+    /// <summary>Every value system, rebuilt when the reader's text modes change.</summary>
+    private Dictionary<string, ValueSystemSummary> Systems
+    {
+        get
+        {
+            if (_systemsVersion == _engine.TextModesVersion) return _systemsByName;
+            _systemsByName = _engine.ValueSystemSummaries().ToDictionary(s => s.Name, StringComparer.Ordinal);
+            _systemsVersion = _engine.TextModesVersion;
+            return _systemsByName;
+        }
     }
 
     public EngineInfo Info() => new(
@@ -38,7 +50,7 @@ internal sealed partial class Handlers
         _engine.Chapters.Count,
         _engine.Chapters.Sum(c => c.VerseCount),
         _engine.Verses.Count,
-        _systems.Count,
+        Systems.Count,
         QuranCodeEngine.DefaultValueSystem);
 
     public IReadOnlyList<ChapterDto> Chapters() => _engine.Chapters
@@ -47,7 +59,7 @@ internal sealed partial class Handlers
             c.RevelationOrder, c.RevelationPlace, c.VerseCount, c.FirstVerse, c.HasVerseZero, c.Initialization))
         .ToArray();
 
-    public IReadOnlyList<ValueSystemDto> ValueSystems() => _systems.Values
+    public IReadOnlyList<ValueSystemDto> ValueSystems() => Systems.Values
         .Select(s => new ValueSystemDto(s.Name, s.TextMode, s.LetterOrder, s.LetterValue, s.ResearchOnly))
         .ToArray();
 
@@ -128,7 +140,7 @@ internal sealed partial class Handlers
 
         IEnumerable<ValueSystemSummary> systems = p.ValueSystems is { Count: > 0 } names
             ? names.Distinct(StringComparer.Ordinal).Select(RequireSystem)
-            : _systems.Values;
+            : Systems.Values;
 
         // Normalize once per text mode, not once per system: 276 systems share
         // eight text modes.
@@ -213,7 +225,7 @@ internal sealed partial class Handlers
     private ValueSystemSummary RequireSystem(string? name)
     {
         name ??= QuranCodeEngine.DefaultValueSystem;
-        return _systems.TryGetValue(name, out ValueSystemSummary system)
+        return Systems.TryGetValue(name, out ValueSystemSummary system)
             ? system
             : throw RpcException.NotFound($"There is no value system named \"{Truncate(name)}\".");
     }

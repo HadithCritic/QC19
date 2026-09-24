@@ -1,13 +1,14 @@
 using System.Globalization;
 using QuranCode.Core;
 using QuranCode.Core.Content;
+using QuranCode.Core.Text;
 using QuranCode.Core.User;
 using QuranCode.Engine.Protocol;
 
 namespace QuranCode.Engine.Host;
 
 /// <summary>
-/// Bookmarks and history over the reader's <c>user.db</c>. Positions travel
+/// Bookmarks, history and text modes over the reader's <c>user.db</c>. Positions travel
 /// as absolute verse numbers of the open edition and are stored as
 /// chapter:verse.
 /// </summary>
@@ -20,6 +21,35 @@ internal sealed class UserHandlers
     {
         _engine = engine;
         _store = store;
+
+        // The reader's text modes are the engine's from the start. One that
+        // is no longer sound (its base gone from this edition) is left in the
+        // file, unused, rather than deleted.
+        foreach (DerivedTextMode mode in _store.TextModes())
+        {
+            if (mode.Problem() is null && _engine.HasTextMode(mode.Base)) _engine.DefineTextMode(mode);
+        }
+    }
+
+    public TextModeDto SaveTextMode(TextModeDto p)
+    {
+        var mode = new DerivedTextMode(
+            p.Name ?? "", p.Base ?? "", [.. (p.Rules ?? []).Select(r => new TextRule(r.Find ?? "", r.Replace ?? ""))], p.Description ?? "");
+        if (mode.Problem() is { } problem) throw RpcException.InvalidParams(problem);
+        if (mode.Description.Length > UserStore.MaxNoteLength)
+        {
+            throw RpcException.InvalidParams($"A description is at most {UserStore.MaxNoteLength:N0} characters.");
+        }
+
+        _engine.DefineTextMode(mode);
+        _store.SaveTextMode(mode);
+        return Handlers.ToDto(mode);
+    }
+
+    public bool DeleteTextMode(NameParams p)
+    {
+        bool removed = _store.DeleteTextMode(p.Name);
+        return _engine.RemoveTextMode(p.Name) || removed;
     }
 
     public IReadOnlyList<BookmarkDto> Bookmarks() => _store.Bookmarks().Select(ToDto).ToArray();

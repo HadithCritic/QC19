@@ -1,5 +1,6 @@
 using System.Globalization;
 using Microsoft.Data.Sqlite;
+using QuranCode.Core.Text;
 
 namespace QuranCode.Core.User;
 
@@ -20,12 +21,13 @@ public enum HistoryKind
 public sealed record HistoryEntry(long Id, HistoryKind Kind, VerseRef? First, VerseRef? Last, string? Term, string? Wordness, DateTime AtUtc);
 
 /// <summary>
-/// The reader's own data: bookmarks with notes and browse and find history,
-/// kept in <c>user.db</c>, apart from the read-only content.
+/// The reader's own data: bookmarks with notes, browse and find history, and
+/// the text modes the reader defined, kept in <c>user.db</c>, apart from the
+/// read-only content.
 /// </summary>
 /// <remarks>
 /// <para>
-/// Features.txt #68 to #70. Positions are stored as chapter:verse rather than
+/// Features.txt #68 to #70, and #72. Positions are stored as chapter:verse rather than
 /// absolute verse numbers, so a bookmark survives switching between editions
 /// whose absolute numbering differs.
 /// </para>
@@ -36,7 +38,7 @@ public sealed record HistoryEntry(long Id, HistoryKind Kind, VerseRef? First, Ve
 /// </remarks>
 public sealed class UserStore : IDisposable
 {
-    public const int SchemaVersion = 1;
+    public const int SchemaVersion = 2;
     public const int MaxNoteLength = 10_000;
     public const int MaxTermLength = 500;
 
@@ -69,6 +71,21 @@ public sealed class UserStore : IDisposable
             at_utc        TEXT    NOT NULL
         );
         CREATE INDEX history_kind_id ON history (kind, id);
+        """,
+        """
+        CREATE TABLE text_modes (
+            name        TEXT PRIMARY KEY,
+            base        TEXT NOT NULL,
+            description TEXT NOT NULL DEFAULT '',
+            updated_utc TEXT NOT NULL
+        );
+        CREATE TABLE text_mode_rules (
+            mode     TEXT    NOT NULL,
+            position INTEGER NOT NULL,
+            find     TEXT    NOT NULL,
+            replace  TEXT    NOT NULL,
+            PRIMARY KEY (mode, position)
+        );
         """,
     ];
 
@@ -231,6 +248,96 @@ public sealed class UserStore : IDisposable
         command.Parameters.AddWithValue("$kind", Name(kind));
         command.Parameters.AddWithValue("$limit", HistoryLimit);
         command.ExecuteNonQuery();
+    }
+
+    // -- text modes -----------------------------------------------------
+
+    /// <summary>The reader's text modes, by name, with their rules in order.</summary>
+    public IReadOnlyList<DerivedTextMode> TextModes()
+    {
+        var rules = new Dictionary<string, List<TextRule>>(StringComparer.Ordinal);
+        using (SqliteCommand command = Command("SELECT mode, find, replace FROM text_mode_rules ORDER BY mode, position"))
+        using (SqliteDataReader reader = command.ExecuteReader())
+        {
+            while (reader.Read())
+            {
+                string mode = reader.GetString(0);
+                if (!rules.TryGetValue(mode, out List<TextRule>? list)) rules[mode] = list = [];
+                list.Add(new TextRule(reader.GetString(1), reader.GetString(2)));
+            }
+        }
+
+        using SqliteCommand modes = Command("SELECT name, base, description FROM text_modes ORDER BY name");
+        var result = new List<DerivedTextMode>();
+        using SqliteDataReader row = modes.ExecuteReader();
+        while (row.Read())
+        {
+            string name = row.GetString(0);
+            result.Add(new DerivedTextMode(name, row.GetString(1), rules.GetValueOrDefault(name) ?? [], row.GetString(2)));
+        }
+        return result;
+    }
+
+    /// <summary>Adds a text mode, or replaces the one of the same name.</summary>
+    /// <exception cref="ArgumentException">The definition is not sound.</exception>
+    public void SaveTextMode(DerivedTextMode mode)
+    {
+        ArgumentNullException.ThrowIfNull(mode);
+        if (mode.Problem() is { } problem) throw new ArgumentException(problem, nameof(mode));
+
+        using SqliteTransaction transaction = _connection.BeginTransaction();
+        DeleteTextMode(mode.Name, transaction);
+
+        using (SqliteCommand command = Command(
+            "INSERT INTO text_modes (name, base, description, updated_utc) VALUES ($name, $base, $description, $now)"))
+        {
+            command.Transaction = transaction;
+            command.Parameters.AddWithValue("$name", mode.Name);
+            command.Parameters.AddWithValue("$base", mode.Base);
+            command.Parameters.AddWithValue("$description", mode.Description);
+            command.Parameters.AddWithValue("$now", Now());
+            command.ExecuteNonQuery();
+        }
+
+        using (SqliteCommand command = Command(
+            "INSERT INTO text_mode_rules (mode, position, find, replace) VALUES ($mode, $position, $find, $replace)"))
+        {
+            command.Transaction = transaction;
+            SqliteParameter position = command.Parameters.Add("$position", SqliteType.Integer);
+            SqliteParameter find = command.Parameters.Add("$find", SqliteType.Text);
+            SqliteParameter replace = command.Parameters.Add("$replace", SqliteType.Text);
+            command.Parameters.AddWithValue("$mode", mode.Name);
+            for (int i = 0; i < mode.Rules.Count; i++)
+            {
+                position.Value = i;
+                find.Value = mode.Rules[i].Find;
+                replace.Value = mode.Rules[i].Replace;
+                command.ExecuteNonQuery();
+            }
+        }
+        transaction.Commit();
+    }
+
+    /// <summary>Removes a text mode; false when there was none of that name.</summary>
+    public bool DeleteTextMode(string name)
+    {
+        using SqliteTransaction transaction = _connection.BeginTransaction();
+        bool removed = DeleteTextMode(name, transaction);
+        transaction.Commit();
+        return removed;
+    }
+
+    private bool DeleteTextMode(string name, SqliteTransaction transaction)
+    {
+        using SqliteCommand rules = Command("DELETE FROM text_mode_rules WHERE mode = $name");
+        rules.Transaction = transaction;
+        rules.Parameters.AddWithValue("$name", name);
+        rules.ExecuteNonQuery();
+
+        using SqliteCommand mode = Command("DELETE FROM text_modes WHERE name = $name");
+        mode.Transaction = transaction;
+        mode.Parameters.AddWithValue("$name", name);
+        return mode.ExecuteNonQuery() > 0;
     }
 
     // -- plumbing -------------------------------------------------------

@@ -307,6 +307,17 @@ internal sealed record DistanceDto(int Chapters, int Verses, int Words, int Lett
 /// </summary>
 internal sealed record BookmarkDto(long Id, string Reference, int? First, int? Last, string Note, string CreatedUtc, string UpdatedUtc);
 
+/// <summary>One find-and-replace rule of a reader's text mode.</summary>
+internal sealed record TextRuleDto(string Find, string Replace);
+
+/// <summary>A text mode the reader defined on top of a stock one (Features.txt #72).</summary>
+internal sealed record TextModeDto(string Name, string Base, IReadOnlyList<TextRuleDto> Rules, string Description = "");
+
+/// <summary>The reader's text modes, and the stock modes of this edition one can start from.</summary>
+internal sealed record TextModesDto(IReadOnlyList<string> Bases, IReadOnlyList<TextModeDto> Modes);
+
+internal sealed record NameParams(string Name);
+
 internal sealed record HistoryDto(long Id, string Kind, string? Reference, int? First, int? Last, string? Term, string? Wordness, string AtUtc);
 
 /// <summary>One system's value for a text, with how many letters that system's text mode counts.</summary>

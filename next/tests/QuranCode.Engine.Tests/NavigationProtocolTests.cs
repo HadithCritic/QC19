@@ -140,6 +140,33 @@ public sealed class NavigationProtocolTests : IDisposable
     }
 
     [Fact]
+    public void TextModesAreSavedListedAndDeleted()
+    {
+        JsonElement listed = Result("textModes.list");
+        Assert.Contains("Simplified29", listed.GetProperty("bases").EnumerateArray().Select(b => b.GetString()));
+        Assert.Equal(0, listed.GetProperty("modes").GetArrayLength());
+
+        var mode = new { name = "TaaAsHaa", @base = "Simplified30", rules = new[] { new { find = "ة", replace = "ه" } }, description = "" };
+        Assert.Equal("TaaAsHaa", Result("textModes.save", mode).GetProperty("name").GetString());
+        Assert.Equal("Simplified30", Result("textModes.list").GetProperty("modes")[0].GetProperty("base").GetString());
+        Assert.Contains(Result("systems.list").EnumerateArray(), s => s.GetProperty("name").GetString()!.StartsWith("TaaAsHaa_", StringComparison.Ordinal));
+
+        // A fresh engine over the same user file has it too.
+        using var engine = new QuranCodeEngine(TestPaths.SubmissionDatabase);
+        _ = new UserHandlers(engine, _store);
+        Assert.True(engine.HasTextMode("TaaAsHaa"));
+
+        Assert.True(Result("textModes.delete", new { name = "TaaAsHaa" }).GetBoolean());
+        Assert.Equal(0, Result("textModes.list").GetProperty("modes").GetArrayLength());
+        Assert.Empty(_store.TextModes());
+    }
+
+    [Fact]
+    public void AnUnsoundTextModeIsRefused() =>
+        Assert.Equal("invalid_params", ErrorCode("textModes.save",
+            new { name = "Simplified29", @base = "Simplified29", rules = new[] { new { find = "ا", replace = "ا" } } }));
+
+    [Fact]
     public void WithoutAUserFileTheMethodsSaySo()
     {
         var bare = new Dispatcher(new Handlers(_engine), new StringWriter());

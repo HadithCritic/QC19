@@ -58,7 +58,7 @@ were imported in Phase 6.
 | 16 | Highlight values divisible by a user divisor | port | **done** | Divisor 2 to 9999, default 19, wraps as in the original; every number chip and the Maths sums are marked; powers get a dotted underline |
 | 24 | Ratio-based colorization, golden ratio default | port | **done** | Reader colors the parts of each verse, chapter, partition or the book at 1/π, 1/e, 1/φ, 1/♥ or any ratio, by letters or value, at a letter, word, pause mark, verse or chapter end, with totals |
 | 71 | Base 2–36 number systems | port | **done** | Numbers shown and typed in any base 2 to 36, digit sums in that base; the 20 Base letter-value systems value words by their digits (golden: base-systems.tsv) |
-| 72 | User-defined SimplifiedXX books | port | engine | `text_modes` + `text_mode_rules` are data |
+| 72 | User-defined SimplifiedXX books | port | **done** | Saved view editor: a stock base plus find-and-replace rules, kept in `user.db`; each mode gets its base's value systems under its own name (`textModes.*`) |
 | 23 | DNA symbols (A T C G) in prime proportions | port | out | ADR 0004 |
 | 30 | Expression calculator, bases 2–36 | **rewrite** | **done** | A parser in the Numbers view in place of the original's run-time C# compilation; exact whole numbers, any base, Arabic text valued in the current system |
 | 78 | Circle/sphere/triangle calculators | port | out | ADR 0004 |
@@ -170,8 +170,7 @@ capability.
 
 | Status | Count |
 | --- | ---: |
-| done | 63 |
-| engine (no UI yet) | 1 (#72) |
+| done | 64 |
 | todo | 0 |
 | out (ADR 0004) | 13 |
 | drop | 1 (#36) |

@@ -297,6 +297,19 @@ class AppState {
     }
   }
 
+  /**
+   * Fetches the value systems again, after the reader defines or removes a
+   * text mode. A chosen system that went with its mode falls back to the
+   * default.
+   */
+  async reloadSystems(): Promise<void> {
+    const systems = await engine.systems();
+    this.allSystems = systems;
+    if (!visibleSystems(systems, this.research).some((s) => s.name === this.valueSystem)) {
+      this.valueSystem = this.info?.defaultValueSystem ?? this.valueSystem;
+    }
+  }
+
   async loadBookmarks(): Promise<void> {
     try {
       this.bookmarks = await engine.bookmarks();

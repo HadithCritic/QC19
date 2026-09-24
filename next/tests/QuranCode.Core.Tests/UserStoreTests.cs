@@ -1,3 +1,4 @@
+using QuranCode.Core.Text;
 using QuranCode.Core.User;
 using Xunit;
 
@@ -86,4 +87,31 @@ public sealed class UserStoreTests : IDisposable
         using var reopened = new UserStore(_path);
         Assert.Equal("Ya-Sin", Assert.Single(reopened.Bookmarks()).Note);
     }
+
+    [Fact]
+    public void SavesATextModeWithItsRulesInOrder()
+    {
+        var mode = new DerivedTextMode("TaaAsHaa", "Simplified30", [new TextRule("ة", "ه"), new TextRule("ى", "ي")], "Folds two letters.");
+        _store.SaveTextMode(mode);
+        _store.SaveTextMode(mode with { Rules = [new TextRule("ى", "ي"), new TextRule("ة", "ه")] });
+
+        using var reopened = new UserStore(_path);
+        DerivedTextMode stored = Assert.Single(reopened.TextModes());
+        Assert.Equal("Simplified30", stored.Base);
+        Assert.Equal("Folds two letters.", stored.Description);
+        Assert.Equal([new TextRule("ى", "ي"), new TextRule("ة", "ه")], stored.Rules);
+    }
+
+    [Fact]
+    public void DeletesATextMode()
+    {
+        _store.SaveTextMode(new DerivedTextMode("Mine", "Simplified29", [new TextRule("ا", "ا")]));
+        Assert.True(_store.DeleteTextMode("Mine"));
+        Assert.False(_store.DeleteTextMode("Mine"));
+        Assert.Empty(_store.TextModes());
+    }
+
+    [Fact]
+    public void RefusesAnUnsoundTextMode() =>
+        Assert.Throws<ArgumentException>(() => _store.SaveTextMode(new DerivedTextMode("Simplified29", "Simplified29", [new TextRule("ا", "ا")])));
 }

@@ -68,4 +68,7 @@ namespace QuranCode.Engine.Protocol;
 [JsonSerializable(typeof(HistoryListParams))]
 [JsonSerializable(typeof(HistoryAddParams))]
 [JsonSerializable(typeof(HistoryClearParams))]
+[JsonSerializable(typeof(TextModesDto))]
+[JsonSerializable(typeof(TextModeDto))]
+[JsonSerializable(typeof(NameParams))]
 internal sealed partial class WireJson : JsonSerializerContext;

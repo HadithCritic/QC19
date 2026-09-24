@@ -36,6 +36,7 @@ public sealed record DerivedTextMode(string Name, string Base, IReadOnlyList<Tex
     {
         if (string.IsNullOrWhiteSpace(Name)) return "A text mode needs a name.";
         if (Name.Length > 64) return "A text mode's name is at most 64 characters.";
+        if (!Name.All(char.IsAsciiLetterOrDigit)) return "A text mode's name is letters and digits only, as in TaaAsHaa.";
         if (StockModes.Contains(Name, StringComparer.OrdinalIgnoreCase)) return $"\"{Name}\" is a stock text mode.";
         if (!StockModes.Contains(Base, StringComparer.Ordinal)) return $"\"{Base}\" is not a stock text mode.";
         if (Rules.Count == 0) return "A text mode needs at least one rule.";

@@ -145,6 +145,26 @@ export interface Bookmark {
   updatedUtc: string;
 }
 
+/** One find-and-replace rule of a reader's text mode. */
+export interface TextRule {
+  find: string;
+  replace: string;
+}
+
+/** A text mode the reader defined on top of a stock one: its base's rules, then these. */
+export interface TextMode {
+  name: string;
+  base: string;
+  rules: TextRule[];
+  description: string;
+}
+
+/** The reader's text modes, and the stock modes of this edition one can start from. */
+export interface TextModes {
+  bases: string[];
+  modes: TextMode[];
+}
+
 export type HistoryKind = "browse" | "find";
 
 export interface HistoryEntry {
