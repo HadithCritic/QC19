@@ -5,7 +5,11 @@ import type {
   CountingOptions,
   Distance,
   EngineInfo,
+  QuranLocation,
+  QuranSelection,
   RatioOptions,
+  ResearchSelection,
+  Scope,
   Translation,
   ValueSystem,
   VerseRange,
@@ -17,6 +21,7 @@ import { DEFAULT_DIVISOR, DEFAULT_RADIX, wrapDivisor, wrapRadix } from "../numbe
 import { DEFAULT_RATIO } from "../ratioColors";
 import { chapterOfVerse, lastVerse } from "../numbers";
 import { visibleSystems } from "../systems";
+import { envelope, expand, isExact, pick, verseSelection, type Level, type SelectMode } from "../selection";
 
 export type View = "read" | "search" | "values" | "numbers" | "statistics" | "findings" | "initials" | "saved";
 
@@ -100,6 +105,22 @@ class AppState {
   view = $state<View>("read");
   chapter = $state(1);
   selection = $state<VerseRange | null>(null);
+  /**
+   * An exact selection of words or letters, which the reader highlights and
+   * every analysis uses; null when the selection is whole verses. While it is
+   * set, `selection` holds the verses it touches, so everything that works
+   * on verses (search scope, bookmarks, history) keeps working.
+   */
+  exact = $state<QuranSelection | null>(null);
+  /** The first click of an exact selection, waiting for the second. */
+  pendingStart = $state<QuranLocation | null>(null);
+  /** What a click in the reader selects. */
+  selectMode = $state<SelectMode>("verse");
+  /** What analyses run over: the exact selection, or the selected verses. */
+  scope = $derived<Scope | null>(this.exact ? { selection: this.exact } : this.selection);
+  /** Saved research selections; null while unavailable (no user data file). */
+  researchSelections = $state<ResearchSelection[] | null>(null);
+
   /** Verse to bring into view in the reader, set by navigation. */
   focusVerse = $state<number | null>(null);
   /** Ranges visited this session, for Back and Forward. */
@@ -154,6 +175,9 @@ class AppState {
   async start(): Promise<void> {
     this.status = "starting";
     this.startupError = null;
+    // A selection belongs to the content it was made in.
+    this.exact = null;
+    this.pendingStart = null;
     try {
       const [info, chapters, systems, translations] = await Promise.all([
         engine.info(),
@@ -179,6 +203,7 @@ class AppState {
       if (!remembered) this.valueSystem = info.defaultValueSystem;
       this.status = "ready";
       void this.loadBookmarks();
+      void this.loadResearchSelections();
     } catch (error) {
       this.startupError = describeError(error);
       this.status = "failed";
@@ -267,8 +292,99 @@ class AppState {
     if (chapter) this.show({ first: chapter.firstVerse, last: lastVerse(chapter) }, null);
   }
 
+  setSelectMode(mode: SelectMode): void {
+    this.selectMode = mode;
+    this.pendingStart = null;
+  }
+
+  /** A click on a word or letter: starts, finishes or extends the exact selection. */
+  pickLocation(location: QuranLocation, shift: boolean): void {
+    const next = pick(this.exact, this.pendingStart, location, shift);
+    this.pendingStart = next.pending;
+    this.setExact(next.selection, false);
+  }
+
+  /**
+   * Makes a selection the active one: exact when it names words or letters,
+   * whole verses otherwise. With `reveal`, the reader opens on its start.
+   */
+  setExact(selection: QuranSelection, reveal = true): void {
+    const range = envelope(selection, this.chapters);
+    if (!range) return;
+    if (!isExact(selection)) {
+      this.exact = null;
+      this.pendingStart = null;
+      if (reveal) this.goTo(range);
+      else this.select(range);
+      return;
+    }
+    this.exact = selection;
+    if (reveal) {
+      const chapter = this.chapterOf(range.first);
+      if (chapter) this.chapter = chapter.number;
+      this.focusVerse = range.first;
+      this.view = "read";
+    }
+    this.select(range);
+  }
+
+  /** Widens the selection so both ends are whole words, verses or chapters. */
+  expandSelection(level: Exclude<Level, "letter">): void {
+    const current = this.exact ?? (this.selection ? verseSelection(this.selection, this.chapters) : null);
+    if (current) this.setExact(expand(current, level), false);
+  }
+
+  /** Clears the selection, exact or not. */
+  clearSelection(): void {
+    this.exact = null;
+    this.pendingStart = null;
+    this.selection = null;
+  }
+
+  async loadResearchSelections(): Promise<void> {
+    try {
+      this.researchSelections = await engine.researchSelections();
+    } catch {
+      this.researchSelections = null; // unavailable: the Saved view says so
+    }
+  }
+
+  /** Saves the active selection for research, with the current system and counting. */
+  async saveResearchSelection(title: string, note: string, id?: number): Promise<ResearchSelection | null> {
+    const selection = this.exact ?? (this.selection ? verseSelection(this.selection, this.chapters) : null);
+    if (!selection) return null;
+    const saved = await engine.saveResearchSelection({
+      selection,
+      ...(id !== undefined ? { id } : {}),
+      title,
+      note,
+      valueSystem: this.valueSystem,
+      counting: { ...this.counting },
+    });
+    this.researchSelections = [saved, ...(this.researchSelections ?? []).filter((r) => r.id !== saved.id)];
+    return saved;
+  }
+
+  async deleteResearchSelection(id: number): Promise<void> {
+    await engine.deleteResearchSelection(id);
+    this.researchSelections = (this.researchSelections ?? []).filter((r) => r.id !== id);
+  }
+
+  /** Reopens a saved selection with the system and counting it was saved under. */
+  openResearchSelection(saved: ResearchSelection): void {
+    if (!saved.selection) return;
+    if (saved.valueSystem && this.allSystems.some((s) => s.name === saved.valueSystem)) this.setSystem(saved.valueSystem);
+    if (saved.counting) {
+      this.counting = { ...saved.counting };
+      this.persist();
+    }
+    this.setExact(saved.selection);
+  }
+
   /** Click selects one verse; shift-click extends from the current anchor. */
   selectVerse(verse: number, extend: boolean): void {
+    this.exact = null;
+    this.pendingStart = null;
     const anchor = this.selection;
     const range =
       extend && anchor
@@ -361,6 +477,8 @@ class AppState {
   private show(range: VerseRange, focus: number | null, record = true): boolean {
     const chapter = this.chapterOf(range.first);
     if (!chapter) return false;
+    this.exact = null;
+    this.pendingStart = null;
     this.chapter = chapter.number;
     this.focusVerse = focus;
     this.select(range, record);

@@ -40,6 +40,14 @@ import type {
   VerseRange,
   VerseValue,
   Wordness,
+  Breakdown,
+  BreakdownUnit,
+  ParsedReference,
+  QuranSelection,
+  ResearchSelection,
+  Scope,
+  SelectionAnalysis,
+  SelectionValue,
 } from "./types";
 
 /** A failure the UI can explain. `code` is one of the engine's or the bridge's codes. */
@@ -107,6 +115,11 @@ function call<T>(method: string, params?: object): Promise<T> {
   return transport(method, params ?? null) as Promise<T>;
 }
 
+/** The parameters that name a scope: first and last verses, or an exact selection. */
+function scoped(scope: Scope): object {
+  return "selection" in scope ? { selection: scope.selection } : { first: scope.first, last: scope.last };
+}
+
 /** Typed access to every engine method. */
 export const engine = {
   info: () => call<EngineInfo>("engine.info"),
@@ -115,10 +128,26 @@ export const engine = {
   chapterVerses: (chapter: number) => call<Verse[]>("chapter.verses", { chapter }),
   chapterValues: (chapter: number, valueSystem: string, counting: CountingOptions) =>
     call<VerseValue[]>("chapter.values", { chapter, valueSystem, counting }),
-  stats: (range: VerseRange, valueSystem: string, counting: CountingOptions) =>
-    call<Stats>("selection.stats", { ...range, valueSystem, counting }),
+  stats: (scope: Scope, valueSystem: string, counting: CountingOptions) =>
+    call<Stats>("selection.stats", { ...scoped(scope), valueSystem, counting }),
   parseReference: (text: string, valueSystem: string, counting: CountingOptions) =>
-    call<VerseRange>("reference.parse", { text, valueSystem, counting }),
+    call<ParsedReference>("reference.parse", { text, valueSystem, counting }),
+  analyze: (selection: QuranSelection, valueSystem: string, counting: CountingOptions) =>
+    call<SelectionAnalysis>("selection.analyze", { selection, valueSystem, counting }),
+  selectionValues: (selection: QuranSelection, counting: CountingOptions, valueSystems?: string[]) =>
+    call<SelectionValue[]>("selection.values", valueSystems ? { selection, counting, valueSystems } : { selection, counting }),
+  breakdown: (selection: QuranSelection, by: BreakdownUnit, valueSystem: string, counting: CountingOptions, offset: number, limit: number) =>
+    call<Breakdown>("selection.breakdown", { selection, by, valueSystem, counting, offset, limit }),
+  researchSelections: () => call<ResearchSelection[]>("selections.list"),
+  saveResearchSelection: (params: {
+    selection: QuranSelection;
+    id?: number;
+    title: string;
+    note: string;
+    valueSystem: string;
+    counting: CountingOptions;
+  }) => call<ResearchSelection>("selections.save", params),
+  deleteResearchSelection: (id: number) => call<boolean>("selections.delete", { id }),
   chapterStats: (valueSystem: string, counting: CountingOptions) =>
     call<ChapterStats[]>("chapters.stats", { valueSystem, counting }),
   distance: (from: WordLocation, to: WordLocation, valueSystem: string, counting: CountingOptions) =>
@@ -138,23 +167,23 @@ export const engine = {
   translations: () => call<Translation[]>("translations.list"),
   findings: () => call<Finding[]>("findings.list"),
   initials: () => call<InitialedChapter[]>("initials.list"),
-  sweep: (range: VerseRange, valueSystem: string, counting: CountingOptions) =>
-    call<SweepTotal[]>("selection.sweep", { ...range, valueSystem, counting }),
+  sweep: (scope: Scope, valueSystem: string, counting: CountingOptions) =>
+    call<SweepTotal[]>("selection.sweep", { ...scoped(scope), valueSystem, counting }),
   wordInfo: (verse: number, word: number) => call<WordInfo>("word.info", { verse, word }),
   translationText: (keys: string[], range: VerseRange) => call<TranslationText[]>("translations.text", { keys, ...range }),
-  selectionWords: (range: VerseRange, valueSystem: string, counting: CountingOptions, withMarks: boolean) =>
-    call<WordFrequencies>("selection.words", { ...range, valueSystem, counting, withMarks }),
-  selectionLetters: (range: VerseRange, valueSystem: string, counting: CountingOptions, scope: LetterScope) =>
-    call<LetterStatistic[]>("selection.letters", { ...range, valueSystem, counting, scope }),
-  selectionMaths: (range: VerseRange, counting: CountingOptions, absoluteDifference: boolean, vOverC: boolean) =>
-    call<Maths>("selection.maths", { ...range, counting, absoluteDifference, vOverC }),
-  selectionSymmetry: (range: VerseRange, valueSystem: string, counting: CountingOptions, kind: SymmetryKind, boundaries: boolean) =>
-    call<Symmetry>("selection.symmetry", { ...range, valueSystem, counting, kind, boundaries }),
-  selectionAllah: (range: VerseRange, valueSystem: string, counting: CountingOptions) =>
-    call<AllahSummary>("selection.allah", { ...range, valueSystem, counting }),
+  selectionWords: (over: Scope, valueSystem: string, counting: CountingOptions, withMarks: boolean) =>
+    call<WordFrequencies>("selection.words", { ...scoped(over), valueSystem, counting, withMarks }),
+  selectionLetters: (over: Scope, valueSystem: string, counting: CountingOptions, scope: LetterScope) =>
+    call<LetterStatistic[]>("selection.letters", { ...scoped(over), valueSystem, counting, scope }),
+  selectionMaths: (over: Scope, counting: CountingOptions, absoluteDifference: boolean, vOverC: boolean) =>
+    call<Maths>("selection.maths", { ...scoped(over), counting, absoluteDifference, vOverC }),
+  selectionSymmetry: (over: Scope, valueSystem: string, counting: CountingOptions, kind: SymmetryKind, boundaries: boolean) =>
+    call<Symmetry>("selection.symmetry", { ...scoped(over), valueSystem, counting, kind, boundaries }),
+  selectionAllah: (over: Scope, valueSystem: string, counting: CountingOptions) =>
+    call<AllahSummary>("selection.allah", { ...scoped(over), valueSystem, counting }),
   researchWords: (params: {
     method: ResearchMethod;
-    range: VerseRange | null;
+    range: Scope | null;
     gap: number;
     valueSystem: string;
     counting: CountingOptions;
@@ -164,7 +193,7 @@ export const engine = {
   }) =>
     call<ResearchTable>("research.words", {
       method: params.method,
-      ...(params.range ?? {}),
+      ...(params.range ? scoped(params.range) : {}),
       gap: params.gap,
       valueSystem: params.valueSystem,
       counting: params.counting,

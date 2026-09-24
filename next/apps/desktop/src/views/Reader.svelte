@@ -4,11 +4,13 @@
   import RatioControl from "../lib/components/RatioControl.svelte";
   import TranslationMenu from "../lib/components/TranslationMenu.svelte";
   import Rosette from "../lib/components/Rosette.svelte";
+  import SelectModeControl from "../lib/components/SelectModeControl.svelte";
   import { describeError, engine, latest } from "../lib/engine/client";
   import type { ClassCode, RatioUnit, Verse } from "../lib/engine/types";
   import { cutWord, partOf } from "../lib/ratioColors";
   import { CLASS_NAMES } from "../lib/numbers";
   import { keySearch, nextBookmark } from "../lib/readerKeys";
+  import { at, coverage, endpointOf, letterClusters } from "../lib/selection";
   import { app } from "../lib/state/app.svelte";
   import { search } from "../lib/state/search.svelte";
 
@@ -114,8 +116,54 @@
   });
 
   function isSelected(verse: number): boolean {
+    // An exact selection is drawn on its words, not on whole verses.
     const s = app.selection;
-    return s !== null && verse >= s.first && verse <= s.last;
+    return app.exact === null && s !== null && verse >= s.first && verse <= s.last;
+  }
+
+  type Cover = ReturnType<typeof coverage>;
+
+  function cover(verse: Verse, index: number): Cover {
+    return app.exact ? coverage(app.exact, verse.chapter, verse.numberInChapter, index + 1, verse.words[index] ?? "") : "none";
+  }
+
+  function endpoint(verse: Verse, index: number): ReturnType<typeof endpointOf> {
+    return app.exact ? endpointOf(app.exact, verse.chapter, verse.numberInChapter, index + 1) : null;
+  }
+
+  function isPending(verse: Verse, index: number): boolean {
+    const p = app.pendingStart;
+    return p !== null && p.chapter === verse.chapter && p.verse === verse.numberInChapter && p.word === index + 1;
+  }
+
+  /** Whether the space after a word is inside the selection, so the highlight reads as one run. */
+  function joins(verse: Verse, index: number): boolean {
+    if (index + 1 >= verse.words.length) return false;
+    const here = cover(verse, index);
+    const next = cover(verse, index + 1);
+    const reachesEnd = here === "full" || (typeof here === "object" && here.to === letterClusters(verse.words[index] ?? "").length);
+    const fromStart = next === "full" || (typeof next === "object" && next.from === 1);
+    return reachesEnd && fromStart;
+  }
+
+  // Letter mode splits only the word under the pointer, and words the
+  // selection cuts, into letters: every letter of a chapter as an element
+  // would be thousands of nodes for no benefit.
+  let hovered = $state<string | null>(null);
+
+  function showLetters(verse: Verse, index: number, c: Cover): boolean {
+    return typeof c === "object" || (app.selectMode === "letter" && hovered === `${verse.number}:${index}`);
+  }
+
+  function letterIn(c: Cover, letter: number): boolean {
+    return c === "full" || (typeof c === "object" && letter >= c.from && letter <= c.to);
+  }
+
+  function onWordKey(event: KeyboardEvent, verse: Verse, index: number): void {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    event.preventDefault();
+    event.stopPropagation();
+    app.pickLocation(at(verse.chapter, verse.numberInChapter, index + 1), event.shiftKey);
   }
 
   function onKey(event: KeyboardEvent, verse: number): void {
@@ -152,7 +200,17 @@
       return;
     }
     app.currentWord = index === null ? null : { verse: verse.number, word: displayIndex(verse, index), text: verse.words[index] ?? "" };
-    app.selectVerse(verse.number, event.shiftKey);
+    if (app.selectMode === "verse") {
+      app.selectVerse(verse.number, event.shiftKey);
+      return;
+    }
+
+    // Word and letter modes select from the text; a click between words does nothing.
+    if (index === null) return;
+    const letterTarget = (event.target as HTMLElement).closest<HTMLElement>("[data-letter]");
+    const letter = app.selectMode === "letter" && letterTarget ? Number(letterTarget.dataset.letter) : null;
+    if (app.selectMode === "letter" && letter === null) return;
+    app.pickLocation(at(verse.chapter, verse.numberInChapter, index + 1, letter), event.shiftKey);
   }
 
   function ratioPart(verse: number, index: number) {
@@ -189,6 +247,12 @@
   function onWindowKey(event: KeyboardEvent): void {
     if (app.view !== "read" || event.ctrlKey || event.altKey || event.metaKey) return;
     if (event.target instanceof Element && event.target.closest("input, textarea, select")) return;
+
+    if (event.key === "Escape" && (app.exact || app.pendingStart)) {
+      event.preventDefault();
+      app.clearSelection();
+      return;
+    }
 
     if (event.key === "F3") {
       event.preventDefault();
@@ -236,7 +300,7 @@
 
 <svelte:window onkeydown={onWindowKey} />
 
-<article class="reader" bind:this={scroller} aria-busy={loading}>
+<article class="reader" class:picking={app.selectMode !== "verse"} bind:this={scroller} aria-busy={loading}>
   {#if error}
     <Notice tone="error" title="This chapter could not be opened" detail={error} action={{ label: "Try again", run: () => app.openChapter(app.chapter) }} />
   {:else if chapter}
@@ -261,6 +325,7 @@
       </div>
 
       <div class="tools">
+        <SelectModeControl />
         <TranslationMenu />
         <RatioControl units={ratioUnits} />
       </div>
@@ -284,13 +349,22 @@
           aria-label={label(verse)}
           onclick={(e) => onVerseClick(e, verse)}
           onkeydown={(e) => onKey(e, verse.number)}
-        >{#each verse.words as word, index (index)}<span
+        >{#each verse.words as word, index (index)}{@const c = cover(verse, index)}{@const ends = endpoint(verse, index)}<!-- A word is focusable only in word mode, where its role is button. --><!-- svelte-ignore a11y_no_noninteractive_tabindex --><span
               class="word"
               class:measure-from={isMeasured(verse.number, index, "from")}
               class:measure-to={isMeasured(verse.number, index, "to")}
               class:current-word={isCurrentWord(verse, index)}
+              class:in-selection={c === "full"}
+              class:partial={typeof c === "object"}
+              class:sel-start={ends === "start" || ends === "both"}
+              class:sel-end={ends === "end" || ends === "both"}
+              class:pending={isPending(verse, index)}
+              role={app.selectMode === "word" ? "button" : undefined}
+              tabindex={app.selectMode === "word" ? 0 : undefined}
+              onkeydown={app.selectMode === "word" ? (e) => onWordKey(e, verse, index) : undefined}
+              onmouseenter={app.selectMode === "letter" ? () => (hovered = `${verse.number}:${index}`) : undefined}
               data-ratio={ratioPart(verse.number, index)?.part}
-              data-word={index}>{#if ratioPart(verse.number, index)?.part === "split"}{@const [a, b] = cutWord(word, splitLetters(verse.number, index))}<span class="ratio-first">{a}</span><span class="ratio-second">{b}</span>{:else}{word}{/if}</span>{" "}{/each}<Rosette number={verse.numberInChapter} code={codes.get(verse.number)?.code ?? null} />{#if uncounted(verse)}<span class="note" lang="en" dir="ltr">not counted</span>{/if}</div>
+              data-word={index}>{#if showLetters(verse, index, c)}{#each letterClusters(word) as letter, k (k)}<span class="letter" class:in-selection={letterIn(c, k + 1)} data-letter={k + 1}>{letter}</span>{/each}{:else if ratioPart(verse.number, index)?.part === "split"}{@const [a, b] = cutWord(word, splitLetters(verse.number, index))}<span class="ratio-first">{a}</span><span class="ratio-second">{b}</span>{:else}{word}{/if}</span><span class="gap" class:in-selection={joins(verse, index)}>{" "}</span>{/each}<Rosette number={verse.numberInChapter} code={codes.get(verse.number)?.code ?? null} />{#if uncounted(verse)}<span class="note" lang="en" dir="ltr">not counted</span>{/if}</div>
           {#each shown as t (t.key)}
             {@const line = translated.get(t.key)?.get(verse.number)}
             {#if line}<p class="translation" class:transliteration={t.kind === "transliteration"} lang={t.language} dir={t.rightToLeft ? "rtl" : "ltr"}>{readable(line)}</p>{/if}
@@ -420,6 +494,57 @@
 
   .word {
     border-radius: 3px;
+  }
+
+  /* Word and letter modes: the text is what is clicked, not the verse. */
+  .picking .verse {
+    cursor: text;
+  }
+
+  .picking .verse:hover {
+    background: none;
+  }
+
+  .picking .word {
+    cursor: pointer;
+  }
+
+  .picking .word:hover {
+    background: var(--surface-sunk);
+  }
+
+  .picking .letter:hover {
+    background: color-mix(in srgb, var(--lapis) 22%, transparent);
+  }
+
+  /* The selection reads as one run across words and verses. Its ends carry a
+     bar on their outer side, so start and end show without relying on color. */
+  .word.in-selection,
+  .gap.in-selection,
+  .letter.in-selection {
+    background: var(--lapis-soft);
+  }
+
+  .word.sel-start {
+    box-shadow: inset -2px 0 0 var(--lapis);
+  }
+
+  .word.sel-end {
+    box-shadow: inset 2px 0 0 var(--lapis);
+  }
+
+  .word.sel-start.sel-end {
+    box-shadow: inset -2px 0 0 var(--lapis), inset 2px 0 0 var(--lapis);
+  }
+
+  .word.pending {
+    outline: 1px dashed var(--lapis);
+    outline-offset: 1px;
+  }
+
+  .word:focus-visible {
+    outline: none;
+    box-shadow: var(--focus);
   }
 
   .tools {

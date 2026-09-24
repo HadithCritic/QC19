@@ -519,3 +519,103 @@ export interface SearchResult {
   /** Where the verses were found when not in the Arabic text: in translations, or in the standard spelling. */
   foundIn: "translations" | "emlaaei" | null;
 }
+
+// Exact selections (docs/specs/research-selection.md). Mirrors LocationDto,
+// SelectionDto and the selection DTOs in Dtos.cs.
+
+/** A place as the reader sees it: verse in chapter (0 for a verse 0), 1-based display word and letter. */
+export interface QuranLocation {
+  chapter: number;
+  verse: number | null;
+  word: number | null;
+  letter: number | null;
+}
+
+export interface QuranSelection {
+  start: QuranLocation;
+  end: QuranLocation;
+}
+
+/** What an analysis runs over: whole verses, or an exact selection. */
+export type Scope = VerseRange | { selection: QuranSelection };
+
+/** Where a counted letter sits; absolute word and letter numbers are 1-based in the counted text. */
+export interface CountedPosition {
+  chapter: number;
+  verse: number;
+  absoluteVerse: number;
+  wordInVerse: number;
+  wordInChapter: number;
+  absoluteWord: number;
+  letterInWord: number;
+  letterInVerse: number;
+  letterInChapter: number;
+  absoluteLetter: number;
+}
+
+export interface SelectionAnalysis {
+  address: string;
+  selection: QuranSelection;
+  /** Absolute verses the counted text touches; null when nothing in the selection is counted. */
+  first: number | null;
+  last: number | null;
+  verseAligned: boolean;
+  position: Position | null;
+  chapters: NumberInfo;
+  verses: NumberInfo;
+  words: NumberInfo;
+  letters: NumberInfo;
+  distinctWords: NumberInfo;
+  distinctLetters: NumberInfo;
+  value: NumberInfo;
+  letterFrequencies: LetterCount[];
+  start: CountedPosition | null;
+  end: CountedPosition | null;
+  /** End minus start, as positions; not the selected counts. */
+  delta: { chapters: number; verses: number; words: number; letters: number } | null;
+  methodology: { edition: string; textMode: string; valueSystem: string; counting: CountingOptions };
+  notes: string[];
+}
+
+/** A selection's value in one system; null with an error when it cannot be resolved there. */
+export interface SelectionValue {
+  valueSystem: string;
+  letterCount: number;
+  value: NumberInfo | null;
+  error: string | null;
+}
+
+export type BreakdownUnit = "verse" | "word" | "letter";
+
+export interface BreakdownRow {
+  address: string;
+  location: QuranLocation;
+  text: string;
+  letters: number;
+  /** A decimal string. */
+  value: string;
+}
+
+export interface Breakdown {
+  by: BreakdownUnit;
+  rowCount: number;
+  offset: number;
+  rows: BreakdownRow[];
+}
+
+export interface ResearchSelection {
+  id: number;
+  title: string;
+  note: string;
+  address: string;
+  selection: QuranSelection | null;
+  valueSystem: string | null;
+  counting: CountingOptions | null;
+  createdUtc: string;
+  updatedUtc: string;
+}
+
+/** A parsed reference: verses, and the exact selection when it named words or letters. */
+export interface ParsedReference extends VerseRange {
+  selection: QuranSelection | null;
+}

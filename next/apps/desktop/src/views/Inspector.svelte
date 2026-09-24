@@ -4,6 +4,7 @@
   import NumberChip from "../lib/components/NumberChip.svelte";
   import NumberDetail from "../lib/components/NumberDetail.svelte";
   import Notice from "../lib/components/Notice.svelte";
+  import SelectionPanel from "../lib/components/SelectionPanel.svelte";
   import { describeError, engine, latest } from "../lib/engine/client";
   import type { NumberInfo, Stats } from "../lib/engine/types";
   import { rangeReference } from "../lib/numbers";
@@ -25,7 +26,8 @@
     const selection = app.selection;
     const system = app.valueSystem;
     const counting = { ...app.counting };
-    if (!selection || !system) {
+    // An exact selection has its own panel; these verse figures would not be its own.
+    if (!selection || !system || app.exact) {
       stats = null;
       return;
     }
@@ -67,10 +69,16 @@
 </script>
 
 <aside class="inspector" aria-label="Selection statistics" aria-busy={loading}>
-  {#if error}
+  {#if app.exact}
+    <SelectionPanel />
+    <WordCard />
+  {:else if error}
     <Notice tone="error" title="These statistics could not be computed" detail={error} />
   {:else if !app.selection}
-    <Notice title="Select verses to see their numbers" detail="Click a verse to select it and shift-click to extend the range. You can also type a reference such as 2:255." />
+    <Notice
+      title="Select verses to see their numbers"
+      detail="Click a verse to select it and shift-click to extend the range. Choose Word or Letter above the text to select exact words or letters. You can also type a reference such as 2:255 or 2:255:w4-2:257:w8."
+    />
   {:else if stats && stats.verses.value === "0"}
     <Notice
       title="This Bismillah is not counted"

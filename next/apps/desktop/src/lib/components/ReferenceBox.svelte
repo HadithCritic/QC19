@@ -16,7 +16,10 @@
     busy = true;
     error = null;
     try {
-      app.goTo(await engine.parseReference(text, app.valueSystem, { ...app.counting }));
+      const parsed = await engine.parseReference(text, app.valueSystem, { ...app.counting });
+      // An exact address (2:255:w4:l2) selects its words or letters; anything else selects verses.
+      if (parsed.selection) app.setExact(parsed.selection);
+      else app.goTo({ first: parsed.first, last: parsed.last });
       text = "";
       input?.blur();
     } catch (e) {
@@ -64,7 +67,7 @@
     bind:value={text}
     class="field num"
     placeholder="Go to 2:255 or page 10"
-    title="A chapter (2, 3-4), a verse (2:255, 2:255-257, 24:35-27:62), or a unit: page, station, part, group, half, quarter, bowing, verse, word or letter, such as page 10 or part 3-4"
+    title="A chapter (2, 3-4), a verse (2:255, 2:255-257, 24:35-27:62), an exact word or letter (2:255:w4, 2:255:w4:l2-2:257:w8), or a unit: page, station, part, group, half, quarter, bowing, verse, word or letter, such as page 10 or part 3-4"
     autocomplete="off"
     spellcheck="false"
     aria-describedby={error ? "reference-error" : undefined}
