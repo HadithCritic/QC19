@@ -125,7 +125,7 @@ public static class ReferenceParser
     private static ReferenceParseResult FormatError(string text) =>
         ReferenceParseResult.Fail($"\"{text.Trim()}\" is not a reference. Try 2, 2:255, 2:255-257 or 1:7-2:2.");
 
-    private static string NormalizeDigits(string text) => string.Create(text.Length, text, static (span, source) =>
+    internal static string NormalizeDigits(string text) => string.Create(text.Length, text, static (span, source) =>
     {
         for (int i = 0; i < source.Length; i++)
         {
