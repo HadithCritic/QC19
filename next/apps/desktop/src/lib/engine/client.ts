@@ -144,8 +144,8 @@ export const engine = {
     id?: number;
     title: string;
     note: string;
-    valueSystem: string;
-    counting: CountingOptions;
+    valueSystem?: string;
+    counting?: CountingOptions;
   }) => call<ResearchSelection>("selections.save", params),
   deleteResearchSelection: (id: number) => call<boolean>("selections.delete", { id }),
   chapterStats: (valueSystem: string, counting: CountingOptions) =>

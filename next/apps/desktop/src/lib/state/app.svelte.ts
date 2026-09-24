@@ -365,6 +365,20 @@ class AppState {
     return saved;
   }
 
+  /** Renames a saved selection or changes its note, keeping what it was studied under. */
+  async editResearchSelection(saved: ResearchSelection, title: string, note: string): Promise<void> {
+    if (!saved.selection) return;
+    const edited = await engine.saveResearchSelection({
+      selection: saved.selection,
+      id: saved.id,
+      title,
+      note,
+      ...(saved.valueSystem ? { valueSystem: saved.valueSystem } : {}),
+      ...(saved.counting ? { counting: saved.counting } : {}),
+    });
+    this.researchSelections = (this.researchSelections ?? []).map((r) => (r.id === edited.id ? edited : r));
+  }
+
   async deleteResearchSelection(id: number): Promise<void> {
     await engine.deleteResearchSelection(id);
     this.researchSelections = (this.researchSelections ?? []).filter((r) => r.id !== id);

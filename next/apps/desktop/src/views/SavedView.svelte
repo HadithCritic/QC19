@@ -1,5 +1,6 @@
 <script lang="ts">
   import Notice from "../lib/components/Notice.svelte";
+  import ResearchSelections from "../lib/components/ResearchSelections.svelte";
   import TextModeEditor from "../lib/components/TextModeEditor.svelte";
   import { describeError, engine } from "../lib/engine/client";
   import type { HistoryEntry, HistoryKind } from "../lib/engine/types";
@@ -26,6 +27,7 @@
   $effect(() => {
     void loadHistory();
     void app.loadBookmarks();
+    void app.loadResearchSelections();
   });
 
   async function clear(kind: HistoryKind): Promise<void> {
@@ -49,7 +51,7 @@
 <section class="saved" aria-labelledby="saved-title">
   <header>
     <h1 id="saved-title">Saved</h1>
-    <p class="hint">Bookmarks and notes, your text modes, and what you have read and searched. Everything here is kept on this computer.</p>
+    <p class="hint">Bookmarks and notes, research selections, your text modes, and what you have read and searched. Everything here is kept on this computer.</p>
   </header>
 
   <div class="body">
@@ -77,6 +79,8 @@
           </ul>
         {/if}
       </section>
+
+      <ResearchSelections />
 
       <TextModeEditor />
 
