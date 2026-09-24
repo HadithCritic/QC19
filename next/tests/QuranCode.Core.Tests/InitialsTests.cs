@@ -1,5 +1,7 @@
 using Microsoft.Data.Sqlite;
 using QuranCode.Core.Code19;
+using QuranCode.Core.Content;
+using QuranCode.Core.Text;
 using Xunit;
 
 namespace QuranCode.Core.Tests;
@@ -173,6 +175,49 @@ public sealed class InitialsTests : IDisposable
             Assert.Equal(Enumerable.Range(0, c.RowCount), verses.Select(r => r[1]));
             Assert.Equal(QuranicInitials.Published[(chapter.Chapter, 'ا')], verses.Sum(r => r[2]));
         }
+    }
+
+    private static readonly CountingOptions KhalifaHamza = new() { IncludeBasmalas = true, HamzaAboveLine = true };
+
+    private long AlifOf(int chapter) =>
+        FindingEvaluator.Evaluate(_engine, new Finding(
+            "t", "t", 0, FindingMeasure.LetterOccurrences, new FindingScope(chapter), "ا",
+            true, "Simplified29", RuleBasis.Stated, "t", "t", HamzaAsAlif: true)).Computed;
+
+    /// <summary>
+    /// Simplified29 with the hamza above a line kept and every hamza on no
+    /// seat counted as alif gives Khalifa's alif total over the 13 chapters
+    /// exactly, though each chapter is off by a few (docs/research/alif-counting.md).
+    /// </summary>
+    [Fact]
+    public void KhalifasHamzaConventionGivesHisAlifTotal()
+    {
+        int[] chapters = [.. QuranicInitials.Chapters.Where(c => c.Letters.Contains('ا')).Select(c => c.Chapter)];
+        Assert.Equal(17152, chapters.Sum(c => QuranicInitials.Published[(c, 'ا')]));
+        Assert.Equal(17152, chapters.Sum(AlifOf));
+        Assert.Equal(4504, AlifOf(2));
+        Assert.Equal(605, AlifOf(13)); // exact
+        Assert.Equal(493, AlifOf(15)); // exact
+    }
+
+    [Fact]
+    public void KhalifasHamzaConventionMatchesHisPrintoutVerseByVerse()
+    {
+        string path = Path.Combine(TestPaths.GoldenDirectory, "..", "..", "data", "sources", "qvp", "alif.tsv");
+        var khalifa = File.ReadLines(path)
+            .Where(l => l.Length > 0 && char.IsDigit(l[0]))
+            .Select(l => l.Split('\t').Select(int.Parse).ToArray())
+            .ToDictionary(r => (r[0], r[1]), r => r[2]);
+
+        Segmentation s = _engine.Segmentation("Simplified29", KhalifaHamza);
+        int exact = 0;
+        for (int v = 0; v < s.VerseCount; v++)
+        {
+            if (!khalifa.TryGetValue((s.VerseChapter[v], s.VerseNumberInChapter[v]), out int published)) continue;
+            string text = string.Concat(s.VerseWords(v));
+            if (text.Count(c => c is 'ا' or 'ء') == published) exact++;
+        }
+        Assert.Equal(1340, exact);
     }
 
     [Fact]

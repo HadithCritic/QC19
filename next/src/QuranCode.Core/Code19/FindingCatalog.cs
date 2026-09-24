@@ -43,12 +43,13 @@ public static class FindingCatalog
                 Measure: ParseMeasure(f[3], lineNumber),
                 Scope: ParseScope(f[4], lineNumber),
                 Match: f[5].Trim() is { Length: > 0 } match ? match : null,
-                IncludeBasmalas: ParseYesNo(f[6], lineNumber),
+                IncludeBasmalas: ParseYesNo(f[6].Split('+')[0], lineNumber),
                 TextMode: f[7],
                 Basis: ParseBasis(f[8], lineNumber),
                 Rule: f[9],
                 Source: f[10],
-                Check: ParseCheck(f[11], lineNumber)));
+                Check: ParseCheck(f[11], lineNumber),
+                HamzaAsAlif: ParseConvention(f[6], lineNumber)));
         }
 
         var duplicate = findings.GroupBy(x => x.Id).FirstOrDefault(g => g.Count() > 1);
@@ -81,6 +82,19 @@ public static class FindingCatalog
         "open" => FindingCheck.Open,
         _ => throw new InvalidDataException($"findings line {line}: check is \"gate\" or \"open\", not \"{text}\""),
     };
+
+    /// <summary>
+    /// What follows "yes" or "no" in the basmalas column. Only "+hamza" is
+    /// defined: Khalifa's hamza convention (see Finding.HamzaAsAlif).
+    /// </summary>
+    private static bool ParseConvention(string text, int line)
+    {
+        string[] parts = text.Split('+');
+        foreach (string extra in parts.Skip(1))
+            if (extra != "hamza")
+                throw new InvalidDataException($"findings line {line}: \"+{extra}\" is not a counting convention (\"+hamza\" is)");
+        return parts.Length > 1;
+    }
 
     private static bool ParseYesNo(string text, int line) => text switch
     {

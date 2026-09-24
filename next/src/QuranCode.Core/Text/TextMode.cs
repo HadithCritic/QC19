@@ -42,6 +42,9 @@ public sealed class TextMode
     /// <summary>Number of rules in the pipeline.</summary>
     public int RuleCount => _rules.Length;
 
+    /// <summary>The rules in order, for a derived mode to build on.</summary>
+    public IReadOnlyList<(string Find, string Replace)> Rules => _rules;
+
     /// <summary>
     /// Applies every rule in order. Equivalent to the legacy
     /// <c>SimplificationSystem.Simplify</c>.

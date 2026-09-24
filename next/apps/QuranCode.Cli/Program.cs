@@ -2,6 +2,7 @@ using System.Globalization;
 using QuranCode.Core;
 using QuranCode.Core.Content;
 using QuranCode.Core.Search;
+using QuranCode.Core.Text;
 
 // QuranCode command line.
 //
@@ -38,6 +39,8 @@ OPTIONS
   --mode <name>            Text mode (default: Original)
   --whole                  Search: match whole words only
   --part                   Search: match only inside longer words
+  --hamza                  Letters: keep the hamza above a line (Khalifa's alif
+                           is then letters اء --mode Simplified29 --hamza)
   --limit <n>              Cap rows printed (default: 50, 0 for all)
 
 EXAMPLES
@@ -66,7 +69,7 @@ for (int i = 1; i < args.Length; i++)
 
     string key = args[i][2..];
     // Flags take no value; everything else consumes the next argument.
-    if (key is "whole" or "part")
+    if (key is "whole" or "part" or "hamza")
     {
         options[key] = "true";
     }
@@ -232,7 +235,11 @@ try
         {
             if (positional.Count == 0) { Console.Error.WriteLine("letters needs the letters to count, e.g. letters اء"); return 2; }
             char[] letters = [.. positional[0].Distinct()];
-            var segmentation = engine.Segmentation(textMode);
+            var segmentation = engine.Segmentation(textMode, new CountingOptions
+            {
+                IncludeBasmalas = true,
+                HamzaAboveLine = options.ContainsKey("hamza"),
+            });
             Console.WriteLine("chapter\tverse\t" + string.Join('\t', letters));
             for (int v = 0; v < segmentation.VerseCount; v++)
             {

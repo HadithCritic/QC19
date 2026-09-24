@@ -145,7 +145,7 @@ public sealed partial class QuranCodeEngine : IDisposable
 
     /// <summary>The options that actually apply in a text mode.</summary>
     public CountingOptions Effective(string textMode, CountingOptions? counting) =>
-        (counting ?? CountingOptions.Default).For(textMode, VerseZero);
+        (counting ?? CountingOptions.Default).For(BaseOf(textMode), VerseZero);
 
     /// <summary>The verses counted with or without verse-0 Bismillahs.</summary>
     public CorpusView View(CountingOptions? counting = null)
@@ -161,8 +161,7 @@ public sealed partial class QuranCodeEngine : IDisposable
     }
 
     /// <summary>The normalization pipeline for a text mode.</summary>
-    public TextPipeline Pipeline(string textMode = DefaultTextMode) =>
-        new(_content.GetTextMode(textMode));
+    public TextPipeline Pipeline(string textMode = DefaultTextMode) => PipelineOf(textMode);
 
     /// <summary>A value system by name.</summary>
     public ValueSystem ValueSystem(string name = DefaultValueSystem) =>

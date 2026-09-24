@@ -40,11 +40,15 @@ public sealed class TextPipeline
     /// <summary>Text mode name, for example <c>Original</c>.</summary>
     public string TextModeName { get; }
 
-    public TextPipeline(TextMode rules)
+    /// <summary>The mode whose letter stage runs: the text mode itself, or a derived mode's base.</summary>
+    public string LetterStageMode { get; }
+
+    public TextPipeline(TextMode rules, string? letterStageMode = null)
     {
         ArgumentNullException.ThrowIfNull(rules);
         _rules = rules;
         TextModeName = rules.Name;
+        LetterStageMode = letterStageMode ?? rules.Name;
     }
 
     /// <summary>
@@ -59,7 +63,7 @@ public sealed class TextPipeline
         if (string.IsNullOrEmpty(text)) return "";
 
         string segmented = _rules.Simplify(text);
-        return ArabicNormalizer.Simplify(segmented, TextModeName);
+        return ArabicNormalizer.Simplify(segmented, LetterStageMode);
     }
 
     /// <summary>
@@ -74,5 +78,5 @@ public sealed class TextPipeline
         string.IsNullOrEmpty(text) ? "" : _rules.Simplify(text);
 
     /// <summary>Applies only the letter stage to text that has been through the rules.</summary>
-    public string LetterStage(string segmented) => ArabicNormalizer.Simplify(segmented, TextModeName);
+    public string LetterStage(string segmented) => ArabicNormalizer.Simplify(segmented, LetterStageMode);
 }

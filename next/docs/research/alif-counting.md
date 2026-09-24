@@ -55,12 +55,25 @@ seated ئ and ؤ:
 
 | | Verses | Share |
 | --- | ---: | ---: |
-| Match his count exactly | 1,338 | 93.2% |
-| Off by one | 90 | 6.3% |
+| Match his count exactly | 1,340 | 93.4% |
+| Off by one | 88 | 6.1% |
 | Off by two | 7 | 0.5% |
 
-Over all 13 chapters this gives 17,154 against his 17,152. Chapters 13 and
-15 come out exact; the others differ by between 2 and 16.
+**This is an option the original already had.** Simplified29 drops the hamza
+on a tatweel, but the original's Statistics panel offers "hamza above line"
+(`CountingOptions.HamzaAboveLine`), which writes ـٔ as ـء before the letter
+stage and so keeps it as a hamza. Khalifa's alif is then Simplified29 with
+that option on, counting ا and ء together. No new text mode is needed.
+
+Over all 13 chapters this gives exactly his 17,152. Chapters 13 and 15 come
+out exact; the others differ by a few, in both directions, and cancel:
+
+| Chapter | 2 | 3 | 7 | 10 | 11 | 12 | 13 | 14 | 15 | 29 | 30 | 31 | 32 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Computed minus his | +2 | -11 | -17 | +2 | +3 | +9 | 0 | +4 | 0 | -3 | -2 | +6 | +7 |
+
+The command line reproduces the per-verse figures:
+`qurancode letters اء --mode Simplified29 --hamza`.
 
 **The remaining differences are not consistent by word.** ولئن is counted
 with an extra alif in 8 of its 18 verses, أولٓئك in 4 of 49, هٓؤلآء in 3 of
@@ -71,11 +84,14 @@ reached with a consistent one.
 
 ## Consequences for the app
 
-- The alif findings stay **open**. The engine's current Simplified29 drops the
-  hamza on a tatweel and does not count the standalone ء as alif, so it gives
-  4,217 against 4,502 in chapter 2. The rule above would close most of that
-  gap, and it is a text mode rather than a finding, so it belongs with
-  user-defined text modes (roadmap stage E).
+- A finding can carry this convention: `yes+hamza` in the catalog's
+  basmalas column turns on the hamza above a line and counts ء wherever ا is
+  counted (`Finding.HamzaAsAlif`). All the alif findings now use it.
+- Four of them reproduce and are gated: the 13-chapter total of 17,152, the
+  chapter figures for 13 (A.L.M.R., 1,482) and 15 (A.L.R., 912), and the
+  A.L.M. total of 19,874. That last one holds only as a total: its six
+  chapters' alifs come to one fewer than his, and chapter 30 has one ل more
+  than his printout. The rest stay **open**, each off by the figure above.
 - His verse-by-verse figures are now data. They can be shown beside the
   computed counts, but summing them is not a check: it reproduces his totals
   by construction.

@@ -85,8 +85,9 @@ internal sealed partial class Handlers
         _ => measure.ToString(),
     };
 
-    private static string Convention(Finding finding) =>
-        finding.IncludeBasmalas
-            ? "counting the 112 unnumbered Basmalahs"
-            : "numbered verses only";
+    private static string Convention(Finding finding)
+    {
+        string basmalas = finding.IncludeBasmalas ? "counting the 112 unnumbered Basmalahs" : "numbered verses only";
+        return finding.HamzaAsAlif ? $"{basmalas}, with Khalifa's hamza (the hamza on no seat counted as alif)" : basmalas;
+    }
 }

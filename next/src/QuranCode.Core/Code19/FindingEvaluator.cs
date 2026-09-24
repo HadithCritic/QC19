@@ -30,7 +30,7 @@ public static class FindingEvaluator
         ArgumentNullException.ThrowIfNull(engine);
         ArgumentNullException.ThrowIfNull(finding);
 
-        var counting = new CountingOptions { IncludeBasmalas = finding.IncludeBasmalas };
+        var counting = new CountingOptions { IncludeBasmalas = finding.IncludeBasmalas, HamzaAboveLine = finding.HamzaAsAlif };
         Segmentation segmentation = engine.Segmentation(finding.TextMode, counting);
         VerseWords[] scope = ScopeOf(finding.Scope, segmentation);
 
@@ -40,7 +40,7 @@ public static class FindingEvaluator
             FindingMeasure.Words => CountWords(engine, counting, segmentation, scope, finding.Match),
             FindingMeasure.Letters => scope.Sum(r => CountLetters(segmentation, r, _ => true)),
             FindingMeasure.LetterOccurrences => scope.Sum(r => CountLetters(segmentation, r, LettersOf(finding).Contains)),
-            FindingMeasure.OwnInitials => CountOwnInitials(segmentation, scope, finding.Match),
+            FindingMeasure.OwnInitials => CountOwnInitials(segmentation, scope, finding.Match, finding.HamzaAsAlif),
             FindingMeasure.WordFormOccurrences => scope.Sum(r => CountForms(segmentation, r, SetOf(finding))),
             FindingMeasure.VerseNumberSum => scope
                 .Where(r => CountForms(segmentation, r, SetOf(finding)) > 0)
@@ -61,10 +61,20 @@ public static class FindingEvaluator
         WordForms.Named(finding.Match ?? "")
         ?? throw new ArgumentException($"no word-form set named \"{finding.Match}\"", nameof(finding));
 
-    private static HashSet<char> LettersOf(Finding finding) =>
-        finding.Match is { Length: > 0 } match
-            ? [.. match]
-            : throw new ArgumentException("a letter count needs at least one letter", nameof(finding));
+    private static HashSet<char> LettersOf(Finding finding)
+    {
+        if (finding.Match is not { Length: > 0 } match)
+            throw new ArgumentException("a letter count needs at least one letter", nameof(finding));
+        HashSet<char> letters = [.. match];
+        return finding.HamzaAsAlif ? WithHamzaAsAlif(letters) : letters;
+    }
+
+    /// <summary>Under Khalifa's hamza convention, counting alif counts the hamza on no seat too.</summary>
+    private static HashSet<char> WithHamzaAsAlif(HashSet<char> letters)
+    {
+        if (letters.Contains('ا')) letters.Add('ء');
+        return letters;
+    }
 
     /// <summary>The scope as the counted words of each verse it covers, in order.</summary>
     private static VerseWords[] ScopeOf(FindingScope scope, Segmentation s)
@@ -124,11 +134,13 @@ public static class FindingEvaluator
         return total;
     }
 
-    private static long CountOwnInitials(Segmentation s, VerseWords[] scope, string? only)
+    private static long CountOwnInitials(Segmentation s, VerseWords[] scope, string? only, bool hamzaAsAlif)
     {
         var initials = QuranicInitials.Chapters.ToDictionary(c => c.Chapter, c => new HashSet<char>(c.Letters));
         if (!string.IsNullOrWhiteSpace(only))
             foreach (HashSet<char> letters in initials.Values) letters.IntersectWith(only);
+        if (hamzaAsAlif)
+            foreach (HashSet<char> letters in initials.Values) WithHamzaAsAlif(letters);
 
         long total = 0;
         foreach (VerseWords r in scope)

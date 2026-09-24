@@ -134,7 +134,14 @@ public sealed record Finding(
     RuleBasis Basis,
     string Rule,
     string Source,
-    FindingCheck Check = FindingCheck.Gate);
+    FindingCheck Check = FindingCheck.Gate,
+    bool HamzaAsAlif = false);
+
+// HamzaAsAlif is Khalifa's hamza convention, from the verse-by-verse printout
+// in Quran: Visual Presentation of the Miracle (docs/research/alif-counting.md):
+// the hamza written above a line counts as a letter (the original's counting
+// option of that name), and wherever alif is counted, every hamza on no seat
+// counts as an alif. The seated forms أ إ ئ ؤ are unaffected.
 
 /// <summary>A finding and what the engine computes for it.</summary>
 public sealed record FindingResult(Finding Finding, long Computed)

@@ -157,10 +157,11 @@ Khalifa's letter of 27 November 1984 then named *Quran: Visual Presentation of
 the Miracle* as his final counting system, and its verse-by-verse printout for
 all 13 alif chapters was transcribed: 1,435 verses, every chapter adding up to
 his total. It shows his alif is the plain alif plus the hamza on no seat (the
-standalone ء and the hamza on a tatweel), which matches 93% of his verses
-exactly and his 17,152 alifs to within 2. The rest are choices made verse by
-verse, not by word, so no rule reproduces them all. The alif findings stay
-open; the rule belongs in stage E as a text mode. The whole account is in
+standalone ء and the hamza on a tatweel). That is Simplified29 with the
+original's "hamza above line" counting option, and it matches 93% of his
+verses exactly and his 17,152 alifs exactly. The rest are choices made verse
+by verse, not by word, so no rule reproduces each chapter. Four alif findings
+now reproduce and are gated; the others stay open. The whole account is in
 [`research/alif-counting.md`](research/alif-counting.md).
 
 ## Stage D: 19-hunting (done)
