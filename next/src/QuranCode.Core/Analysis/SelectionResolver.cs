@@ -24,6 +24,13 @@ public sealed record CountedSpan(
     public int LetterCount => LastLetter - FirstLetter + 1;
 }
 
+/// <summary>A display word and the counted letters it stands for.</summary>
+/// <param name="Word">0-based display word in its verse.</param>
+/// <param name="Count">Display words the row covers: more than one only when their letters cannot be told apart.</param>
+/// <param name="LastLetter">FirstLetter - 1 when the word produces no counted letter.</param>
+/// <param name="LetterEnds">Counted letters through each display letter, from FirstLetter; null when unknown.</param>
+public sealed record DisplayWordLetters(int Word, int Count, int FirstLetter, int LastLetter, int[]? LetterEnds);
+
 /// <summary>
 /// A selection resolved against the counted text, or the reason it cannot be.
 /// </summary>
@@ -99,6 +106,54 @@ public sealed class SelectionResolver
         {
             return new SelectionResolution(ordered, null, [], ex.Message);
         }
+    }
+
+    /// <summary>
+    /// Every display word of a counted verse with the counted letters it
+    /// stands for; null when the verse cannot be aligned.
+    /// </summary>
+    /// <remarks>
+    /// Display words counted as one word are listed one by one when their
+    /// letters can be told apart, and as one row otherwise.
+    /// </remarks>
+    public IReadOnlyList<DisplayWordLetters>? WordsOf(int index)
+    {
+        Segmentation s = _segmentation;
+        VerseDisplay display = _display(_view.Verses[index]);
+        DisplaySpan[]? spans = DisplayWords.Align(display, s.VerseWords(index), _normalizeWord);
+        if (spans is null) return null;
+
+        var rows = new List<DisplayWordLetters>();
+        for (int c = 0; c < spans.Length;)
+        {
+            DisplaySpan group = spans[c];
+            int last = c;
+            while (last + 1 < spans.Length && spans[last + 1] == group) last++;
+            if (group.Count == 0) { c = last + 1; continue; }
+
+            int start = s.WordFirstLetter[s.VerseFirstWord[index] + c];
+            int lastWord = s.VerseFirstWord[index] + last;
+            int end = s.WordFirstLetter[lastWord] + s.WordLetterCount[lastWord];
+            string[] words = display.Words.Skip(group.First).Take(group.Count).ToArray();
+            int[][]? ends = DisplayLetters.Map(words, new string(s.LetterChars, start, end - start), _normalizeWord);
+
+            if (ends is null)
+            {
+                rows.Add(new DisplayWordLetters(group.First, group.Count, start, end - 1, null));
+            }
+            else
+            {
+                for (int j = 0; j < words.Length; j++)
+                {
+                    int before = EndOfWordsBefore(ends, j);
+                    int after = ends[j].Length > 0 ? ends[j][^1] : before;
+                    rows.Add(new DisplayWordLetters(
+                        group.First + j, 1, start + before, start + after - 1, ends[j].Select(e => e - before).ToArray()));
+                }
+            }
+            c = last + 1;
+        }
+        return rows;
     }
 
     private CountedSpan Span(int firstLetter, int lastLetter)

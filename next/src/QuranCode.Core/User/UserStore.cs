@@ -18,12 +18,23 @@ public enum HistoryKind
     Find,
 }
 
+/// <summary>
+/// An exact selection kept for research, with the settings it was studied
+/// under, so a result can be reproduced as it was found.
+/// </summary>
+/// <param name="Address">The canonical selection address, as in 2:255:w4:l2-2:257:w8.</param>
+/// <param name="ValueSystem">The value system it was studied in, or null.</param>
+/// <param name="Counting">The counting options it was studied with, or null.</param>
+public sealed record ResearchSelection(
+    long Id, string Title, string Note, string Address, string? ValueSystem, CountingOptions? Counting,
+    DateTime CreatedUtc, DateTime UpdatedUtc);
+
 public sealed record HistoryEntry(long Id, HistoryKind Kind, VerseRef? First, VerseRef? Last, string? Term, string? Wordness, DateTime AtUtc);
 
 /// <summary>
-/// The reader's own data: bookmarks with notes, browse and find history, and
-/// the text modes the reader defined, kept in <c>user.db</c>, apart from the
-/// read-only content.
+/// The reader's own data: bookmarks with notes, browse and find history, the
+/// text modes the reader defined, and saved research selections, kept in
+/// <c>user.db</c>, apart from the read-only content.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -38,7 +49,8 @@ public sealed record HistoryEntry(long Id, HistoryKind Kind, VerseRef? First, Ve
 /// </remarks>
 public sealed class UserStore : IDisposable
 {
-    public const int SchemaVersion = 2;
+    public const int SchemaVersion = 3;
+    public const int MaxTitleLength = 200;
     public const int MaxNoteLength = 10_000;
     public const int MaxTermLength = 500;
 
@@ -85,6 +97,18 @@ public sealed class UserStore : IDisposable
             find     TEXT    NOT NULL,
             replace  TEXT    NOT NULL,
             PRIMARY KEY (mode, position)
+        );
+        """,
+        """
+        CREATE TABLE research_selections (
+            id           INTEGER PRIMARY KEY,
+            title        TEXT    NOT NULL,
+            note         TEXT    NOT NULL DEFAULT '',
+            address      TEXT    NOT NULL,
+            value_system TEXT,
+            counting     TEXT,
+            created_utc  TEXT    NOT NULL,
+            updated_utc  TEXT    NOT NULL
         );
         """,
     ];
@@ -338,6 +362,102 @@ public sealed class UserStore : IDisposable
         mode.Transaction = transaction;
         mode.Parameters.AddWithValue("$name", name);
         return mode.ExecuteNonQuery() > 0;
+    }
+
+    // -- research selections -------------------------------------------
+
+    /// <summary>Every saved research selection, most recently changed first.</summary>
+    public IReadOnlyList<ResearchSelection> ResearchSelections()
+    {
+        using SqliteCommand command = Command(
+            "SELECT id, title, note, address, value_system, counting, created_utc, updated_utc " +
+            "FROM research_selections ORDER BY updated_utc DESC, id DESC");
+        var result = new List<ResearchSelection>();
+        using SqliteDataReader reader = command.ExecuteReader();
+        while (reader.Read())
+        {
+            result.Add(new ResearchSelection(
+                reader.GetInt64(0), reader.GetString(1), reader.GetString(2), reader.GetString(3),
+                reader.IsDBNull(4) ? null : reader.GetString(4),
+                reader.IsDBNull(5) ? null : ParseCounting(reader.GetString(5)),
+                ParseTime(reader.GetString(6)), ParseTime(reader.GetString(7))));
+        }
+        return result;
+    }
+
+    /// <summary>Adds a research selection, or replaces the one with <paramref name="id"/>.</summary>
+    /// <returns>The saved selection; null when <paramref name="id"/> names none.</returns>
+    /// <exception cref="ArgumentException">The title, note or address is not acceptable.</exception>
+    public ResearchSelection? SaveResearchSelection(
+        long? id, string title, string note, string address, string? valueSystem, CountingOptions? counting)
+    {
+        ArgumentNullException.ThrowIfNull(title);
+        ArgumentNullException.ThrowIfNull(note);
+        ArgumentNullException.ThrowIfNull(address);
+        if (title.Length > MaxTitleLength) throw new ArgumentException($"A title is at most {MaxTitleLength} characters.", nameof(title));
+        if (note.Length > MaxNoteLength) throw new ArgumentException($"A note is at most {MaxNoteLength:N0} characters.", nameof(note));
+        if (Content.SelectionAddress.Parse(address) is { IsSuccess: false, Error: string error }) throw new ArgumentException(error, nameof(address));
+
+        string now = Now();
+        using SqliteCommand command = Command(id is null
+            ? """
+              INSERT INTO research_selections (title, note, address, value_system, counting, created_utc, updated_utc)
+              VALUES ($title, $note, $address, $system, $counting, $now, $now)
+              RETURNING id, created_utc
+              """
+            : """
+              UPDATE research_selections
+              SET title = $title, note = $note, address = $address, value_system = $system, counting = $counting, updated_utc = $now
+              WHERE id = $id
+              RETURNING id, created_utc
+              """);
+        if (id is long existing) command.Parameters.AddWithValue("$id", existing);
+        command.Parameters.AddWithValue("$title", title);
+        command.Parameters.AddWithValue("$note", note);
+        command.Parameters.AddWithValue("$address", address);
+        command.Parameters.AddWithValue("$system", (object?)valueSystem ?? DBNull.Value);
+        command.Parameters.AddWithValue("$counting", counting is null ? DBNull.Value : FormatCounting(counting));
+        command.Parameters.AddWithValue("$now", now);
+
+        using SqliteDataReader reader = command.ExecuteReader();
+        if (!reader.Read()) return null;
+        return new ResearchSelection(
+            reader.GetInt64(0), title, note, address, valueSystem, counting, ParseTime(reader.GetString(1)), ParseTime(now));
+    }
+
+    /// <summary>Removes a research selection; false when there was none with that id.</summary>
+    public bool DeleteResearchSelection(long id)
+    {
+        using SqliteCommand command = Command("DELETE FROM research_selections WHERE id = $id");
+        command.Parameters.AddWithValue("$id", id);
+        return command.ExecuteNonQuery() > 0;
+    }
+
+    // Counting options are stored as the names of those switched on, which
+    // reads plainly in the file and needs no serializer.
+    private static readonly (string Name, Func<CountingOptions, bool> Get, Func<CountingOptions, CountingOptions> Set)[] CountingFlags =
+    [
+        ("IncludeBasmalas", o => o.IncludeBasmalas, o => o with { IncludeBasmalas = true }),
+        ("WawAsWord", o => o.WawAsWord, o => o with { WawAsWord = true }),
+        ("ShaddaAsLetter", o => o.ShaddaAsLetter, o => o with { ShaddaAsLetter = true }),
+        ("HamzaAboveLine", o => o.HamzaAboveLine, o => o with { HamzaAboveLine = true }),
+        ("ElfAboveLine", o => o.ElfAboveLine, o => o with { ElfAboveLine = true }),
+        ("YaaAboveLine", o => o.YaaAboveLine, o => o with { YaaAboveLine = true }),
+        ("NoonAboveLine", o => o.NoonAboveLine, o => o with { NoonAboveLine = true }),
+    ];
+
+    private static string FormatCounting(CountingOptions options) =>
+        string.Join(',', CountingFlags.Where(f => f.Get(options)).Select(f => f.Name));
+
+    private static CountingOptions ParseCounting(string text)
+    {
+        var names = text.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToHashSet(StringComparer.Ordinal);
+        CountingOptions options = CountingOptions.Default with { IncludeBasmalas = false };
+        foreach (var flag in CountingFlags)
+        {
+            if (names.Contains(flag.Name)) options = flag.Set(options);
+        }
+        return options;
     }
 
     // -- plumbing -------------------------------------------------------

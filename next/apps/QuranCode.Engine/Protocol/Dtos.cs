@@ -294,7 +294,8 @@ internal sealed record StatsDto(
     NumberDto Value,
     IReadOnlyList<LetterCountDto> LetterFrequencies);
 
-internal sealed record RangeDto(int First, int Last);
+/// <param name="Selection">The exact selection, when the reference was an exact address such as 2:255:w4.</param>
+internal sealed record RangeDto(int First, int Last, SelectionDto? Selection = null);
 
 /// <summary>One chapter's figures under the current system and counting, for sorting.</summary>
 internal sealed record ChapterStatsDto(int Chapter, int Verses, int Words, int Letters, string Value, string Code);
@@ -401,6 +402,49 @@ internal sealed record LocationDto(int Chapter, int? Verse = null, int? Word = n
 internal sealed record SelectionDto(LocationDto Start, LocationDto End);
 
 internal sealed record AnalyzeParams(SelectionDto Selection, string? ValueSystem = null, CountingDto? Counting = null);
+
+/// <param name="ValueSystems">The systems to value in; every system when null or empty.</param>
+internal sealed record SelectionValuesParams(
+    SelectionDto Selection, IReadOnlyList<string>? ValueSystems = null, CountingDto? Counting = null);
+
+/// <summary>A selection's value in one system; <c>Value</c> is null, with an <c>Error</c>, when it cannot be resolved there.</summary>
+internal sealed record SelectionValueDto(string ValueSystem, int LetterCount, NumberDto? Value, string? Error);
+
+/// <param name="By">verse, word or letter.</param>
+internal sealed record BreakdownParams(
+    SelectionDto Selection,
+    string? By = null,
+    string? ValueSystem = null,
+    CountingDto? Counting = null,
+    int? Offset = null,
+    int? Limit = null);
+
+/// <param name="Value">A decimal string, since a value can exceed what JavaScript holds exactly.</param>
+internal sealed record BreakdownRowDto(string Address, LocationDto Location, string Text, int Letters, string Value);
+
+internal sealed record BreakdownDto(string By, int RowCount, int Offset, IReadOnlyList<BreakdownRowDto> Rows);
+
+/// <summary>A saved research selection with the settings it was studied under.</summary>
+/// <param name="Selection">The address as a selection; null when the stored address no longer parses.</param>
+internal sealed record ResearchSelectionDto(
+    long Id,
+    string Title,
+    string Note,
+    string Address,
+    SelectionDto? Selection,
+    string? ValueSystem,
+    CountingDto? Counting,
+    string CreatedUtc,
+    string UpdatedUtc);
+
+/// <param name="Id">The selection to replace; a new one when null.</param>
+internal sealed record ResearchSelectionSaveParams(
+    SelectionDto Selection,
+    long? Id = null,
+    string Title = "",
+    string Note = "",
+    string? ValueSystem = null,
+    CountingDto? Counting = null);
 
 /// <summary>Where a counted letter sits; absolute word and letter numbers are 1-based in the counted text.</summary>
 internal sealed record CountedPositionDto(

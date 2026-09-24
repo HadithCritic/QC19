@@ -1,5 +1,6 @@
 using System.Globalization;
 using QuranCode.Core;
+using QuranCode.Core.Analysis;
 using QuranCode.Core.Content;
 using QuranCode.Core.Text;
 using QuranCode.Core.User;
@@ -65,6 +66,37 @@ internal sealed class UserHandlers
     }
 
     public bool DeleteBookmark(IdParams p) => _store.DeleteBookmark(p.Id);
+
+    public IReadOnlyList<ResearchSelectionDto> ResearchSelections() =>
+        _store.ResearchSelections().Select(ToDto).ToArray();
+
+    /// <summary>Saves a research selection under its canonical address, checked against the open edition.</summary>
+    public ResearchSelectionDto SaveResearchSelection(ResearchSelectionSaveParams p)
+    {
+        QuranSelection selection = Handlers.ToSelection(p.Selection);
+        CountingOptions? counting = p.Counting is null ? null : Handlers.Counting(p.Counting);
+        SelectionResolution resolution = _engine.Resolve(selection, counting: counting);
+        if (!resolution.IsSuccess) throw RpcException.InvalidParams(resolution.Error!);
+        if (p.ValueSystem is string name && !_engine.ValueSystems().Contains(name, StringComparer.Ordinal))
+        {
+            throw RpcException.NotFound("There is no value system of that name.");
+        }
+
+        string address = SelectionAddress.Format(resolution.Selection);
+        string title = string.IsNullOrWhiteSpace(p.Title) ? address : p.Title.Trim();
+        try
+        {
+            ResearchSelection saved = _store.SaveResearchSelection(p.Id, title, p.Note, address, p.ValueSystem, counting)
+                ?? throw RpcException.NotFound($"There is no saved selection {p.Id}.");
+            return ToDto(saved);
+        }
+        catch (ArgumentException ex)
+        {
+            throw RpcException.InvalidParams(ex.Message);
+        }
+    }
+
+    public bool DeleteResearchSelection(IdParams p) => _store.DeleteResearchSelection(p.Id);
 
     public IReadOnlyList<HistoryDto> History(HistoryListParams p) =>
         _store.History(ParseKind(p.Kind), p.Limit).Select(ToDto).ToArray();
@@ -141,6 +173,10 @@ internal sealed class UserHandlers
 
     private BookmarkDto ToDto(Bookmark b) =>
         new(b.Id, Text(b.First, b.Last), AbsoluteOf(b.First), AbsoluteOf(b.Last), b.Note, Time(b.CreatedUtc), Time(b.UpdatedUtc));
+
+    private static ResearchSelectionDto ToDto(ResearchSelection r) => new(
+        r.Id, r.Title, r.Note, r.Address, Handlers.ToDto(r.Address), r.ValueSystem,
+        r.Counting is null ? null : Handlers.ToDto(r.Counting), Time(r.CreatedUtc), Time(r.UpdatedUtc));
 
     private HistoryDto ToDto(HistoryEntry h) => new(
         h.Id,

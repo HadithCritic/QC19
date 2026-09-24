@@ -73,4 +73,11 @@ namespace QuranCode.Engine.Protocol;
 [JsonSerializable(typeof(NameParams))]
 [JsonSerializable(typeof(AnalyzeParams))]
 [JsonSerializable(typeof(SelectionAnalysisDto))]
+[JsonSerializable(typeof(SelectionValuesParams))]
+[JsonSerializable(typeof(IReadOnlyList<SelectionValueDto>))]
+[JsonSerializable(typeof(BreakdownParams))]
+[JsonSerializable(typeof(BreakdownDto))]
+[JsonSerializable(typeof(IReadOnlyList<ResearchSelectionDto>))]
+[JsonSerializable(typeof(ResearchSelectionDto))]
+[JsonSerializable(typeof(ResearchSelectionSaveParams))]
 internal sealed partial class WireJson : JsonSerializerContext;

@@ -56,6 +56,15 @@ public static class DisplayLetters
         return word;
     }
 
+    /// <summary>Letter <paramref name="letter"/> (1-based) of a display word with its marks.</summary>
+    public static string Letter(string word, int letter)
+    {
+        ArgumentNullException.ThrowIfNull(word);
+        string through = Prefix(word, letter);
+        string before = Prefix(word, letter - 1);
+        return through[before.Length..].Trim();
+    }
+
     /// <summary>
     /// Counted letters produced up to each display letter of a run of display
     /// words that became <paramref name="counted"/>: element [j][k] is the

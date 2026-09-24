@@ -64,6 +64,8 @@ internal sealed class Dispatcher
             ["chapters.stats"] = WithDefault(json.ChaptersStatsParams, new ChaptersStatsParams(), handlers.ChapterStats, json.IReadOnlyListChapterStatsDto),
             ["words.distance"] = With(json.DistanceParams, handlers.Distance, json.DistanceDto),
             ["selection.analyze"] = With(json.AnalyzeParams, handlers.AnalyzeSelection, json.SelectionAnalysisDto),
+            ["selection.values"] = With(json.SelectionValuesParams, handlers.SelectionValues, json.IReadOnlyListSelectionValueDto),
+            ["selection.breakdown"] = With(json.BreakdownParams, handlers.Breakdown, json.BreakdownDto),
         };
 
         // The reader's own data needs a writable user.db; without one these
@@ -73,6 +75,9 @@ internal sealed class Dispatcher
         _methods["bookmarks.list"] = NoParams(() => requireUser().Bookmarks(), json.IReadOnlyListBookmarkDto);
         _methods["bookmarks.save"] = With(json.BookmarkSaveParams, p => requireUser().SaveBookmark(p), json.BookmarkDto);
         _methods["bookmarks.delete"] = With(json.IdParams, p => requireUser().DeleteBookmark(p), json.Boolean);
+        _methods["selections.list"] = NoParams(() => requireUser().ResearchSelections(), json.IReadOnlyListResearchSelectionDto);
+        _methods["selections.save"] = With(json.ResearchSelectionSaveParams, p => requireUser().SaveResearchSelection(p), json.ResearchSelectionDto);
+        _methods["selections.delete"] = With(json.IdParams, p => requireUser().DeleteResearchSelection(p), json.Boolean);
         _methods["history.list"] = With(json.HistoryListParams, p => requireUser().History(p), json.IReadOnlyListHistoryDto);
         _methods["history.add"] = With(json.HistoryAddParams, p => requireUser().AddHistory(p), json.Boolean);
         _methods["history.clear"] = With(json.HistoryClearParams, p => requireUser().ClearHistory(p), json.Boolean);

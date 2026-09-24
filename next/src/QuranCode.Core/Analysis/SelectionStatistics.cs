@@ -145,6 +145,19 @@ public sealed record SelectionStatistics(
         };
     }
 
+    /// <summary>
+    /// Only the value of a span, by the same paths as <see cref="Compute(Segmentation, CorpusView, IReadOnlyList{Chapter}, CountedSpan, ValueSystem, CalculationProfile, ModifierSet)"/>.
+    /// </summary>
+    public static long ValueOf(
+        Segmentation segmentation, CorpusView view, IReadOnlyList<Chapter> chapters, CountedSpan span,
+        ValueSystem system, CalculationProfile profile, ModifierSet modifiers)
+    {
+        ArgumentNullException.ThrowIfNull(span);
+        return span.IsVerseAligned
+            ? ValueOf(segmentation, view, chapters, span.FirstVerse, span.LastVerse, system, profile, modifiers)
+            : SegmentedCalculator.ValueOfLetters(segmentation, span.FirstLetter, span.LastLetter, system, profile, modifiers);
+    }
+
     /// <summary>Letter frequencies over an inclusive run of letters, most frequent first.</summary>
     private static LetterFrequency[] Frequencies(Segmentation segmentation, int firstLetter, int lastLetter)
     {

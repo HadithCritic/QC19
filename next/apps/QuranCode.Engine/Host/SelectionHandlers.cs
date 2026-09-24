@@ -49,6 +49,72 @@ internal sealed partial class Handlers
             resolution.Notes);
     }
 
+    /// <summary>Longest selection broken down letter by letter; a longer one is broken down by word.</summary>
+    public const int MaxLetterBreakdown = 20_000;
+
+    public IReadOnlyList<SelectionValueDto> SelectionValues(SelectionValuesParams p)
+    {
+        IEnumerable<string> systems = p.ValueSystems is { Count: > 0 } names
+            ? names.Distinct(StringComparer.Ordinal).Select(n => RequireSystem(n).Name)
+            : Systems.Keys;
+        return _engine.Values(ToSelection(p.Selection), systems.ToArray(), Counting(p.Counting))
+            .Select(v => new SelectionValueDto(v.ValueSystem, v.Letters, v.Value is long value ? Number(value) : null, v.Error))
+            .ToArray();
+    }
+
+    public BreakdownDto Breakdown(BreakdownParams p)
+    {
+        BreakdownUnit unit = p.By switch
+        {
+            null or "word" => BreakdownUnit.Word,
+            "verse" => BreakdownUnit.Verse,
+            "letter" => BreakdownUnit.Letter,
+            _ => throw RpcException.InvalidParams("by must be verse, word or letter."),
+        };
+        int offset = p.Offset ?? 0;
+        int limit = p.Limit ?? DefaultSearchLimit;
+        if (offset < 0) throw RpcException.InvalidParams("offset must not be negative.");
+        if (limit is < 1 or > MaxResearchRows) throw RpcException.InvalidParams($"limit must be between 1 and {MaxResearchRows}.");
+
+        string system = RequireSystem(p.ValueSystem).Name;
+        CountingOptions counting = Counting(p.Counting);
+        QuranSelection selection = ToSelection(p.Selection);
+        if (unit == BreakdownUnit.Letter && _engine.ResolveFor(selection, system, counting).Span is { LetterCount: > MaxLetterBreakdown })
+        {
+            throw RpcException.InvalidParams(
+                $"A selection of more than {MaxLetterBreakdown:N0} letters is broken down by word or verse, not by letter.");
+        }
+
+        SelectionBreakdown breakdown = _engine.Breakdown(selection, unit, system, counting);
+        if (!breakdown.Resolution.IsSuccess) throw RpcException.InvalidParams(breakdown.Resolution.Error!);
+        return new BreakdownDto(
+            p.By ?? "word",
+            breakdown.Rows.Count,
+            offset,
+            breakdown.Rows.Skip(offset).Take(limit).Select(r => new BreakdownRowDto(
+                SelectionAddress.Format(r.Location), ToDto(r.Location), r.Text, r.Letters,
+                r.Value.ToString(System.Globalization.CultureInfo.InvariantCulture))).ToArray());
+    }
+
+    /// <summary>An exact address typed or pasted as a reference, checked against the edition.</summary>
+    private RangeDto ParseExactReference(string text, string textMode, CountingOptions counting)
+    {
+        SelectionParseResult parsed = SelectionAddress.Parse(text);
+        if (!parsed.IsSuccess) throw RpcException.InvalidParams(parsed.Error!);
+        SelectionResolution resolution = _engine.Resolve(parsed.Selection!, textMode, counting);
+        if (!resolution.IsSuccess) throw RpcException.InvalidParams(resolution.Error!);
+
+        VerseRange envelope = Envelope(resolution.Selection);
+        return new RangeDto(envelope.First, envelope.Last, ToDto(resolution.Selection));
+    }
+
+    /// <summary>Whether a reference names a word or letter, as in 2:255:w4, rather than verses.</summary>
+    private static bool IsExactReference(string text) =>
+        text.Contains(":w", StringComparison.OrdinalIgnoreCase) || text.Contains(":l", StringComparison.OrdinalIgnoreCase);
+
+    internal static SelectionDto? ToDto(string address) =>
+        SelectionAddress.Parse(address) is { IsSuccess: true, Selection: QuranSelection s } ? ToDto(s) : null;
+
     /// <summary>
     /// What a range method runs over. A selection of whole verses becomes those
     /// verses, so it gets exactly the verse-range result; only a selection
@@ -89,7 +155,7 @@ internal sealed partial class Handlers
             ordered.End.Verse is int w ? last.AbsoluteOf(w) : last.LastVerse);
     }
 
-    private static QuranSelection ToSelection(SelectionDto dto) =>
+    internal static QuranSelection ToSelection(SelectionDto dto) =>
         new(ToLocation(dto.Start), ToLocation(dto.End));
 
     private static QuranLocation ToLocation(LocationDto dto) => new(dto.Chapter, dto.Verse, dto.Word, dto.Letter);
@@ -103,6 +169,6 @@ internal sealed partial class Handlers
         p.Chapter, p.Verse, p.AbsoluteVerse, p.WordInVerse, p.WordInChapter, p.AbsoluteWord,
         p.LetterInWord, p.LetterInVerse, p.LetterInChapter, p.AbsoluteLetter);
 
-    private static CountingDto ToDto(CountingOptions o) => new(
+    internal static CountingDto ToDto(CountingOptions o) => new(
         o.IncludeBasmalas, o.WawAsWord, o.ShaddaAsLetter, o.HamzaAboveLine, o.ElfAboveLine, o.YaaAboveLine, o.NoonAboveLine);
 }

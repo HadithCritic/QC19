@@ -130,7 +130,10 @@ internal sealed partial class Handlers
     public RangeDto ParseReference(ReferenceParams p)
     {
         RequireText(p.Text, "text");
-        ReferenceParseResult result = _engine.ParseReference(p.Text, RequireSystem(p.ValueSystem).TextMode, Counting(p.Counting));
+        string textMode = RequireSystem(p.ValueSystem).TextMode;
+        if (IsExactReference(p.Text)) return ParseExactReference(p.Text, textMode, Counting(p.Counting));
+
+        ReferenceParseResult result = _engine.ParseReference(p.Text, textMode, Counting(p.Counting));
         if (!result.IsSuccess) throw RpcException.InvalidParams(result.Error!);
         return new RangeDto(result.Range.First, result.Range.Last);
     }
@@ -195,7 +198,7 @@ internal sealed partial class Handlers
         return new DistanceDto(distance.Chapters, distance.Verses, distance.Words, distance.Letters);
     }
 
-    private static CountingOptions Counting(CountingDto? dto) => dto is null
+    internal static CountingOptions Counting(CountingDto? dto) => dto is null
         ? CountingOptions.Default
         : new CountingOptions
         {
