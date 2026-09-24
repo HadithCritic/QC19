@@ -1,6 +1,6 @@
 <script lang="ts">
   import { describeError, engine, latest } from "../../engine/client";
-  import type { CvSums, Maths, QuantitySums, VerseRange } from "../../engine/types";
+  import type { CvSums, Maths, QuantitySums, Scope } from "../../engine/types";
   import { toRadix } from "../../numberDisplay";
   import { app } from "../../state/app.svelte";
   import Notice from "../Notice.svelte";
@@ -12,10 +12,10 @@
   // to single values.
 
   interface Props {
-    range: VerseRange;
+    scope: Scope;
   }
 
-  let { range }: Props = $props();
+  let { scope }: Props = $props();
 
   let absoluteDifference = $state(false);
   let vOverC = $state(false);
@@ -24,7 +24,7 @@
   const load = latest(engine.selectionMaths);
 
   $effect(() => {
-    const r = { ...range };
+    const r = $state.snapshot(scope);
     load(r, { ...app.counting }, absoluteDifference, vOverC)
       .then(({ current, value }) => {
         if (!current) return;

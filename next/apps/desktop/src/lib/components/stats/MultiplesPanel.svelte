@@ -1,6 +1,6 @@
 <script lang="ts">
   import { describeError, engine, latest } from "../../engine/client";
-  import type { SweepTotal, VerseRange } from "../../engine/types";
+  import type { SweepTotal, Scope } from "../../engine/types";
   import { toRadix } from "../../numberDisplay";
   import { app } from "../../state/app.svelte";
   import Notice from "../Notice.svelte";
@@ -11,10 +11,10 @@
   // letter's frequency.
 
   interface Props {
-    range: VerseRange;
+    scope: Scope;
   }
 
-  let { range }: Props = $props();
+  let { scope }: Props = $props();
 
   let totals = $state<SweepTotal[]>([]);
   let error = $state<string | null>(null);
@@ -22,7 +22,7 @@
   const load = latest(engine.sweep);
 
   $effect(() => {
-    const r = { ...range };
+    const r = $state.snapshot(scope);
     load(r, app.valueSystem, { ...app.counting })
       .then(({ current, value }) => {
         if (!current) return;

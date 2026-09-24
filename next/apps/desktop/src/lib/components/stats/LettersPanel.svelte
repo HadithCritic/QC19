@@ -1,6 +1,6 @@
 <script lang="ts">
   import { describeError, engine, latest } from "../../engine/client";
-  import type { LetterScope, LetterStatistic, VerseRange } from "../../engine/types";
+  import type { LetterScope, LetterStatistic, Scope } from "../../engine/types";
   import { app } from "../../state/app.svelte";
   import Notice from "../Notice.svelte";
   import NumberChip from "../NumberChip.svelte";
@@ -10,10 +10,10 @@
   // occurrences. Choose letters for their totals; open any total to factor it.
 
   interface Props {
-    range: VerseRange;
+    over: Scope;
   }
 
-  let { range }: Props = $props();
+  let { over }: Props = $props();
 
   type Column = "order" | "letter" | "count" | "positionSum" | "distanceSum";
   const COLUMNS: { key: Column; label: string; title: string }[] = [
@@ -40,7 +40,7 @@
   const load = latest(engine.selectionLetters);
 
   $effect(() => {
-    const r = { ...range };
+    const r = $state.snapshot(over);
     const s = scope;
     load(r, app.valueSystem, { ...app.counting }, s)
       .then(({ current, value }) => {

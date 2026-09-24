@@ -1,6 +1,6 @@
 <script lang="ts">
   import { describeError, engine, latest } from "../../engine/client";
-  import type { VerseRange, WordFrequencies } from "../../engine/types";
+  import type { Scope, WordFrequencies } from "../../engine/types";
   import { app } from "../../state/app.svelte";
   import { search } from "../../state/search.svelte";
   import Notice from "../Notice.svelte";
@@ -10,10 +10,10 @@
   // their total, and search for them together.
 
   interface Props {
-    range: VerseRange;
+    scope: Scope;
   }
 
-  let { range }: Props = $props();
+  let { scope }: Props = $props();
 
   let withMarks = $state(false);
   let byWord = $state(false);
@@ -22,11 +22,12 @@
   let chosen = $state<Set<string>>(new Set());
 
   const load = latest(engine.selectionWords);
-  // Words with their marks only differ from the counted words in the modes that keep marks.
-  const marksAvailable = $derived(["Original", "SimplifiedMarks"].includes(app.currentSystem?.textMode ?? ""));
+  // Words with their marks only differ from the counted words in the modes that keep marks,
+  // and are listed for whole verses, so not for a selection of words or letters.
+  const marksAvailable = $derived(!("selection" in scope) && ["Original", "SimplifiedMarks"].includes(app.currentSystem?.textMode ?? ""));
 
   $effect(() => {
-    const r = { ...range };
+    const r = $state.snapshot(scope);
     const marks = withMarks && marksAvailable;
     load(r, app.valueSystem, { ...app.counting }, marks)
       .then(({ current, value }) => {

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { describeError, engine, latest } from "../../engine/client";
-  import type { AllahSummary, ResearchMethod, ResearchTable, VerseRange } from "../../engine/types";
+  import type { AllahSummary, ResearchMethod, ResearchTable, Scope } from "../../engine/types";
   import { app } from "../../state/app.svelte";
   import Notice from "../Notice.svelte";
 
@@ -9,10 +9,10 @@
   // each list to a file; here a list can be copied as tab-separated text.
 
   interface Props {
-    range: VerseRange;
+    scope: Scope;
   }
 
-  let { range }: Props = $props();
+  let { scope }: Props = $props();
 
   const PAGE = 100;
   const METHODS: { value: ResearchMethod; label: string }[] = [
@@ -36,7 +36,7 @@
   const loadSummary = latest(engine.selectionAllah);
 
   $effect(() => {
-    const r = wholeBook ? null : { ...range };
+    const r = wholeBook ? null : $state.snapshot(scope);
     const request = { method, range: r, gap, valueSystem: app.valueSystem, counting: { ...app.counting }, offset, limit: PAGE };
     load(request)
       .then(({ current, value }) => {
@@ -48,7 +48,7 @@
   });
 
   $effect(() => {
-    loadSummary({ ...range }, app.valueSystem, { ...app.counting })
+    loadSummary($state.snapshot(scope), app.valueSystem, { ...app.counting })
       .then(({ current, value }) => {
         if (current) summary = value;
       })
@@ -67,7 +67,7 @@
     copied = null;
     try {
       const whole = await engine.researchWords({
-        method, range: wholeBook ? null : { ...range }, gap, valueSystem: app.valueSystem, counting: { ...app.counting }, tsv: true,
+        method, range: wholeBook ? null : $state.snapshot(scope), gap, valueSystem: app.valueSystem, counting: { ...app.counting }, tsv: true,
       });
       await navigator.clipboard.writeText(whole.tsv ?? "");
       copied = `Copied ${whole.rowCount} rows.`;

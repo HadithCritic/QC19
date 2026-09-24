@@ -3,34 +3,56 @@
   import NumberDetail from "../lib/components/NumberDetail.svelte";
   import Notice from "../lib/components/Notice.svelte";
   import { describeError, engine, latest } from "../lib/engine/client";
-  import type { SystemValue } from "../lib/engine/types";
+  import type { NumberInfo, QuranSelection } from "../lib/engine/types";
+  import { formatSelection, ordered, verseSelection } from "../lib/selection";
   import { app } from "../lib/state/app.svelte";
   import { humanize } from "../lib/systems";
 
   // Features.txt #2: the value of any text in every letter-value system at
-  // once. Recomputed as the user types, after a short pause.
+  // once. Recomputed as the user types, after a short pause. The same table
+  // values the active selection, exact or whole verses, so the reader never
+  // has to copy the text out of the reader to value it.
 
   const DEBOUNCE_MS = 250;
 
+  /** One system's value; null with a reason when the selection cannot be resolved in its text mode. */
+  interface Row {
+    valueSystem: string;
+    letterCount: number;
+    value: NumberInfo | null;
+    error: string | null;
+  }
+
   let text = $state("");
   let filter = $state("");
-  let rows = $state<SystemValue[]>([]);
+  let source = $state<"text" | "selection">(app.scope ? "selection" : "text");
+  let rows = $state<Row[]>([]);
   let error = $state<string | null>(null);
   let loading = $state(false);
 
-  const load = latest(engine.textValues);
+  const loadText = latest(engine.textValues);
+  const loadSelection = latest(engine.selectionValues);
+
+  const selection = $derived<QuranSelection | null>(
+    app.exact ? ordered(app.exact) : app.selection ? verseSelection(app.selection, app.chapters) : null,
+  );
 
   $effect(() => {
     const input = text.trim();
     const names = app.systems.map((s) => s.name);
-    if (!input) {
+    const chosen = source === "selection" ? $state.snapshot(selection) : null;
+    const counting = { ...app.counting };
+    if (source === "selection" ? !chosen : !input) {
       rows = [];
       error = null;
       return;
     }
     const timer = setTimeout(() => {
       loading = true;
-      load(input, names)
+      const request: Promise<{ current: boolean; value: Row[] }> = chosen
+        ? loadSelection(chosen, counting, names)
+        : loadText(input, names).then(({ current, value }) => ({ current, value: value.map((v) => ({ ...v, error: null })) }));
+      request
         .then(({ current, value }) => {
           if (current) {
             rows = value;
@@ -54,9 +76,20 @@
 <section class="values" aria-labelledby="values-title">
   <header>
     <h1 id="values-title">Value any text</h1>
-    <p class="hint">Type or paste Arabic. Each system reads it in its own text mode, so letter counts can differ between rows.</p>
-    <label class="visually-hidden" for="values-text">Arabic text</label>
-    <textarea id="values-text" class="quran input" lang="ar" dir="rtl" rows="3" bind:value={text} placeholder="بسم الله الرحمن الرحيم"></textarea>
+    <div class="source" role="radiogroup" aria-label="Value">
+      <label><input type="radio" bind:group={source} value="text" /> Typed text</label>
+      <label class:disabled={!selection}>
+        <input type="radio" bind:group={source} value="selection" disabled={!selection} /> The selection
+        {#if selection}<span class="num">{formatSelection(selection)}</span>{/if}
+      </label>
+    </div>
+    {#if source === "text"}
+      <p class="hint">Type or paste Arabic. Each system reads it in its own text mode, so letter counts can differ between rows.</p>
+      <label class="visually-hidden" for="values-text">Arabic text</label>
+      <textarea id="values-text" class="quran input" lang="ar" dir="rtl" rows="3" bind:value={text} placeholder="بسم الله الرحمن الرحيم"></textarea>
+    {:else}
+      <p class="hint">The selected text in every system, counted with the current options. Each system reads it in its own text mode, so letter counts can differ between rows.</p>
+    {/if}
   </header>
 
   <div class="body" aria-busy={loading}>
@@ -65,7 +98,7 @@
     {:else if rows.length === 0}
       <Notice title="Nothing to value yet" detail="The value under your chosen system appears here, followed by every other system." />
     {:else}
-      {#if current}
+      {#if current?.value}
         <div class="current">
           <div>
             <p class="eyebrow">{humanize(app.currentSystem?.letterOrder ?? "")} · {humanize(app.currentSystem?.letterValue ?? "")}</p>
@@ -100,8 +133,12 @@
               <td>{humanize(system?.letterOrder ?? "")}</td>
               <td>{humanize(system?.letterValue ?? "")}</td>
               <td class="n num">{row.letterCount}</td>
-              <td class="n"><NumberChip value={row.value.value} code={row.value.code} size="sm" /></td>
-              <td class="n num">{row.value.digitSum}</td>
+              {#if row.value}
+                <td class="n"><NumberChip value={row.value.value} code={row.value.code} size="sm" /></td>
+                <td class="n num">{row.value.digitSum}</td>
+              {:else}
+                <td class="n unresolved" colspan="2" title={row.error ?? ""}>not matched in this text mode</td>
+              {/if}
             </tr>
           {/each}
         </tbody>
@@ -129,6 +166,29 @@
     font-size: var(--text-xl);
     font-weight: 600;
     letter-spacing: -0.015em;
+  }
+
+  .source {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-4);
+    margin-top: var(--space-2);
+    font-size: var(--text-sm);
+  }
+
+  .source label {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+  }
+
+  .source .disabled {
+    color: var(--ink-faint);
+  }
+
+  .unresolved {
+    color: var(--ink-faint);
+    font-size: var(--text-xs);
   }
 
   .hint {

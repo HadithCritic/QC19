@@ -2,6 +2,7 @@
   import CountingMenu from "./lib/components/CountingMenu.svelte";
   import Notice from "./lib/components/Notice.svelte";
   import ReferenceBox from "./lib/components/ReferenceBox.svelte";
+  import SelectionBar from "./lib/components/SelectionBar.svelte";
   import SystemPicker from "./lib/components/SystemPicker.svelte";
   import { app, type Theme, type View } from "./lib/state/app.svelte";
   import FindingsView from "./views/FindingsView.svelte";
@@ -85,7 +86,8 @@
       </div>
     </header>
 
-    <main class="content">
+    <main class="content" class:with-bar={app.exact !== null && app.view !== "read"}>
+      {#if app.view !== "read"}<SelectionBar />{/if}
       {#if app.view === "read"}
         <ReadView />
       {:else if app.view === "search"}
@@ -251,5 +253,11 @@
   .content {
     min-height: 0;
     overflow: hidden;
+  }
+
+  /* Outside the reader an exact selection keeps a summary line above the view. */
+  .content.with-bar {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
   }
 </style>

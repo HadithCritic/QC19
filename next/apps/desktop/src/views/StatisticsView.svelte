@@ -6,7 +6,8 @@
   import ResearchPanel from "../lib/components/stats/ResearchPanel.svelte";
   import SymmetryPanel from "../lib/components/stats/SymmetryPanel.svelte";
   import WordsPanel from "../lib/components/stats/WordsPanel.svelte";
-  import type { VerseRange } from "../lib/engine/types";
+  import type { Scope, VerseRange } from "../lib/engine/types";
+  import { formatSelection, ordered } from "../lib/selection";
   import { app } from "../lib/state/app.svelte";
 
   // Lists and sums over the selection, or the open chapter when nothing is
@@ -25,8 +26,9 @@
   let tab = $state<Tab>("multiples");
 
   const chapter = $derived(app.chapters[app.chapter - 1]);
-  const range = $derived<VerseRange | null>(
-    app.selection ?? (chapter ? { first: chapter.firstVerse, last: chapter.firstVerse + chapter.verseCount - (chapter.hasVerseZero ? 0 : 1) } : null),
+  // The one active selection, exact or not; the open chapter when there is none.
+  const scope = $derived<Scope | null>(
+    app.scope ?? (chapter ? { first: chapter.firstVerse, last: chapter.firstVerse + chapter.verseCount - (chapter.hasVerseZero ? 0 : 1) } : null),
   );
 
   function describeRange(r: VerseRange): string {
@@ -44,9 +46,12 @@
   <header>
     <h1 id="stats-title">Statistics</h1>
     <p class="hint">
-      {#if range}
-        {app.selection ? "The selection" : `Chapter ${chapter?.number}, since nothing is selected`}:
-        <span class="num">{describeRange(range)}</span>
+      {#if scope}
+        {app.scope ? "The selection" : `Chapter ${chapter?.number}, since nothing is selected`}:
+        <span class="num">{"selection" in scope ? formatSelection(ordered(scope.selection)) : describeRange(scope)}</span>
+        {#if "selection" in scope}
+          <span class="note">Maths sums and research lists take every verse the selection touches.</span>
+        {/if}
       {/if}
     </p>
     <div class="tabs" role="tablist" aria-label="Statistics">
@@ -58,13 +63,13 @@
   </header>
 
   <div class="body" role="tabpanel">
-    {#if range}
-      {#if tab === "multiples"}<MultiplesPanel {range} />
-      {:else if tab === "words"}<WordsPanel {range} />
-      {:else if tab === "letters"}<LettersPanel {range} />
-      {:else if tab === "maths"}<MathsPanel {range} />
-      {:else if tab === "symmetry"}<SymmetryPanel {range} />
-      {:else}<ResearchPanel {range} />{/if}
+    {#if scope}
+      {#if tab === "multiples"}<MultiplesPanel {scope} />
+      {:else if tab === "words"}<WordsPanel {scope} />
+      {:else if tab === "letters"}<LettersPanel over={scope} />
+      {:else if tab === "maths"}<MathsPanel {scope} />
+      {:else if tab === "symmetry"}<SymmetryPanel {scope} />
+      {:else}<ResearchPanel {scope} />{/if}
     {/if}
   </div>
 </section>
@@ -96,6 +101,11 @@
     margin: 0;
     font-size: var(--text-sm);
     color: var(--ink-muted);
+  }
+
+  .note {
+    display: block;
+    font-size: var(--text-xs);
   }
 
   .tabs {

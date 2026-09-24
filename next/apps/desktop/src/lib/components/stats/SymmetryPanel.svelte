@@ -1,6 +1,6 @@
 <script lang="ts">
   import { describeError, engine, latest } from "../../engine/client";
-  import type { Symmetry, SymmetryKind, VerseRange } from "../../engine/types";
+  import type { Symmetry, SymmetryKind, Scope } from "../../engine/types";
   import { app } from "../../state/app.svelte";
   import Notice from "../Notice.svelte";
 
@@ -8,10 +8,10 @@
   // from the back at once, and list every place the two totals agree.
 
   interface Props {
-    range: VerseRange;
+    scope: Scope;
   }
 
-  let { range }: Props = $props();
+  let { scope }: Props = $props();
 
   const KINDS: { value: SymmetryKind; label: string; unit: string; total: string }[] = [
     { value: "wordLetters", label: "letters of each word", unit: "Words", total: "Letters" },
@@ -26,7 +26,7 @@
   const load = latest(engine.selectionSymmetry);
 
   $effect(() => {
-    const r = { ...range };
+    const r = $state.snapshot(scope);
     load(r, app.valueSystem, { ...app.counting }, kind, boundaries)
       .then(({ current, value }) => {
         if (!current) return;
