@@ -1,5 +1,6 @@
 using QuranCode.Core.Analysis;
 using QuranCode.Core.Content;
+using QuranCode.Core.Numerology;
 using QuranCode.Core.Text;
 
 namespace QuranCode.Core.Code19;
@@ -36,7 +37,27 @@ public static class Sweep
     {
         ArgumentNullException.ThrowIfNull(engine);
         SelectionStatistics stats = engine.Statistics(range, valueSystem, counting: counting);
+        return Totals(engine, stats, engine.View(counting).IndexRange(range), valueSystem, counting);
+    }
 
+    /// <summary>The same totals for an exact selection, resolved in the value system's text mode.</summary>
+    /// <remarks>Chapter and verse number sums take every verse the selection touches.</remarks>
+    public static IReadOnlyList<SweepTotal> Of(
+        QuranCodeEngine engine, CountedSpan span, string valueSystem, CountingOptions? counting = null)
+    {
+        ArgumentNullException.ThrowIfNull(engine);
+        ArgumentNullException.ThrowIfNull(span);
+        ValueSystem system = engine.ValueSystem(valueSystem);
+        SelectionStatistics stats = SelectionStatistics.Compute(
+            engine.Segmentation(system.TextModeName, counting), engine.View(counting), engine.Chapters, span,
+            system, CalculationProfile.Default, ModifierSet.None);
+        return Totals(engine, stats, (span.FirstVerse, span.LastVerse), valueSystem, counting);
+    }
+
+    private static List<SweepTotal> Totals(
+        QuranCodeEngine engine, SelectionStatistics stats, (int First, int Last)? verses,
+        string valueSystem, CountingOptions? counting)
+    {
         var totals = new List<SweepTotal>
         {
             new(SweepGroup.Counts, "Chapters", stats.ChapterCount),
@@ -48,7 +69,7 @@ public static class Sweep
         };
 
         CorpusView view = engine.View(counting);
-        if (view.IndexRange(range) is (int first, int last))
+        if (verses is (int first, int last))
         {
             Segmentation segmentation = engine.Segmentation(engine.ValueSystem(valueSystem).TextModeName, counting);
             long chapterSum = 0, verseSum = 0, absoluteSum = 0;

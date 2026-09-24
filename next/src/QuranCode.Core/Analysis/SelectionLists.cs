@@ -87,14 +87,20 @@ public static class SelectionLists
         Segmentation s, int firstVerse, int lastVerse, LetterPositionScope scope)
     {
         ArgumentNullException.ThrowIfNull(s);
+        int firstLetter = s.WordFirstLetter[s.VerseFirstWord[firstVerse]];
+        int lastWord = s.VerseFirstWord[lastVerse] + s.VerseWordCount[lastVerse] - 1;
+        return LettersBetween(s, firstLetter, s.WordFirstLetter[lastWord] + s.WordLetterCount[lastWord] - 1, scope);
+    }
+
+    /// <summary>Letter statistics over an inclusive run of counted letters, in order of first appearance.</summary>
+    public static IReadOnlyList<LetterStatistic> LettersBetween(
+        Segmentation s, int firstLetter, int lastLetter, LetterPositionScope scope)
+    {
+        ArgumentNullException.ThrowIfNull(s);
         var order = new List<char>();
         var counts = new Dictionary<char, (int Count, long PositionSum, long DistanceSum, long Last)>();
 
-        int firstLetter = s.WordFirstLetter[s.VerseFirstWord[firstVerse]];
-        int lastWord = s.VerseFirstWord[lastVerse] + s.VerseWordCount[lastVerse] - 1;
-        int endLetter = s.WordFirstLetter[lastWord] + s.WordLetterCount[lastWord];
-
-        for (int l = firstLetter; l < endLetter; l++)
+        for (int l = firstLetter; l <= lastLetter; l++)
         {
             char c = s.LetterChars[l];
             long position = scope switch

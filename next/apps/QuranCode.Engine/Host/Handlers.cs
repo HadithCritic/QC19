@@ -101,9 +101,22 @@ internal sealed partial class Handlers
 
     public StatsDto Stats(RangeParams p)
     {
-        VerseRange range = RequireRange(p.First, p.Last);
         string system = RequireSystem(p.ValueSystem).Name;
-        SelectionStatistics s = _engine.Statistics(range, system, counting: Counting(p.Counting));
+        CountingOptions counting = Counting(p.Counting);
+        SelectionStatistics s;
+        if (p.Selection is null)
+        {
+            s = _engine.Statistics(RequireRange(p.First, p.Last), system, counting: counting);
+        }
+        else
+        {
+            // Validated through the same scope as every range method, then analyzed exactly.
+            _ = ScopeOf(p.First, p.Last, p.Selection, system, counting);
+            QuranSelection selection = ToSelection(p.Selection);
+            s = _engine.Analyze(selection, system, counting).Statistics
+                ?? new SelectionStatistics(Envelope(selection), system, 0, 0, 0, 0, 0, 0, []);
+        }
+        VerseRange range = s.Range;
 
         SelectionPosition position = s.Position;
         return new StatsDto(

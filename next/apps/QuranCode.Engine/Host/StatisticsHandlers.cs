@@ -20,14 +20,28 @@ internal sealed partial class Handlers
 
     public WordFrequenciesDto SelectionWords(SelectionParams p)
     {
-        VerseRange range = RequireRange(p.First, p.Last);
-        IReadOnlyList<WordCount> words = _engine.WordFrequencies(range, SystemName(p.ValueSystem), Counting(p.Counting), p.WithMarks);
+        string system = SystemName(p.ValueSystem);
+        CountingOptions counting = Counting(p.Counting);
+        RangeScope scope = ScopeOf(p.First, p.Last, p.Selection, system, counting);
+        if (scope.Span is not null && p.WithMarks)
+        {
+            throw RpcException.InvalidParams("Words with marks are listed for whole verses; select whole verses to list them.");
+        }
+
+        IReadOnlyList<WordCount> words = scope switch
+        {
+            { Range: VerseRange range } => _engine.WordFrequencies(range, system, counting, p.WithMarks),
+            { Span: CountedSpan span } => _engine.WordFrequencies(span, system, counting),
+            _ => [],
+        };
         return new WordFrequenciesDto(words.Sum(w => w.Count), words.Count, words.Select(w => new WordCountDto(w.Word, w.Count)).ToArray());
     }
 
     public IReadOnlyList<LetterStatisticDto> SelectionLetters(SelectionParams p)
     {
-        VerseRange range = RequireRange(p.First, p.Last);
+        string system = SystemName(p.ValueSystem);
+        CountingOptions counting = Counting(p.Counting);
+        RangeScope over = ScopeOf(p.First, p.Last, p.Selection, system, counting);
         LetterPositionScope scope = p.Scope switch
         {
             null or "book" => LetterPositionScope.Book,
@@ -36,15 +50,27 @@ internal sealed partial class Handlers
             "word" => LetterPositionScope.Word,
             _ => throw RpcException.InvalidParams("scope must be book, chapter, verse or word."),
         };
-        return _engine.LetterStatistics(range, SystemName(p.ValueSystem), Counting(p.Counting), scope)
+        IReadOnlyList<LetterStatistic> letters = over switch
+        {
+            { Range: VerseRange range } => _engine.LetterStatistics(range, system, counting, scope),
+            { Span: CountedSpan span } => _engine.LetterStatistics(span, system, counting, scope),
+            _ => [],
+        };
+        return letters
             .Select(l => new LetterStatisticDto(l.Letter.ToString(), l.Order, l.Count, l.PositionSum, l.DistanceSum))
             .ToArray();
     }
 
+    /// <remarks>Chapter and verse sums are over whole verses: a selection gives every verse it touches.</remarks>
     public MathsDto SelectionMaths(SelectionParams p)
     {
-        VerseRange range = RequireRange(p.First, p.Last);
         CountingOptions counting = Counting(p.Counting);
+        string system = SystemName(p.ValueSystem);
+        if (VersesOf(ScopeOf(p.First, p.Last, p.Selection, system, counting), system, counting) is not VerseRange range)
+        {
+            CvSumsDto none = Cv(SelectionLists.Cv([], p.AbsoluteDifference, p.VOverC));
+            return new MathsDto(none, none);
+        }
         return new MathsDto(
             Cv(_engine.ChapterSums(range, counting, p.AbsoluteDifference, p.VOverC)),
             Cv(_engine.VerseSums(range, counting, p.AbsoluteDifference, p.VOverC)));
@@ -52,7 +78,9 @@ internal sealed partial class Handlers
 
     public SymmetryDto SelectionSymmetry(SelectionParams p)
     {
-        VerseRange range = RequireRange(p.First, p.Last);
+        string system = SystemName(p.ValueSystem);
+        CountingOptions counting = Counting(p.Counting);
+        RangeScope scope = ScopeOf(p.First, p.Last, p.Selection, system, counting);
         SymmetryKind kind = p.Kind switch
         {
             null or "wordLetters" => SymmetryKind.WordLetters,
@@ -60,7 +88,12 @@ internal sealed partial class Handlers
             "verseLetters" => SymmetryKind.VerseLetters,
             _ => throw RpcException.InvalidParams("kind must be wordLetters, verseWords or verseLetters."),
         };
-        SymmetryResult result = _engine.Symmetry(range, kind, p.Boundaries, SystemName(p.ValueSystem), Counting(p.Counting));
+        SymmetryResult result = scope switch
+        {
+            { Range: VerseRange range } => _engine.Symmetry(range, kind, p.Boundaries, system, counting),
+            { Span: CountedSpan span } => _engine.Symmetry(span, kind, p.Boundaries, system, counting),
+            _ => SelectionLists.Symmetry([], p.Boundaries),
+        };
         return new SymmetryDto(
             result.Units,
             result.Points.Select(x => new SymmetryPointDto(x.Position, x.Total, x.PositionSum, x.TotalSum)).ToArray(),
@@ -69,7 +102,14 @@ internal sealed partial class Handlers
 
     public AllahSummaryDto SelectionAllah(SelectionParams p)
     {
-        AllahSummary s = _engine.AllahSummary(RequireRange(p.First, p.Last), SystemName(p.ValueSystem), Counting(p.Counting));
+        string system = SystemName(p.ValueSystem);
+        CountingOptions counting = Counting(p.Counting);
+        AllahSummary s = ScopeOf(p.First, p.Last, p.Selection, system, counting) switch
+        {
+            { Range: VerseRange range } => _engine.AllahSummary(range, system, counting),
+            { Span: CountedSpan span } => _engine.AllahSummary(span, system, counting),
+            _ => new AllahSummary(0, 0, 0),
+        };
         return new AllahSummaryDto(s.Allah, s.WithAllah, s.WithLillah, s.Total);
     }
 
@@ -85,14 +125,18 @@ internal sealed partial class Handlers
             _ => throw RpcException.InvalidParams("method must be allah, nonAllah, all, double or repeated."),
         };
         if (p.Gap is < 0 or > 100) throw RpcException.InvalidParams("gap must be between 0 and 100.");
-        VerseRange? range = (p.First, p.Last) switch
+        string system = SystemName(p.ValueSystem);
+        CountingOptions counting = Counting(p.Counting);
+        VerseRange? range = (p.First, p.Last, p.Selection) switch
         {
-            (null, null) => null,
-            (int first, int last) => RequireRange(first, last),
-            _ => throw RpcException.InvalidParams("give both first and last, or neither for the whole book."),
+            (null, null, null) => null,
+            (null, null, SelectionDto selection) => VersesOf(ScopeOf(0, 0, selection, system, counting), system, counting)
+                ?? throw RpcException.InvalidParams("Nothing in this selection is counted under the current options."),
+            (int first, int last, null) => RequireRange(first, last),
+            _ => throw RpcException.InvalidParams("give both first and last, or a selection, or neither for the whole book."),
         };
 
-        ResearchTable table = _engine.WordList(kind, range, SystemName(p.ValueSystem), Counting(p.Counting), p.Gap);
+        ResearchTable table = _engine.WordList(kind, range, system, counting, p.Gap);
         if (p.Tsv)
         {
             var text = new StringBuilder();

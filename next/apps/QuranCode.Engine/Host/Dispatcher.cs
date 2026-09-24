@@ -63,6 +63,7 @@ internal sealed class Dispatcher
             ["search.frequency"] = With(json.FrequencySearchParams, handlers.SearchFrequency, json.UnitSearchResultDto),
             ["chapters.stats"] = WithDefault(json.ChaptersStatsParams, new ChaptersStatsParams(), handlers.ChapterStats, json.IReadOnlyListChapterStatsDto),
             ["words.distance"] = With(json.DistanceParams, handlers.Distance, json.DistanceDto),
+            ["selection.analyze"] = With(json.AnalyzeParams, handlers.AnalyzeSelection, json.SelectionAnalysisDto),
         };
 
         // The reader's own data needs a writable user.db; without one these

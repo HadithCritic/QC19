@@ -71,8 +71,8 @@ internal sealed record LetterCountDto(string Letter, int Count);
 /// <c>Kind</c> (wordLetters, verseWords, verseLetters) and <c>Boundaries</c> for symmetry.
 /// </summary>
 internal sealed record SelectionParams(
-    int First,
-    int Last,
+    int First = 0,
+    int Last = 0,
     string? ValueSystem = null,
     CountingDto? Counting = null,
     bool WithMarks = false,
@@ -80,7 +80,8 @@ internal sealed record SelectionParams(
     bool AbsoluteDifference = false,
     bool VOverC = false,
     string? Kind = null,
-    bool Boundaries = false);
+    bool Boundaries = false,
+    SelectionDto? Selection = null);
 
 internal sealed record WordCountDto(string Word, int Count);
 
@@ -119,7 +120,8 @@ internal sealed record ResearchParams(
     CountingDto? Counting = null,
     int? Offset = null,
     int? Limit = null,
-    bool Tsv = false);
+    bool Tsv = false,
+    SelectionDto? Selection = null);
 
 internal sealed record ResearchTableDto(
     IReadOnlyList<string> Columns,
@@ -385,7 +387,67 @@ internal sealed record ChapterParams(int Chapter);
 
 internal sealed record ChapterValuesParams(int Chapter, string? ValueSystem = null, CountingDto? Counting = null);
 
-internal sealed record RangeParams(int First, int Last, string? ValueSystem = null, CountingDto? Counting = null);
+/// <summary>A run of verses by absolute number, or an exact <c>Selection</c> in its place.</summary>
+internal sealed record RangeParams(
+    int First = 0, int Last = 0, string? ValueSystem = null, CountingDto? Counting = null, SelectionDto? Selection = null);
+
+/// <summary>
+/// A place as the reader sees it: verse in chapter (0 for a verse 0), and
+/// 1-based display word and letter. See docs/specs/research-selection.md.
+/// </summary>
+internal sealed record LocationDto(int Chapter, int? Verse = null, int? Word = null, int? Letter = null);
+
+/// <summary>An inclusive selection from one location to another.</summary>
+internal sealed record SelectionDto(LocationDto Start, LocationDto End);
+
+internal sealed record AnalyzeParams(SelectionDto Selection, string? ValueSystem = null, CountingDto? Counting = null);
+
+/// <summary>Where a counted letter sits; absolute word and letter numbers are 1-based in the counted text.</summary>
+internal sealed record CountedPositionDto(
+    int Chapter,
+    int Verse,
+    int AbsoluteVerse,
+    int WordInVerse,
+    int WordInChapter,
+    int AbsoluteWord,
+    int LetterInWord,
+    int LetterInVerse,
+    int LetterInChapter,
+    int AbsoluteLetter);
+
+/// <summary>End minus start, as positions: not the selected counts, which are inclusive.</summary>
+internal sealed record DeltaDto(int Chapters, int Verses, int Words, int Letters);
+
+/// <summary>Everything that decided a result, so it can be reproduced.</summary>
+internal sealed record MethodologyDto(string Edition, string TextMode, string ValueSystem, CountingDto Counting);
+
+/// <summary>
+/// An exact selection's analysis.
+/// </summary>
+/// <param name="Address">The canonical address, endpoints in Quran order.</param>
+/// <param name="First">Absolute number of the first verse the counted text touches; null when nothing is counted.</param>
+/// <param name="VerseAligned">It covers whole verses, so the verse-range figures apply exactly.</param>
+/// <param name="Notes">Sentences for the reader about what the options leave out.</param>
+internal sealed record SelectionAnalysisDto(
+    string Address,
+    SelectionDto Selection,
+    int? First,
+    int? Last,
+    bool VerseAligned,
+    PositionDto? Position,
+    NumberDto Chapters,
+    NumberDto Verses,
+    NumberDto Words,
+    NumberDto Letters,
+    NumberDto DistinctWords,
+    NumberDto DistinctLetters,
+    NumberDto Value,
+    IReadOnlyList<LetterCountDto> LetterFrequencies,
+    CountedPositionDto? Start,
+    CountedPositionDto? End,
+    DeltaDto? Delta,
+    MethodologyDto Methodology,
+    IReadOnlyList<string> Notes);
 
 internal sealed record ReferenceParams(string Text, string? ValueSystem = null, CountingDto? Counting = null);
 

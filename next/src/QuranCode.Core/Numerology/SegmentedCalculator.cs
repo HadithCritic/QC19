@@ -80,10 +80,41 @@ public static class SegmentedCalculator
         ValueSystem system, CalculationProfile profile, ModifierSet modifiers) =>
         Calculate(segmentation, firstVerse, verseCount, system, profile, modifiers, singleVerse: false);
 
+    /// <summary>Value of an inclusive run of counted letters, which may start or end inside a word.</summary>
+    /// <remarks>
+    /// <para>
+    /// This follows the aggregate path of <see cref="ValueOfVerses"/> with
+    /// every loop clamped to the run: a partial word is valued from its selected
+    /// letters, and word and verse additions apply to each word and verse the
+    /// run touches. Over whole verses it equals <see cref="ValueOfVerses"/>.
+    /// </para>
+    /// <para>
+    /// The legacy engine could not select part of a verse, so there is no
+    /// oracle for a partial run; this is QC19's own definition. See
+    /// <c>docs/specs/research-selection.md</c>.
+    /// </para>
+    /// </remarks>
+    public static long ValueOfLetters(
+        Segmentation segmentation, int firstLetter, int lastLetter,
+        ValueSystem system, CalculationProfile profile, ModifierSet modifiers)
+    {
+        ArgumentNullException.ThrowIfNull(segmentation);
+        if (firstLetter < 0 || lastLetter >= segmentation.LetterCount || lastLetter < firstLetter)
+        {
+            throw new ArgumentOutOfRangeException(nameof(firstLetter), $"letters run from 0 to {segmentation.LetterCount - 1}");
+        }
+
+        int firstVerse = segmentation.WordVerse[segmentation.LetterWord[firstLetter]];
+        int lastVerse = segmentation.WordVerse[segmentation.LetterWord[lastLetter]];
+        return Calculate(
+            segmentation, firstVerse, lastVerse - firstVerse + 1, system, profile, modifiers,
+            singleVerse: false, firstLetter, lastLetter);
+    }
+
     private static long Calculate(
         Segmentation segmentation, int firstVerse, int verseCount,
         ValueSystem system, CalculationProfile profile, ModifierSet modifiers,
-        bool singleVerse)
+        bool singleVerse, int firstLetter = 0, int lastLetter = int.MaxValue)
     {
         ArgumentNullException.ThrowIfNull(segmentation);
         ArgumentNullException.ThrowIfNull(system);
@@ -131,10 +162,15 @@ public static class SegmentedCalculator
                 long wordValue = 0L;
                 long letterSign = 1L;
 
-                int firstLetter = segmentation.WordFirstLetter[w];
+                int wordStart = segmentation.WordFirstLetter[w];
                 int letters = segmentation.WordLetterCount[w];
 
-                for (int l = firstLetter; l < firstLetter + letters; l++)
+                // A clamped run skips words outside it and values only its letters of the rest.
+                int from = Math.Max(wordStart, firstLetter);
+                int to = Math.Min(wordStart + letters - 1, lastLetter);
+                if (from > to) continue;
+
+                for (int l = from; l <= to; l++)
                 {
                     long value = system[segmentation.LetterChars[l]];
 

@@ -1,4 +1,6 @@
+using QuranCode.Core.Analysis;
 using QuranCode.Core.Content;
+using QuranCode.Core.Text;
 using QuranCode.Core.Code19;
 using QuranCode.Engine.Protocol;
 
@@ -56,11 +58,17 @@ internal sealed partial class Handlers
     /// </summary>
     public IReadOnlyList<SweepTotalDto> Sweep(RangeParams p)
     {
-        VerseRange range = RequireRange(p.First, p.Last);
         string system = RequireSystem(p.ValueSystem).Name;
+        CountingOptions counting = Counting(p.Counting);
+        IReadOnlyList<Core.Code19.SweepTotal> totals = ScopeOf(p.First, p.Last, p.Selection, system, counting) switch
+        {
+            { Range: VerseRange range } => Core.Code19.Sweep.Of(_engine, range, system, counting),
+            { Span: CountedSpan span } => Core.Code19.Sweep.Of(_engine, span, system, counting),
+            _ => [],
+        };
         return
         [
-            .. Core.Code19.Sweep.Of(_engine, range, system, Counting(p.Counting)).Select(t => new SweepTotalDto(
+            .. totals.Select(t => new SweepTotalDto(
                 t.Group switch
                 {
                     SweepGroup.Counts => "counts",

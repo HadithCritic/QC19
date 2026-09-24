@@ -81,18 +81,7 @@ public sealed record SelectionStatistics(
             ? firstLetter
             : segmentation.WordFirstLetter[endWord - 1] + segmentation.WordLetterCount[endWord - 1];
 
-        var counts = new Dictionary<char, int>();
-        for (int l = firstLetter; l < endLetter; l++)
-        {
-            char c = segmentation.LetterChars[l];
-            counts[c] = counts.GetValueOrDefault(c) + 1;
-        }
-
-        LetterFrequency[] frequencies = counts
-            .Select(p => new LetterFrequency(p.Key, p.Value))
-            .OrderByDescending(f => f.Count)
-            .ThenBy(f => f.Letter)
-            .ToArray();
+        LetterFrequency[] frequencies = Frequencies(segmentation, firstLetter, endLetter - 1);
 
         int firstChapter = segmentation.VerseChapter[firstIndex];
         int lastChapter = segmentation.VerseChapter[lastIndex];
@@ -110,6 +99,67 @@ public sealed record SelectionStatistics(
         {
             Position = position,
         };
+    }
+
+    /// <summary>
+    /// Computes statistics over an exact span of counted letters.
+    /// </summary>
+    /// <remarks>
+    /// A span covering whole verses goes through the verse-range overload, so
+    /// it gets exactly what the same verses selected as verses get, legacy
+    /// value paths included. Any other span counts the letters it covers and
+    /// the words and verses it touches, and is valued by
+    /// <see cref="SegmentedCalculator.ValueOfLetters"/>. <see cref="Range"/> is
+    /// then the verses the span touches.
+    /// </remarks>
+    public static SelectionStatistics Compute(
+        Segmentation segmentation,
+        CorpusView view,
+        IReadOnlyList<Chapter> chapters,
+        CountedSpan span,
+        ValueSystem system,
+        CalculationProfile profile,
+        ModifierSet modifiers)
+    {
+        ArgumentNullException.ThrowIfNull(segmentation);
+        ArgumentNullException.ThrowIfNull(view);
+        ArgumentNullException.ThrowIfNull(span);
+        ArgumentNullException.ThrowIfNull(system);
+
+        var range = new VerseRange(view.Verses[span.FirstVerse].Number, view.Verses[span.LastVerse].Number);
+        if (span.IsVerseAligned) return Compute(segmentation, view, chapters, range, system, profile, modifiers);
+
+        LetterFrequency[] frequencies = Frequencies(segmentation, span.FirstLetter, span.LastLetter);
+        return new SelectionStatistics(
+            range,
+            system.Name,
+            span.ChapterCount,
+            span.VerseCount,
+            span.WordCount,
+            span.LetterCount,
+            frequencies.Length,
+            SegmentedCalculator.ValueOfLetters(segmentation, span.FirstLetter, span.LastLetter, system, profile, modifiers),
+            frequencies)
+        {
+            Position = SelectionPosition.Of(segmentation, view, chapters, span.FirstVerse, span.LastVerse),
+        };
+    }
+
+    /// <summary>Letter frequencies over an inclusive run of letters, most frequent first.</summary>
+    private static LetterFrequency[] Frequencies(Segmentation segmentation, int firstLetter, int lastLetter)
+    {
+        var counts = new Dictionary<char, int>();
+        for (int l = firstLetter; l <= lastLetter; l++)
+        {
+            char c = segmentation.LetterChars[l];
+            counts[c] = counts.GetValueOrDefault(c) + 1;
+        }
+
+        return counts
+            .Select(p => new LetterFrequency(p.Key, p.Value))
+            .OrderByDescending(f => f.Count)
+            .ThenBy(f => f.Letter)
+            .ToArray();
     }
 
     private static long ValueOf(
