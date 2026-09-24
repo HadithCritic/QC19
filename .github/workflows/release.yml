@@ -38,9 +38,12 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "9.0.x"
-      - name: Build the Submission database
+      # The tests read both editions; the installer ships Submission.
+      - name: Build the content databases
         working-directory: .
-        run: python next/data/import/build_content.py --edition submission -o next/data/submission.db
+        run: |
+          python next/data/import/build_content.py -o next/data/content.db
+          python next/data/import/build_content.py --edition submission -o next/data/submission.db
       # The released app must be the tested one.
       - name: Engine and protocol tests
         working-directory: .
