@@ -1,0 +1,74 @@
+name: release
+
+# Builds the Windows installer. A tag such as v0.1.0 also drafts a GitHub
+# release with the installer attached; the draft is published by hand. Run it
+# from the Actions tab to build the installer without drafting anything.
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  installer:
+    name: Windows installer
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    defaults:
+      run:
+        working-directory: next/apps/desktop
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
+          cache-dependency-path: next/apps/desktop/pnpm-lock.yaml
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "9.0.x"
+      - name: Build the Submission database
+        working-directory: .
+        run: python next/data/import/build_content.py --edition submission -o next/data/submission.db
+      # The released app must be the tested one.
+      - name: Engine and protocol tests
+        working-directory: .
+        run: |
+          dotnet test next/tests/QuranCode.Core.Tests
+          dotnet test next/tests/QuranCode.Engine.Tests
+      - run: pnpm install --frozen-lockfile
+      - name: Check that the tag matches the app version
+        if: github.ref_type == 'tag'
+        shell: bash
+        run: |
+          version=$(node -p "require('./src-tauri/tauri.conf.json').version")
+          if [ "v$version" != "$GITHUB_REF_NAME" ]; then
+            echo "tag $GITHUB_REF_NAME does not match version $version in tauri.conf.json"
+            exit 1
+          fi
+      - name: Build the installer
+        run: pnpm release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: qurancode-installer
+          path: next/apps/desktop/src-tauri/target/release/bundle/nsis/*.exe
+          if-no-files-found: error
+      - name: Draft the release
+        if: github.ref_type == 'tag'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" src-tauri/target/release/bundle/nsis/*.exe \
+            --draft --title "QuranCode $GITHUB_REF_NAME" --notes "Windows installer. See README.md for what is in this release."

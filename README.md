@@ -195,6 +195,12 @@ for development. The command line reads either database:
 dotnet run --project next/apps/QuranCode.Cli -- stats --db next/data/submission.db
 ```
 
+`pnpm release` builds the Windows installer into
+`src-tauri/target/release/bundle/nsis`. The `release` workflow does the same
+on GitHub: run by hand it only builds the installer, and a tag such as
+`v0.1.0` that matches the app's version also drafts a release with the
+installer attached.
+
 ## How it is built
 
 ```
@@ -301,8 +307,9 @@ boundaries from the original's data in `C#/`.
 GPL-3.0, the license of the original QuranCode; see [LICENSE](LICENSE). The
 interface fonts (Amiri Quran, Instrument Sans, IBM Plex Mono) are under
 the SIL Open Font License. The classic text comes from tanzil.net. The
-Submission edition export carries no license statement; its terms should be
-confirmed before a public release.
+Submission edition's Arabic text and translations come from WikiSubmission,
+of which this project is part, so they raise no third-party question (ADR
+0004, section 8). The installer shows the license before it installs.
 
 The original QuranCode is the work of Ali Adams: http://qurancode.com and
 http://heliwave.com.

@@ -214,6 +214,12 @@ original's hamza above line option, which findings carry as `yes+hamza`.
 
 Installer, the licensing statement ADR 0004 §8 settles, and a first tag.
 
+- The installer is NSIS, built by `pnpm release` and by the `release`
+  workflow, and shows the GPL before it installs.
+- The README's licensing note follows §8.
+- The first tag is the owner's call. Pushing `v0.1.0` drafts the release;
+  publishing the draft is a separate, manual step.
+
 ---
 
 ## Not on this roadmap
