@@ -2,7 +2,7 @@
 name = "qurancode-desktop"
 version = "0.1.0"
 description = "QuranCode: numerical research over the text of the Quran"
-license = "GPL-3.0-or-later"
+license = "GPL-3.0-only"
 edition = "2021"
 rust-version = "1.77.2"
 

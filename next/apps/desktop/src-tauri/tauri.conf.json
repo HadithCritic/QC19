@@ -27,7 +27,7 @@
   "bundle": {
     "active": true,
     "targets": ["nsis"],
-    "license": "GPL-3.0-or-later",
+    "license": "GPL-3.0-only",
     "licenseFile": "../../../../LICENSE",
     "category": "Education",
     "shortDescription": "Numerical research over the text of the Quran",

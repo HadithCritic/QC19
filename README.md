@@ -304,7 +304,7 @@ boundaries from the original's data in `C#/`.
 
 ## License
 
-GPL-3.0, the license of the original QuranCode; see [LICENSE](LICENSE). The
+GPL-3.0 (version 3 only), the license of the original QuranCode; see [LICENSE](LICENSE). The
 interface fonts (Amiri Quran, Instrument Sans, IBM Plex Mono) are under
 the SIL Open Font License. The classic text comes from tanzil.net. The
 Submission edition's Arabic text and translations come from WikiSubmission,

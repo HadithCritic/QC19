@@ -160,6 +160,11 @@ The owner confirms this is part of a WikiSubmission project, so the Arabic
 text and the translations raise no third-party issue. ADR 0003's open
 question is closed. The work remains GPL-3.0 as a derivative of the original.
 
+> Settled 2026-09-24: the license is GPL-3.0-only, as SPDX names it. The
+> original states no "or any later version" grant, and version 3 only is the
+> one choice that is valid either way. The package manifests and the
+> installer say so.
+
 ## Consequences
 
 Positive: a much smaller surface; the removed features were the bulk of the
